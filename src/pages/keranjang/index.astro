@@ -1,0 +1,28 @@
+---
+import Base from '../../layouts/Base.astro';
+
+// PLACEHOLDER — keranjang final memakai state lokal (browser) sampai
+// checkout, lalu order dibuat di Supabase. Selama harga produk masih TBD,
+// tidak ada produk yang bisa masuk keranjang secara nyata (PRD §7.4).
+---
+
+<Base title="Keranjang">
+  <h1>Keranjang</h1>
+  <p>
+    <span class="badge">Keranjang placeholder</span> — keranjang masih kosong
+    karena belum ada produk dengan harga final. Setelah harga diisi di admin
+    dan Supabase tersambung, produk yang ditambahkan akan tampil di sini
+    dengan total yang sama persis dengan total di checkout dan tagihan
+    BorderPay.
+  </p>
+  <div class="card">
+    <strong>Keranjangmu masih kosong.</strong>
+    <p>
+      <a href="/templates">Kembali ke katalog</a>
+    </p>
+  </div>
+  <p>
+    Aturan yang akan dijaga: total di keranjang = total di checkout = total
+    yang ditagihkan. Selisih satu rupiah pun = bug.
+  </p>
+</Base>

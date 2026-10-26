@@ -1,0 +1,31 @@
+---
+import Base from '../../layouts/Base.astro';
+
+// PLACEHOLDER — dashboard pembeli final memakai Supabase Auth (email +
+// Google). Guest checkout membuat akun otomatis dari email; pembeli mengatur
+// password lewat tautan email (PRD §7.6). Halaman ini aktif setelah env
+// Supabase diisi dan Auth diaktifkan.
+---
+
+<Base title="Akun saya">
+  <h1>Akun saya</h1>
+  <p>
+    <span class="badge">Dashboard placeholder</span> — login belum aktif
+    sampai Supabase tersambung. Setelah aktif, di sini tampil:
+  </p>
+  <div class="card">
+    <strong>Order saya</strong>
+    <p>Riwayat order + status pembayaran (menunggu_bayar / lunas / gagal / kedaluwarsa).</p>
+  </div>
+  <div class="card">
+    <strong>Download saya</strong>
+    <p>
+      File hanya bisa diunduh dari sini untuk order yang sudah lunas, lewat
+      signed URL bertanda waktu — bukan URL publik yang bisa ditebak.
+    </p>
+  </div>
+  <div class="card">
+    <strong>Profil</strong>
+    <p>Nama, email, dan pengaturan akun.</p>
+  </div>
+</Base>

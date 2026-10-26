@@ -1,0 +1,31 @@
+---
+import Base from '../../layouts/Base.astro';
+
+// PLACEHOLDER — admin final: login terpisah + peran (Nabil penuh/teknis,
+// Imam produk/order/konten). Dijaga RLS: hanya role admin yang bisa tulis
+// tabel products/orders/services (lihat supabase/schema.sql).
+---
+
+<Base title="Admin">
+  <h1>Admin</h1>
+  <p>
+    <span class="badge">Admin placeholder</span> — login admin + peran
+    aktif setelah Supabase tersambung. Yang akan dikelola dari sini:
+  </p>
+  <div class="card">
+    <strong>Produk</strong>
+    <p>
+      Tambah/ubah produk, jenjang, deskripsi, pratinjau, file, harga, dan
+      status tampil. Harga yang diubah di sini langsung tercermin di katalog
+      dan checkout (satu sumber harga).
+    </p>
+  </div>
+  <div class="card">
+    <strong>Order</strong>
+    <p>Daftar order + status pembayaran, cari per email/produk, kirim ulang email lunas/download bila perlu.</p>
+  </div>
+  <div class="card">
+    <strong>Layanan konsultasi</strong>
+    <p>Layanan, harga, dan jadwal — tetap tersembunyi dari publik sampai data mentor masuk.</p>
+  </div>
+</Base>

@@ -1,0 +1,34 @@
+---
+import Base from '../../layouts/Base.astro';
+
+// PLACEHOLDER — modul konsultasi dibangun sekalian, tapi PINTU TERTUTUP:
+// tidak ada booking nyata dan tidak ada harga/jadwal mentor yang tampil
+// sebelum data Nizam masuk (lihat PRD §11).
+const layanan = [
+  'Konsultasi private 1-1',
+  'Jasa editor',
+  'Bantu proses publish',
+  'Pembimbing',
+];
+---
+
+<Base title="Konsultasi">
+  <h1>Konsultasi & pendampingan</h1>
+  <p>
+    <span class="badge">Segera hadir</span> — layanan, harga, dan jadwal
+    menyusul setelah mentor mengonfirmasi. Halaman ini adalah ruangnya;
+    isinya datang belakangan.
+  </p>
+  {
+    layanan.map((nama) => (
+      <div class="card">
+        <strong>{nama}</strong>
+        <span class="badge">Harga & jadwal menyusul</span>
+      </div>
+    ))
+  }
+  <p>
+    Booking dibuka setelah layanan + harga + jam ketersediaan mentor
+    terverifikasi. Akun login akan wajib untuk booking.
+  </p>
+</Base>

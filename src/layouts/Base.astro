@@ -1,0 +1,67 @@
+---
+interface Props {
+  title: string;
+}
+const { title } = Astro.props;
+---
+
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title} — ArticleTemplate.id</title>
+    <meta
+      name="description"
+      content="Template artikel untuk peneliti: beli, bayar lewat BorderPay, unduh, dan kelola dari akunmu."
+    />
+    <style>
+      body {
+        font-family: system-ui, -apple-system, sans-serif;
+        max-width: 860px;
+        margin: 0 auto;
+        padding: 1.5rem;
+        line-height: 1.6;
+        color: #1c1c1c;
+      }
+      nav a {
+        margin-right: 1rem;
+      }
+      .badge {
+        display: inline-block;
+        background: #fff3cd;
+        border: 1px solid #e6c87a;
+        padding: 0.1rem 0.5rem;
+        border-radius: 999px;
+        font-size: 0.85rem;
+      }
+      .card {
+        border: 1px solid #ddd;
+        border-radius: 12px;
+        padding: 1rem;
+        margin: 0.75rem 0;
+      }
+      footer {
+        margin-top: 2rem;
+        font-size: 0.9rem;
+        color: #666;
+      }
+    </style>
+  </head>
+  <body>
+    <nav>
+      <a href="/">Beranda</a>
+      <a href="/templates">Template</a>
+      <a href="/keranjang">Keranjang</a>
+      <a href="/konsultasi">Konsultasi</a>
+      <a href="/akun">Akun saya</a>
+    </nav>
+    <slot />
+    <footer>
+      <p>
+        ArticleTemplate.id — toko template artikel untuk peneliti. Harga dan
+        layanan konsultasi menyusul (placeholder, lihat PRD).
+      </p>
+    </footer>
+  </body>
+</html>

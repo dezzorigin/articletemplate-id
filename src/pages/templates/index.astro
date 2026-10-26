@@ -1,0 +1,34 @@
+---
+import Base from '../../layouts/Base.astro';
+
+// PLACEHOLDER — katalog final diisi dari Supabase (tabel products) setelah
+// harga dan file template ditetapkan tim. Produk dengan harga NULL tidak
+// boleh bisa dibeli (lihat PRD §7.2).
+const placeholders = [
+  { jenjang: 'Scopus Q1', harga: 'TBD' },
+  { jenjang: 'Scopus Q2', harga: 'TBD' },
+  { jenjang: 'Scopus Q3', harga: 'TBD' },
+  { jenjang: 'Scopus Q4', harga: 'TBD' },
+  { jenjang: 'Sinta', harga: 'TBD' },
+  { jenjang: 'Prosiding', harga: 'TBD' },
+];
+---
+
+<Base title="Katalog template">
+  <h1>Katalog template</h1>
+  <p>
+    <span class="badge">Katalog placeholder</span> — harga, format file, dan
+    pratinjau final menyusul dari tim. Produk di bawah ini belum bisa dibeli
+    sampai harganya diisi di admin.
+  </p>
+  {
+    placeholders.map((p) => (
+      <div class="card">
+        <strong>Template {p.jenjang}</strong>
+        <span class="badge">Harga: {p.harga}</span>
+        <p>Deskripsi, format file, dan pratinjau menyusul.</p>
+        <button disabled>Beli (menunggu harga final)</button>
+      </div>
+    ))
+  }
+</Base>

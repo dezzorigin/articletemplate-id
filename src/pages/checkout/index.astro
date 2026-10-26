@@ -1,0 +1,32 @@
+---
+import Base from '../../layouts/Base.astro';
+
+// PLACEHOLDER — checkout final: data pembeli (nama + email) -> pilih metode
+// (QRIS / VA) -> bayar di BorderPay -> webhook mengubah status order.
+// Checkout TIDAK aktif sampai: harga final + akun merchant BorderPay (mode
+// test dulu) + webhook terverifikasi (PRD §7.5).
+---
+
+<Base title="Checkout">
+  <h1>Checkout</h1>
+  <p>
+    <span class="badge">Checkout placeholder</span> — checkout belum bisa
+    dipakai sampai harga final dan akun merchant BorderPay (mode test)
+    siap. Alur finalnya:
+  </p>
+  <ol>
+    <li>Isi data pembeli: nama + email (email menjadi identitas akun).</li>
+    <li>Pilih metode: QRIS atau Virtual Account.</li>
+    <li>Bayar di BorderPay, lalu kembali ke halaman status.</li>
+    <li>
+      Status order final berasal dari webhook BorderPay
+      (<code>/api/webhook-borderpay</code>), bukan dari halaman kembali —
+      karena halaman kembali bisa ditutup sebelum webhook sampai.
+    </li>
+  </ol>
+  <div class="card">
+    <strong>Metode pembayaran (rencana):</strong>
+    <p>QRIS dan Virtual Account — diaktifkan setelah merchant BorderPay siap.</p>
+    <button disabled>Bayar (menunggu merchant + harga final)</button>
+  </div>
+</Base>

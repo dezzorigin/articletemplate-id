@@ -1,0 +1,22 @@
+name: Supabase keepalive
+
+# Mencegah project Supabase free tier pause setelah 7 hari tanpa aktivitas.
+# Query ringan ke tabel products (baca 1 baris) setiap hari = aktivitas database.
+# Setup: isi GitHub secrets SUPABASE_URL dan SUPABASE_ANON_KEY (repo Settings
+# -> Secrets and variables -> Actions). Workflow ini tidak butuh service role key.
+on:
+  schedule:
+    - cron: '0 3 * * *' # 10:00 WIB setiap hari
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Light query to Supabase (counts as database activity)
+        run: |
+          curl -fsS \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/products?select=id&limit=1"
+          echo "keepalive OK"
