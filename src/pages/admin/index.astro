@@ -12,20 +12,22 @@ import Base from '../../layouts/Base.astro';
     <span class="badge">Admin placeholder</span> — login admin + peran
     aktif setelah Supabase tersambung. Yang akan dikelola dari sini:
   </p>
-  <div class="card">
-    <strong>Produk</strong>
-    <p>
-      Tambah/ubah produk, jenjang, deskripsi, pratinjau, file, harga, dan
-      status tampil. Harga yang diubah di sini langsung tercermin di katalog
-      dan checkout (satu sumber harga).
-    </p>
-  </div>
-  <div class="card">
-    <strong>Order</strong>
-    <p>Daftar order + status pembayaran, cari per email/produk, kirim ulang email lunas/download bila perlu.</p>
-  </div>
-  <div class="card">
-    <strong>Layanan konsultasi</strong>
-    <p>Layanan, harga, dan jadwal — tetap tersembunyi dari publik sampai data mentor masuk.</p>
+  <div class="grid">
+    <div class="card">
+      <strong>Produk</strong>
+      <p>
+        Tambah/ubah produk, jenjang, deskripsi, pratinjau, file, harga, dan
+        status tampil. Harga yang diubah di sini langsung tercermin di katalog
+        dan checkout (satu sumber harga).
+      </p>
+    </div>
+    <div class="card">
+      <strong>Order</strong>
+      <p>Daftar order + status pembayaran, cari per email/produk, kirim ulang email lunas/download bila perlu.</p>
+    </div>
+    <div class="card">
+      <strong>Layanan konsultasi</strong>
+      <p>Layanan, harga, dan jadwal — tetap tersembunyi dari publik sampai data mentor masuk.</p>
+    </div>
   </div>
 </Base>

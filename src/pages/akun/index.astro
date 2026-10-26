@@ -13,19 +13,21 @@ import Base from '../../layouts/Base.astro';
     <span class="badge">Dashboard placeholder</span> — login belum aktif
     sampai Supabase tersambung. Setelah aktif, di sini tampil:
   </p>
-  <div class="card">
-    <strong>Order saya</strong>
-    <p>Riwayat order + status pembayaran (menunggu_bayar / lunas / gagal / kedaluwarsa).</p>
-  </div>
-  <div class="card">
-    <strong>Download saya</strong>
-    <p>
-      File hanya bisa diunduh dari sini untuk order yang sudah lunas, lewat
-      signed URL bertanda waktu — bukan URL publik yang bisa ditebak.
-    </p>
-  </div>
-  <div class="card">
-    <strong>Profil</strong>
-    <p>Nama, email, dan pengaturan akun.</p>
+  <div class="grid">
+    <div class="card">
+      <strong>Order saya</strong>
+      <p>Riwayat order + status pembayaran (menunggu_bayar / lunas / gagal / kedaluwarsa).</p>
+    </div>
+    <div class="card">
+      <strong>Download saya</strong>
+      <p>
+        File hanya bisa diunduh dari sini untuk order yang sudah lunas, lewat
+        signed URL bertanda waktu — bukan URL publik yang bisa ditebak.
+      </p>
+    </div>
+    <div class="card">
+      <strong>Profil</strong>
+      <p>Nama, email, dan pengaturan akun.</p>
+    </div>
   </div>
 </Base>

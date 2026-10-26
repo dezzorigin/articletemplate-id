@@ -19,14 +19,16 @@ const layanan = [
     menyusul setelah mentor mengonfirmasi. Halaman ini adalah ruangnya;
     isinya datang belakangan.
   </p>
-  {
-    layanan.map((nama) => (
-      <div class="card">
-        <strong>{nama}</strong>
-        <span class="badge">Harga & jadwal menyusul</span>
-      </div>
-    ))
-  }
+  <div class="grid">
+    {
+      layanan.map((nama) => (
+        <div class="card">
+          <strong>{nama}</strong>
+          <span class="badge">Harga & jadwal menyusul</span>
+        </div>
+      ))
+    }
+  </div>
   <p>
     Booking dibuka setelah layanan + harga + jam ketersediaan mentor
     terverifikasi. Akun login akan wajib untuk booking.

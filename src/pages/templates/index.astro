@@ -21,14 +21,16 @@ const placeholders = [
     pratinjau final menyusul dari tim. Produk di bawah ini belum bisa dibeli
     sampai harganya diisi di admin.
   </p>
-  {
-    placeholders.map((p) => (
-      <div class="card">
-        <strong>Template {p.jenjang}</strong>
-        <span class="badge">Harga: {p.harga}</span>
-        <p>Deskripsi, format file, dan pratinjau menyusul.</p>
-        <button disabled>Beli (menunggu harga final)</button>
-      </div>
-    ))
-  }
+  <div class="grid">
+    {
+      placeholders.map((p) => (
+        <div class="card">
+          <strong>Template {p.jenjang}</strong>
+          <span class="badge">Harga: {p.harga}</span>
+          <p>Deskripsi, format file, dan pratinjau menyusul.</p>
+          <button disabled>Beli (menunggu harga final)</button>
+        </div>
+      ))
+    }
+  </div>
 </Base>
