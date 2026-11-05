@@ -1,9 +1,11 @@
 name: Supabase keepalive
 
 # Mencegah project Supabase free tier pause setelah 7 hari tanpa aktivitas.
-# Query ringan ke tabel products (baca 1 baris) setiap hari = aktivitas database.
-# Setup: isi GitHub secrets SUPABASE_URL dan SUPABASE_ANON_KEY (repo Settings
-# -> Secrets and variables -> Actions). Workflow ini tidak butuh service role key.
+# Query ringan ke endpoint REST Supabase (OpenAPI spec) setiap hari.
+# Setup: isi GitHub secrets (repo Settings -> Secrets and variables -> Actions):
+#   - SUPABASE_URL      : https://<project-ref>.supabase.co
+#   - SUPABASE_ANON_KEY : anon/public key dari dashboard Supabase
+# Workflow ini tidak butuh service role key.
 on:
   schedule:
     - cron: '0 3 * * *' # 10:00 WIB setiap hari
@@ -13,10 +15,24 @@ jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
-      - name: Light query to Supabase (counts as database activity)
+      - name: Light query to Supabase REST (counts as database activity)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
-          curl -fsS \
-            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
-            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
-            "${{ secrets.SUPABASE_URL }}/rest/v1/products?select=id&limit=1"
-          echo "keepalive OK"
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
+            echo "::error::Secrets SUPABASE_URL / SUPABASE_ANON_KEY belum diisi."
+            exit 1
+          fi
+          # Ping REST root (OpenAPI spec) — tidak bergantung pada tabel tertentu.
+          status=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
+            "${SUPABASE_URL}/rest/v1/")
+          echo "HTTP status: $status"
+          if [ "$status" = "200" ] || [ "$status" = "401" ]; then
+            echo "keepalive OK (status $status)"
+          else
+            echo "::warning::Unexpected status $status"
+            exit 1
+          fi
