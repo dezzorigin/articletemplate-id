@@ -10,8 +10,8 @@ Legenda: `[ ]` belum, `[x]` lulus, `[!]` gagal.
 - [x] A3 `GET /api/health` 200 `{ok:true}` (bukti: `node dist/server/entry.mjs`, HTTP 200, 13 Nov 2026; `/` dan `/templates` juga 200)
 - [x] A4 Tidak ada nilai rahasia di repo (bukti: `git grep` hanya menemukan nama variabel + placeholder)
 - [x] A5 `.env.example` lengkap, aplikasi gagal jelas bila env wajib kosong (bukti: tes `requireEnv` melempar pesan jelas)
-- [ ] A6 Keepalive GitHub Actions hijau 1 run
-- [ ] A7 Supabase proyek aktif (bukan pause)
+- [ ] A6 Keepalive GitHub Actions hijau 1 run (secret repo harus diganti ke proyek Supabase baru, lalu jalankan manual)
+- [x] A7 Supabase proyek aktif (bukti: proyek baru `articletemplate-id` ref kckivepafrmyihoigcnb, status ACTIVE_HEALTHY, 13 Nov 2026; menggantikan proyek Nabil yang pause)
 
 ## B. Katalog
 - [ ] B1 `/templates` memuat produk dari tabel `products` (hanya `is_visible=true`)
@@ -85,12 +85,12 @@ Legenda: `[ ]` belum, `[x]` lulus, `[!]` gagal.
 - [ ] J2 Booking nyata tidak bisa dibuat (UI dan API)
 
 ## K. Keamanan
-- [ ] K1 RLS aktif semua tabel, diuji per peran (anon, pembeli, admin)
+- [ ] K1 RLS aktif semua tabel, diuji per peran (anon, pembeli, admin). Sebagian: anon + pembeli sudah diuji 13 Nov (ubah role, buat order lunas, baca produk/layanan/order); peran admin belum
 - [ ] K2 Service role key tidak ada di bundle frontend
 - [ ] K3 Validasi input server-side semua endpoint
 - [ ] K4 Header keamanan terpasang
 - [ ] K5 Rate limit endpoint publik
-- [ ] K6 `get_advisors` Supabase tanpa temuan kritis
+- [ ] K6 `get_advisors` Supabase tanpa temuan kritis (13 Nov: 2 WARN pada is_admin(), sengaja dibiarkan karena dipakai kebijakan RLS; perlu dicek ulang setelah ada tabel/fungsi baru)
 
 ## L. Non-fungsional
 - [ ] L1 Halaman 404 dan 500 ramah
@@ -121,4 +121,4 @@ Legenda: `[ ]` belum, `[x]` lulus, `[!]` gagal.
 | Tanggal | Tahap | Lulus | Gagal | Belum | Catatan |
 |---|---|---|---|---|---|
 | 2026-11-13 | 0 | 0 | 0 | semua | checklist dibuat, belum ada uji |
-| 2026-11-13 | 1 | 4 (A1,A3,A4,A5) | 0 | A2, A6, A7 + B sampai N | A2 menunggu Docker/Coolify, A6/A7 menunggu akses Supabase |
+| 2026-11-13 | 1 | 5 (A1,A3,A4,A5,A7) | 0 | A2, A6 + B sampai N | A2 menunggu Docker/Coolify, A6 menunggu secret GitHub baru; K1/K6 sebagian |
