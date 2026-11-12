@@ -1,12 +1,12 @@
 import { defineConfig } from 'astro/config';
-import cloudflare from '@astrojs/cloudflare';
+import node from '@astrojs/node';
 import react from '@astrojs/react';
 
-// Deploy target: Cloudflare Pages/Workers (lihat README.md).
-// Halaman yang tidak butuh data user dibuat statis oleh Astro;
-// halaman akun/checkout/admin dirender di server (output: 'server').
+// Deploy target: Coolify (Docker, Node standalone). Lihat Dockerfile + README.md.
+// output: 'server' - halaman akun/checkout/admin dirender di server.
 export default defineConfig({
   output: 'server',
-  adapter: cloudflare(),
+  adapter: node({ mode: 'standalone' }),
   integrations: [react()],
+  server: { host: true },
 });

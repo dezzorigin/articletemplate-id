@@ -4,9 +4,8 @@ Toko template artikel + modul konsultasi (dibangun sekaligus, PRD `../prd.md`).
 
 ## Stack
 
-- **Astro + React** (halaman + pulau interaktif) — adapter Cloudflare
-- **Cloudflare Pages/Workers** — hosting (custom domain menyusul setelah
-  `articletemplate.id` Active)
+- **Astro + React** (halaman + pulau interaktif) — adapter Node (standalone)
+- **Coolify** — hosting lewat Docker (domain/Cloudflare DNS diurus belakangan)
 - **Supabase Cloud** — Postgres + Auth + Storage (free tier + cron keepalive)
 - **BorderPay** — checkout QRIS/VA (mode test dulu, merchant menyusul)
 
@@ -14,9 +13,12 @@ Toko template artikel + modul konsultasi (dibangun sekaligus, PRD `../prd.md`).
 
 - `src/pages/` — Beranda, `/templates`, `/keranjang`, `/checkout`,
   `/konsultasi`, `/akun`, `/admin`, `/api/health`,
-  `/api/webhook-borderpay` (skeleton 501 — skema signature BorderPay
+  `/api/webhook-borderpay` (skeleton 501 — BorderPay DITUNDA; skema signature
   dikonfirmasi dari dok merchant saat akun aktif, tidak ditebak)
-- `src/lib/supabase.ts` — klien Supabase (anon key + RLS)
+- `src/lib/env.ts` — baca env runtime, gagal jelas bila wajib kosong
+- `src/lib/supabase.ts` — `getSupabase()` (anon + RLS), `getSupabaseAdmin()` (service role, server saja)
+- `src/lib/money.ts` — satu-satunya format harga + hitung total
+- `docs/FRAMEWORK.md`, `docs/CHECKLIST.md` — rencana kerja + checklist uji
 - `supabase/schema.sql` — skema + RLS + seed placeholder (jalankan sekali)
 - `.github/workflows/keepalive.yml` — cron harian anti-pause Supabase free
 
@@ -48,13 +50,20 @@ npm run dev
 6. GitHub repo → Secrets `SUPABASE_URL` + `SUPABASE_ANON_KEY` → workflow
    keepalive aktif otomatis tiap hari (10:00 WIB).
 
-## Deploy
+## Deploy ke Coolify
 
-Opsi utama: hubungkan repo GitHub ke **Cloudflare Pages** (preset Astro)
-lewat dashboard Cloudflare → domain `*.pages.dev` dulu. Setelah
-`articletemplate.id` Active di Domainesia, tambahkan custom domain di Pages
-dan arahkan DNS-nya. Deploy via API token dari VM tidak dipakai untuk Pages
-(konektor Cloudflare di VM hanya mencakup zones/tunnel/DNS).
+1. Coolify -> New Resource -> repo GitHub ini, build pack **Dockerfile** (sudah ada di root).
+2. Port **4321**. Health check path `/api/health`.
+3. Environment Variables (Runtime) - isi semua dari `.env.example`:
+   `PUBLIC_SUPABASE_URL`, `PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
+   (BorderPay menyusul). Nilai rahasia hanya di dashboard Coolify.
+4. Domain + DNS Cloudflare diatur belakangan oleh tim.
+
+Uji image lokal (butuh Docker): `docker build -t articletemplate .` lalu
+`docker run -p 4321:4321 --env-file .env articletemplate`.
+Tanpa Docker: `npm run build && node dist/server/entry.mjs`.
+
+> Jangan taruh folder kerja di path yang mengandung `#` (Vite gagal build).
 
 ## Yang belum bisa jalan tanpa akses berikut
 

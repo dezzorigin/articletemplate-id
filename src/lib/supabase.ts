@@ -1,9 +1,27 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { requireEnv } from './env';
 
-// Klien publik (anon key + RLS). Dipakai halaman yang butuh data Supabase.
-// Selama env belum diisi (tahap scaffold), URL/key placeholder dipakai supaya
-// build tidak gagal — query database akan gagal sampai env diisi (lihat README).
-const url = import.meta.env.PUBLIC_SUPABASE_URL ?? 'https://placeholder.supabase.co';
-const anonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? 'placeholder-anon-key';
+let anonClient: SupabaseClient | undefined;
+let adminClient: SupabaseClient | undefined;
 
-export const supabase = createClient(url, anonKey);
+/** Klien publik (anon key + RLS). Dipakai untuk data yang boleh dibaca user. */
+export function getSupabase(): SupabaseClient {
+  anonClient ??= createClient(
+    requireEnv('PUBLIC_SUPABASE_URL'),
+    requireEnv('PUBLIC_SUPABASE_ANON_KEY'),
+  );
+  return anonClient;
+}
+
+/**
+ * Klien service role. HANYA server (webhook, signed URL download).
+ * Jangan diimpor dari komponen yang dikirim ke browser.
+ */
+export function getSupabaseAdmin(): SupabaseClient {
+  adminClient ??= createClient(
+    requireEnv('PUBLIC_SUPABASE_URL'),
+    requireEnv('SUPABASE_SERVICE_ROLE_KEY'),
+    { auth: { persistSession: false, autoRefreshToken: false } },
+  );
+  return adminClient;
+}
