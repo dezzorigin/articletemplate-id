@@ -23,11 +23,11 @@ Legenda: `[ ]` belum, `[x]` lulus, `[!]` gagal.
 - [x] B7 Keadaan kosong (tanpa produk) tampil rapi ('Katalog segera hadir'; filter tanpa hasil: 'Tidak ada template yang cocok')
 
 ## C. Detail produk
-- [ ] C1 `/templates/[slug]` tampil: judul, jenjang, format, deskripsi, harga, lisensi
-- [ ] C2 Pratinjau parsial saja, file penuh tidak bisa diakses publik
-- [ ] C3 Checklist kepatuhan + tautan sumber guideline tampil (produk per jurnal)
-- [ ] C4 Slug tidak ada: 404
-- [ ] C5 Produk terkait tampil
+- [x] C1 `/templates/[slug]` tampil: judul, jenjang, format, deskripsi, harga, lisensi (bukti 13 Nov dengan produk uji: semua tampil, lisensi + kalimat tanpa jaminan terbit ada)
+- [ ] C2 Pratinjau parsial saja, file penuh tidak bisa diakses publik (kode: `file_path` tidak pernah diambil di halaman, pratinjau hanya dari bucket public `previews`. Belum diuji dengan upload nyata)
+- [x] C3 Checklist kepatuhan + tautan sumber guideline tampil (produk per jurnal) (bukti: 3 item tampil, tautan https tampil; URL `javascript:` tidak dijadikan tautan)
+- [x] C4 Slug tidak ada: 404 (bukti: slug tidak ada, slug tidak valid, dan produk tersembunyi semuanya 404)
+- [x] C5 Produk terkait tampil (bagian 'Template lain' tampil; urutan memprioritaskan bidang sama)
 
 ## D. Keranjang
 - [ ] D1 Tambah produk, qty selalu 1, tambah dua kali tidak menggandakan
@@ -121,5 +121,6 @@ Legenda: `[ ]` belum, `[x]` lulus, `[!]` gagal.
 | Tanggal | Tahap | Lulus | Gagal | Belum | Catatan |
 |---|---|---|---|---|---|
 | 2026-11-13 | 0 | 0 | 0 | semua | checklist dibuat, belum ada uji |
+| 2026-11-13 | 2 (WES-11, WES-12) | 15 (+B1-B4,B7,C1,C3,C4,C5) | 0 | B5, B6, C2, N4 + sisanya | T2 selesai kode. B4 harga turun belum dicek; C2 butuh upload nyata; CTA sticky ada tapi tombol nonaktif sampai WES-14 |
 | 2026-11-13 | 2 (WES-10) | 7 (A1,A3,A4,A5,A7,N1,N2) | 0 | A2, A6, N4, N5, N8, L1(500) + sisanya | WES-10 layout mobile selesai kode; N5 butuh HP nyata |
 | 2026-11-13 | 1 | 5 (A1,A3,A4,A5,A7) | 0 | A2, A6 + B sampai N | A2 menunggu Docker/Coolify, A6 menunggu secret GitHub baru; K1/K6 sebagian |

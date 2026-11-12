@@ -21,6 +21,9 @@ export interface Product {
   format: string | null;
   harga: Price;
   preview_path: string | null;
+  jurnal: string | null;
+  sumber_guideline_url: string | null;
+  checklist_kepatuhan: string[];
 }
 
 export interface CatalogQuery {
@@ -42,7 +45,8 @@ export function parseCatalogQuery(params: URLSearchParams): CatalogQuery {
   };
 }
 
-const COLUMNS = 'id, slug, judul, jenjang, bidang, deskripsi, format, harga, preview_path';
+const COLUMNS =
+  'id, slug, judul, jenjang, bidang, deskripsi, format, harga, preview_path, jurnal, sumber_guideline_url, checklist_kepatuhan';
 
 /** Hanya produk is_visible (dijaga juga oleh RLS). Harga NULL tetap tampil tapi tidak bisa dibeli. */
 export async function listProducts(
@@ -58,6 +62,39 @@ export async function listProducts(
   const { data, error } = await req;
   if (error) return { products: [], error: 'Katalog sedang tidak bisa dimuat. Coba lagi sebentar.' };
   return { products: (data ?? []) as Product[], error: null };
+}
+
+const SLUG_RE = /^[a-z0-9][a-z0-9-]{0,80}$/;
+
+/** Satu produk by slug. null bila tidak ada / tidak visible / slug tidak valid. */
+export async function getProductBySlug(slug: string): Promise<Product | null> {
+  if (!SLUG_RE.test(slug)) return null;
+  const { data } = await getSupabase()
+    .from('products')
+    .select(COLUMNS)
+    .eq('slug', slug)
+    .eq('is_visible', true)
+    .maybeSingle();
+  return (data as Product | null) ?? null;
+}
+
+/** Produk terkait: jenjang lain atau bidang sama, maksimal 3. */
+export async function relatedProducts(p: Product): Promise<Product[]> {
+  const { data } = await getSupabase()
+    .from('products')
+    .select(COLUMNS)
+    .eq('is_visible', true)
+    .neq('id', p.id)
+    .limit(3);
+  return ((data ?? []) as Product[]).sort(
+    (a, b) => Number(b.bidang === p.bidang && !!p.bidang) - Number(a.bidang === p.bidang && !!p.bidang),
+  );
+}
+
+/** URL pratinjau PUBLIK dari bucket previews. File penuh ada di bucket private. */
+export function previewUrl(path: string | null): string | null {
+  if (!path) return null;
+  return getSupabase().storage.from('previews').getPublicUrl(path).data.publicUrl;
 }
 
 export { isPurchasable };
