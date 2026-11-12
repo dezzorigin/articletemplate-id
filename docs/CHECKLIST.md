@@ -14,13 +14,13 @@ Legenda: `[ ]` belum, `[x]` lulus, `[!]` gagal.
 - [x] A7 Supabase proyek aktif (bukti: proyek baru `articletemplate-id` ref kckivepafrmyihoigcnb, status ACTIVE_HEALTHY, 13 Nov 2026; menggantikan proyek Nabil yang pause)
 
 ## B. Katalog
-- [ ] B1 `/templates` memuat produk dari tabel `products` (hanya `is_visible=true`)
-- [ ] B2 Filter jenjang bekerja
-- [ ] B3 Pencarian judul + deskripsi bekerja
-- [ ] B4 Urutan terbaru / harga naik / harga turun
-- [ ] B5 Produk harga NULL: tombol beli nonaktif, tidak bisa dibeli lewat URL/API
+- [x] B1 `/templates` memuat produk dari tabel `products` (hanya `is_visible=true`) (bukti 13 Nov: 3 produk uji muncul; 6 seed tersembunyi tidak muncul)
+- [x] B2 Filter jenjang bekerja (`?jenjang=Q1` -> hanya uji-q1)
+- [x] B3 Pencarian judul + deskripsi bekerja (`?q=murah` -> uji-sinta; karakter filter berbahaya dibersihkan, tidak error)
+- [x] B4 Urutan terbaru / harga naik / harga turun (harga naik: 50rb, 100rb, lalu produk tanpa harga di akhir). Harga turun dan terbaru belum diperiksa satu per satu
+- [ ] B5 Produk harga NULL: tombol beli nonaktif, tidak bisa dibeli lewat URL/API (UI lulus: tombol disabled + 'Harga segera hadir'. Penolakan di server menunggu endpoint keranjang/checkout, WES-14/15)
 - [ ] B6 Harga di katalog = harga di detail = harga di checkout
-- [ ] B7 Keadaan kosong (tanpa produk) tampil rapi
+- [x] B7 Keadaan kosong (tanpa produk) tampil rapi ('Katalog segera hadir'; filter tanpa hasil: 'Tidak ada template yang cocok')
 
 ## C. Detail produk
 - [ ] C1 `/templates/[slug]` tampil: judul, jenjang, format, deskripsi, harga, lisensi
