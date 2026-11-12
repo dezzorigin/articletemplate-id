@@ -1,32 +1,78 @@
 ---
 import Base from '../../layouts/Base.astro';
+import { readCart, loadCart } from '../../lib/cart';
+import { formatRupiah } from '../../lib/money';
 
-// PLACEHOLDER — checkout final: data pembeli (nama + email) -> pilih metode
-// (QRIS / VA) -> bayar di BorderPay -> webhook mengubah status order.
-// Checkout TIDAK aktif sampai: harga final + akun merchant BorderPay (mode
-// test dulu) + webhook terverifikasi (PRD §7.5).
+const view = await loadCart(readCart(Astro.cookies));
+const payable = view.lines.filter((l) => l.buyable);
+if (payable.length === 0) return Astro.redirect('/keranjang');
+
+const user = Astro.locals.user;
+const code = Astro.url.searchParams.get('e');
+const messages: Record<string, string> = {
+  data: 'Isi nama dan email yang valid.',
+  akun: 'Akun belum bisa dibuat untuk email ini. Coba email lain.',
+  harga: 'Tidak ada template berharga final di keranjangmu.',
+  gagal: 'Pesanan gagal dibuat. Coba lagi sebentar lagi.',
+};
+const error = code ? messages[code] : undefined;
 ---
 
 <Base title="Checkout">
   <h1>Checkout</h1>
-  <p>
-    <span class="badge">Checkout placeholder</span> — checkout belum bisa
-    dipakai sampai harga final dan akun merchant BorderPay (mode test)
-    siap. Alur finalnya:
-  </p>
-  <ol>
-    <li>Isi data pembeli: nama + email (email menjadi identitas akun).</li>
-    <li>Pilih metode: QRIS atau Virtual Account.</li>
-    <li>Bayar di BorderPay, lalu kembali ke halaman status.</li>
-    <li>
-      Status order final berasal dari webhook BorderPay
-      (<code>/api/webhook-borderpay</code>), bukan dari halaman kembali —
-      karena halaman kembali bisa ditutup sebelum webhook sampai.
-    </li>
-  </ol>
-  <div class="card">
-    <strong>Metode pembayaran (rencana):</strong>
-    <p>QRIS dan Virtual Account — diaktifkan setelah merchant BorderPay siap.</p>
-    <button disabled>Bayar (menunggu merchant + harga final)</button>
-  </div>
+  {error ? <p class="notice" role="alert">{error}</p> : null}
+
+  <ul class="lines">
+    {
+      payable.map((l) => (
+        <li class="card line">
+          <span>{l.product.judul}</span>
+          <strong>{formatRupiah(l.product.harga)}</strong>
+        </li>
+      ))
+    }
+  </ul>
+  <p class="total"><span>Total</span> <strong>{formatRupiah(view.total)}</strong></p>
+
+  <form class="form" method="post" action="/checkout/buat">
+    {
+      user ? (
+        <p class="hint">Membeli sebagai <strong>{user.email}</strong>.</p>
+      ) : (
+        <>
+          <label class="field">
+            <span>Nama</span>
+            <input type="text" name="nama" required autocomplete="name" maxlength="80" />
+          </label>
+          <label class="field">
+            <span>Email</span>
+            <input type="email" name="email" required autocomplete="email" inputmode="email" autocapitalize="none" autocorrect="off" maxlength="254" />
+            <span class="hint">Akun dibuat otomatis dari email ini. Kamu masuk lewat "Lupa kata sandi".</span>
+          </label>
+        </>
+      )
+    }
+    <button type="submit">Buat pesanan</button>
+  </form>
 </Base>
+
+<style>
+  .lines {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 0.75rem;
+    display: grid;
+    gap: 0.5rem;
+  }
+  .line {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+  .total {
+    display: flex;
+    justify-content: space-between;
+    font-size: 1.15rem;
+    margin: 0 0 1.25rem;
+  }
+</style>
