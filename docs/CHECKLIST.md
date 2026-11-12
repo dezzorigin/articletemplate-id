@@ -37,12 +37,12 @@ Legenda: `[ ]` belum, `[x]` lulus, `[!]` gagal.
 - [x] D5 Produk yang harganya berubah/nonaktif ditangani jelas (harga diubah -> total ikut berubah Rp175.000; produk disembunyikan -> keluar dari total + peringatan; cookie rusak -> keranjang kosong tanpa error)
 
 ## E. Auth
-- [ ] E1 Daftar email + password
-- [ ] E2 Login/logout email
-- [ ] E3 Login Google
-- [ ] E4 Lupa/atur password lewat email
+- [ ] E1 Daftar email + password (validasi email/sandi lulus. Sukses daftar BELUM terbukti: Supabase menolak domain example.com (`email_address_invalid`), uji butuh email domain nyata + kotak masuk. Akun uji dibuat langsung di DB)
+- [x] E2 Login/logout email (bukti 13 Nov: login benar -> sesi, /akun 200 dengan email+nama; sandi salah dan email tak dikenal -> pesan sama; keluar -> /akun kembali ke /masuk; cookie sesi palsu/rusak ditolak)
+- [ ] E3 Login Google (kode siap, tombol tersembunyi sampai `GOOGLE_LOGIN_ENABLED=true`. Provider Google belum dihidupkan di dashboard Supabase, belum diuji)
+- [ ] E4 Lupa/atur password lewat email (endpoint teruji: balasan seragam untuk email tak dikenal, sandi beda ditolak, tanpa sesi ditolak. Alur tautan email end-to-end BELUM: butuh email nyata + provider email WES-18)
 - [ ] E5 Guest checkout membuat akun dari email, password diatur lewat tautan
-- [ ] E6 `/akun` dan `/admin` menolak yang belum login
+- [x] E6 `/akun` dan `/admin` menolak yang belum login (bukti: anon -> 303 ke /masuk?next=...; `next` jahat (`//evil.com`, `https://`, `/\`, `javascript:`) jatuh ke /akun)
 
 ## F. Checkout + pembayaran
 - [ ] F1 Form nama + email tervalidasi
@@ -65,7 +65,7 @@ Legenda: `[ ]` belum, `[x]` lulus, `[!]` gagal.
 - [ ] G7 URL file tidak bisa ditebak, signed URL kedaluwarsa
 
 ## H. Admin
-- [ ] H1 Hanya role admin bisa masuk, pembeli ditolak
+- [x] H1 Hanya role admin bisa masuk, pembeli ditolak (bukti: anon 303, pembeli 404, admin 200 untuk /admin. Login admin terpisah dari pembeli belum dibangun, memakai akun sama dengan role)
 - [ ] H2 Tambah/ubah/hapus produk
 - [ ] H3 Ubah harga langsung tercermin di katalog dan checkout
 - [ ] H4 Upload file template (bucket private) dan pratinjau (bucket public)
@@ -121,6 +121,7 @@ Legenda: `[ ]` belum, `[x]` lulus, `[!]` gagal.
 | Tanggal | Tahap | Lulus | Gagal | Belum | Catatan |
 |---|---|---|---|---|---|
 | 2026-11-13 | 0 | 0 | 0 | semua | checklist dibuat, belum ada uji |
+| 2026-11-13 | 3 (WES-13) | 26 (+E2,E6,H1) | 0 | E1, E3, E4 sebagian + sisanya | auth teruji kecuali email nyata dan Google |
 | 2026-11-13 | 3 (WES-14) | 23 (+D1,D2,D4,D5,B5,N4) | 0 | D3, C2, dst | keranjang selesai; auth (WES-13) masih jalan |
 | 2026-11-13 | 2 (WES-11, WES-12) | 15 (+B1-B4,B7,C1,C3,C4,C5) | 0 | B5, B6, C2, N4 + sisanya | T2 selesai kode. B4 harga turun belum dicek; C2 butuh upload nyata; CTA sticky ada tapi tombol nonaktif sampai WES-14 |
 | 2026-11-13 | 2 (WES-10) | 7 (A1,A3,A4,A5,A7,N1,N2) | 0 | A2, A6, N4, N5, N8, L1(500) + sisanya | WES-10 layout mobile selesai kode; N5 butuh HP nyata |

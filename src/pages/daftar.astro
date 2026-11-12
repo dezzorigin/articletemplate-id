@@ -1,0 +1,46 @@
+---
+import Base from '../layouts/Base.astro';
+
+if (Astro.locals.user) return Astro.redirect('/akun');
+
+const code = Astro.url.searchParams.get('e');
+const ok = Astro.url.searchParams.get('ok') === 'cek-email';
+const messages: Record<string, string> = {
+  email: 'Format email tidak valid.',
+  sandi: 'Kata sandi harus 8 sampai 72 karakter.',
+  gagal: 'Pendaftaran belum berhasil. Coba lagi sebentar.',
+};
+const error = code ? messages[code] : undefined;
+---
+
+<Base title="Daftar">
+  <h1>Daftar</h1>
+  {error ? <p class="notice" role="alert">{error}</p> : null}
+  {
+    ok ? (
+      <p class="notice ok" role="status">
+        Cek email kamu. Jika pendaftaran bisa dilanjutkan, tautan konfirmasi sudah dikirim.
+      </p>
+    ) : (
+      <form class="form" method="post" action="/auth/daftar">
+        <label class="field">
+          <span>Nama</span>
+          <input type="text" name="nama" autocomplete="name" maxlength="80" />
+        </label>
+        <label class="field">
+          <span>Email</span>
+          <input type="email" name="email" required autocomplete="email" inputmode="email" autocapitalize="none" autocorrect="off" maxlength="254" />
+        </label>
+        <label class="field">
+          <span>Kata sandi</span>
+          <input type="password" name="password" required autocomplete="new-password" minlength="8" maxlength="72" />
+          <span class="hint">Minimal 8 karakter.</span>
+        </label>
+        <button type="submit">Buat akun</button>
+      </form>
+    )
+  }
+  <div class="linkrow">
+    <a href="/masuk">Sudah punya akun? Masuk</a>
+  </div>
+</Base>
