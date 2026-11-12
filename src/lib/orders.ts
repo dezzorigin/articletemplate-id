@@ -1,5 +1,6 @@
 import { getSupabaseAdmin } from './supabase';
 import { cartTotal, isPurchasable } from './money';
+import { ORDER_TTL_MS, expireIfStale, getPaymentMetode, type Metode } from './payments';
 
 // Penulisan orders/order_items HANYA lewat service role (RLS: pembeli cuma baca).
 // Harga selalu dibaca ulang dari DB di sini, jangan percaya angka dari form/cookie.
@@ -55,6 +56,10 @@ export async function createOrder(userId: string, slugs: string[]): Promise<Orde
 
   const total = cartTotal(buyable.map((p) => ({ harga: p.harga as number })));
 
+  // Re-checkout: pakai ulang order menunggu_bayar yang isinya sama (tidak membuat order ganda).
+  const reused = await findReusableOrder(userId, buyable.map((p) => p.id as string), total);
+  if (reused) return { ok: true, orderId: reused, total };
+
   const { data: order, error: orderErr } = await admin
     .from('orders')
     .insert({ user_id: userId, total, status: 'menunggu_bayar' })
@@ -81,11 +86,31 @@ export async function createOrder(userId: string, slugs: string[]): Promise<Orde
   return { ok: true, orderId: order.id as string, total };
 }
 
+/** Order menunggu_bayar milik user dengan himpunan produk & total sama, belum kedaluwarsa. */
+async function findReusableOrder(userId: string, productIds: string[], total: number): Promise<string | null> {
+  const since = new Date(Date.now() - ORDER_TTL_MS).toISOString();
+  const { data } = await getSupabaseAdmin()
+    .from('orders')
+    .select('id, total, order_items(product_id)')
+    .eq('user_id', userId)
+    .eq('status', 'menunggu_bayar')
+    .gte('created_at', since)
+    .order('created_at', { ascending: false })
+    .limit(10);
+  const want = [...productIds].sort().join(',');
+  for (const o of data ?? []) {
+    const have = ((o as any).order_items ?? []).map((i: any) => i.product_id as string).sort().join(',');
+    if (have === want && Number(o.total) === total) return o.id as string;
+  }
+  return null;
+}
+
 export interface OrderView {
   id: string;
   total: number;
   status: 'menunggu_bayar' | 'lunas' | 'gagal' | 'kedaluwarsa';
   created_at: string;
+  metode: Metode | null;
   items: { judul: string; harga_saat_beli: number }[];
 }
 
@@ -104,11 +129,13 @@ export async function getOrderView(id: string): Promise<OrderView | null> {
     judul: i.products?.judul ?? 'Template',
     harga_saat_beli: Number(i.harga_saat_beli),
   }));
+  const status = await expireIfStale(data.id as string, data.created_at as string, data.status as OrderView['status']);
   return {
     id: data.id as string,
     total: Number(data.total),
-    status: data.status as OrderView['status'],
+    status,
     created_at: data.created_at as string,
+    metode: await getPaymentMetode(data.id as string),
     items,
   };
 }
