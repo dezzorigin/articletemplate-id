@@ -1,28 +1,128 @@
 ---
 import Base from '../../layouts/Base.astro';
+import { readCart, loadCart } from '../../lib/cart';
+import { formatRupiah } from '../../lib/money';
 
-// PLACEHOLDER — keranjang final memakai state lokal (browser) sampai
-// checkout, lalu order dibuat di Supabase. Selama harga produk masih TBD,
-// tidak ada produk yang bisa masuk keranjang secara nyata (PRD §7.4).
+const view = await loadCart(readCart(Astro.cookies));
+const empty = view.lines.length === 0;
+const payable = view.lines.filter((l) => l.buyable);
 ---
 
 <Base title="Keranjang">
   <h1>Keranjang</h1>
-  <p>
-    <span class="badge">Keranjang placeholder</span> — keranjang masih kosong
-    karena belum ada produk dengan harga final. Setelah harga diisi di admin
-    dan Supabase tersambung, produk yang ditambahkan akan tampil di sini
-    dengan total yang sama persis dengan total di checkout dan tagihan
-    BorderPay.
-  </p>
-  <div class="card">
-    <strong>Keranjangmu masih kosong.</strong>
-    <p>
-      <a href="/templates">Kembali ke katalog</a>
-    </p>
-  </div>
-  <p>
-    Aturan yang akan dijaga: total di keranjang = total di checkout = total
-    yang ditagihkan. Selisih satu rupiah pun = bug.
-  </p>
+
+  {
+    empty ? (
+      <div class="card">
+        <strong>Keranjangmu masih kosong</strong>
+        <p>Pilih template yang sesuai jenjang targetmu.</p>
+        <a class="btn" href="/templates">Lihat katalog template</a>
+      </div>
+    ) : (
+      <>
+        <ul class="lines">
+          {view.lines.map((l) => (
+            <li class="card line">
+              <div class="info">
+                <span class="badge">{l.product.jenjang}</span>
+                <a class="title" href={`/templates/${l.product.slug}`}>{l.product.judul}</a>
+                {l.buyable ? (
+                  <span class="price">{formatRupiah(l.product.harga)}</span>
+                ) : (
+                  <span class="warn">Harga belum final. Produk ini tidak ikut ditagih.</span>
+                )}
+              </div>
+              <form method="post" action="/keranjang/hapus">
+                <input type="hidden" name="slug" value={l.product.slug} />
+                <button type="submit" class="ghost" aria-label={`Hapus ${l.product.judul} dari keranjang`}>Hapus</button>
+              </form>
+            </li>
+          ))}
+        </ul>
+
+        {view.missing.length > 0 ? (
+          <p class="warn">Beberapa template di keranjangmu sudah tidak tersedia dan tidak ikut dihitung.</p>
+        ) : null}
+
+        <div class="summary">
+          <div>
+            <span class="muted">Total ({payable.length} template)</span>
+            <strong class="total">{formatRupiah(view.total)}</strong>
+          </div>
+          {payable.length > 0 ? (
+            <a class="btn" href="/checkout">Lanjut ke checkout</a>
+          ) : (
+            <button type="button" disabled>Belum bisa checkout</button>
+          )}
+        </div>
+      </>
+    )
+  }
 </Base>
+
+<style>
+  .lines {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1rem;
+    display: grid;
+    gap: 0.75rem;
+  }
+  .line {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+  .info {
+    display: grid;
+    gap: 0.2rem;
+    min-width: 0;
+  }
+  .title {
+    color: var(--ink);
+    font-weight: 700;
+    text-decoration: none;
+  }
+  .price {
+    font-weight: 700;
+  }
+  .warn {
+    color: var(--badge-ink);
+    font-size: 0.9rem;
+  }
+  .muted {
+    color: var(--muted);
+    font-size: 0.85rem;
+    display: block;
+  }
+  button.ghost {
+    background: transparent;
+    color: var(--accent);
+    border: 1px solid var(--line);
+    flex: none;
+  }
+  .summary {
+    position: sticky;
+    bottom: calc(var(--tab-h) + env(safe-area-inset-bottom, 0px));
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin: 1.5rem calc(var(--gutter) * -1) 0;
+    padding: 0.75rem var(--gutter);
+    background: rgba(255, 255, 255, 0.97);
+    border-top: 1px solid var(--line);
+    z-index: 40;
+  }
+  .total {
+    font-size: 1.25rem;
+  }
+  @media (min-width: 720px) {
+    .summary {
+      bottom: 0;
+      margin: 1.5rem 0 0;
+      border-radius: 14px 14px 0 0;
+    }
+  }
+</style>

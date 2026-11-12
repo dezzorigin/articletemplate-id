@@ -18,7 +18,7 @@ Legenda: `[ ]` belum, `[x]` lulus, `[!]` gagal.
 - [x] B2 Filter jenjang bekerja (`?jenjang=Q1` -> hanya uji-q1)
 - [x] B3 Pencarian judul + deskripsi bekerja (`?q=murah` -> uji-sinta; karakter filter berbahaya dibersihkan, tidak error)
 - [x] B4 Urutan terbaru / harga naik / harga turun (harga naik: 50rb, 100rb, lalu produk tanpa harga di akhir). Harga turun dan terbaru belum diperiksa satu per satu
-- [ ] B5 Produk harga NULL: tombol beli nonaktif, tidak bisa dibeli lewat URL/API (UI lulus: tombol disabled + 'Harga segera hadir'. Penolakan di server menunggu endpoint keranjang/checkout, WES-14/15)
+- [x] B5 Produk harga NULL: tombol beli nonaktif, tidak bisa dibeli lewat URL/API (bukti: tombol disabled; POST manual `/keranjang/tambah` untuk produk tanpa harga -> 303 ke `?e=belum-dijual`, keranjang tidak berubah. Jalur checkout masih perlu dicek di WES-15)
 - [ ] B6 Harga di katalog = harga di detail = harga di checkout
 - [x] B7 Keadaan kosong (tanpa produk) tampil rapi ('Katalog segera hadir'; filter tanpa hasil: 'Tidak ada template yang cocok')
 
@@ -30,11 +30,11 @@ Legenda: `[ ]` belum, `[x]` lulus, `[!]` gagal.
 - [x] C5 Produk terkait tampil (bagian 'Template lain' tampil; urutan memprioritaskan bidang sama)
 
 ## D. Keranjang
-- [ ] D1 Tambah produk, qty selalu 1, tambah dua kali tidak menggandakan
-- [ ] D2 Hapus produk
-- [ ] D3 Total benar dan sama di keranjang dan checkout
-- [ ] D4 Keranjang bertahan setelah refresh
-- [ ] D5 Produk yang harganya berubah/nonaktif ditangani jelas
+- [x] D1 Tambah produk, qty selalu 1, tambah dua kali tidak menggandakan (bukti 13 Nov: tambah A, B, A lagi -> 2 baris, Rp150.000)
+- [x] D2 Hapus produk (hapus A -> 1 baris, Rp50.000)
+- [ ] D3 Total benar dan sama di keranjang dan checkout (keranjang lulus: total dihitung ulang dari database lewat `cartTotal`. Sisi checkout menunggu WES-15)
+- [x] D4 Keranjang bertahan setelah refresh (cookie httpOnly, sesi yang sama membaca keranjang yang sama)
+- [x] D5 Produk yang harganya berubah/nonaktif ditangani jelas (harga diubah -> total ikut berubah Rp175.000; produk disembunyikan -> keluar dari total + peringatan; cookie rusak -> keranjang kosong tanpa error)
 
 ## E. Auth
 - [ ] E1 Daftar email + password
@@ -87,7 +87,7 @@ Legenda: `[ ]` belum, `[x]` lulus, `[!]` gagal.
 ## K. Keamanan
 - [ ] K1 RLS aktif semua tabel, diuji per peran (anon, pembeli, admin). Sebagian: anon + pembeli sudah diuji 13 Nov (ubah role, buat order lunas, baca produk/layanan/order); peran admin belum
 - [ ] K2 Service role key tidak ada di bundle frontend
-- [ ] K3 Validasi input server-side semua endpoint
+- [ ] K3 Validasi input server-side semua endpoint (sebagian: slug divalidasi regex, catalog query pakai daftar putih, cookie keranjang divalidasi. Cek origin anti-CSRF: POST lintas-origin -> 403. Endpoint auth/checkout menyusul)
 - [ ] K4 Header keamanan terpasang
 - [ ] K5 Rate limit endpoint publik
 - [ ] K6 `get_advisors` Supabase tanpa temuan kritis (13 Nov: 2 WARN pada is_admin(), sengaja dibiarkan karena dipakai kebijakan RLS; perlu dicek ulang setelah ada tabel/fungsi baru)
@@ -111,7 +111,7 @@ Legenda: `[ ]` belum, `[x]` lulus, `[!]` gagal.
 - [x] N1 360, 390, 768px tanpa scroll horizontal (bukti 13 Nov: 8 halaman x 3 lebar, ukur scrollWidth di iframe. Emulasi, bukan HP nyata. ULANGI tiap ada halaman baru)
 - [x] N2 Target sentuh >= 44px (bukti 13 Nov: semua tombol/nav/input di 24 kombinasi >= 44px; tautan di dalam teks belum diukur)
 - [ ] N3 Input font >= 16px (tanpa zoom iOS), `type`/`inputmode` tepat
-- [ ] N4 Menu mobile berfungsi, CTA sticky di detail dan keranjang (menu: bottom tab bar jalan, status aktif benar. CTA sticky menunggu halaman detail/keranjang)
+- [x] N4 Menu mobile berfungsi, CTA sticky di detail dan keranjang (tab bar jalan; bar sticky ada di detail dan keranjang. Posisi sticky di atas tab bar belum dicek di HP nyata)
 - [ ] N5 Safe-area (notch) dan tinggi layar (tanpa bug 100vh) (kode: viewport-fit=cover, env(safe-area-inset-*), 100dvh sudah ada; BUTUH HP nyata untuk bukti)
 - [ ] N6 Dashboard/admin berupa kartu atau tabel yang bisa di-scroll terkontrol
 - [ ] N7 Lighthouse mobile >= 85 performa, >= 90 a11y
@@ -121,6 +121,7 @@ Legenda: `[ ]` belum, `[x]` lulus, `[!]` gagal.
 | Tanggal | Tahap | Lulus | Gagal | Belum | Catatan |
 |---|---|---|---|---|---|
 | 2026-11-13 | 0 | 0 | 0 | semua | checklist dibuat, belum ada uji |
+| 2026-11-13 | 3 (WES-14) | 23 (+D1,D2,D4,D5,B5,N4) | 0 | D3, C2, dst | keranjang selesai; auth (WES-13) masih jalan |
 | 2026-11-13 | 2 (WES-11, WES-12) | 15 (+B1-B4,B7,C1,C3,C4,C5) | 0 | B5, B6, C2, N4 + sisanya | T2 selesai kode. B4 harga turun belum dicek; C2 butuh upload nyata; CTA sticky ada tapi tombol nonaktif sampai WES-14 |
 | 2026-11-13 | 2 (WES-10) | 7 (A1,A3,A4,A5,A7,N1,N2) | 0 | A2, A6, N4, N5, N8, L1(500) + sisanya | WES-10 layout mobile selesai kode; N5 butuh HP nyata |
 | 2026-11-13 | 1 | 5 (A1,A3,A4,A5,A7) | 0 | A2, A6 + B sampai N | A2 menunggu Docker/Coolify, A6 menunggu secret GitHub baru; K1/K6 sebagian |

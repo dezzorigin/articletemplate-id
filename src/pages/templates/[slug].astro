@@ -2,6 +2,7 @@
 import Base from '../../layouts/Base.astro';
 import { getProductBySlug, relatedProducts, previewUrl, isPurchasable } from '../../lib/catalog';
 import { formatRupiah } from '../../lib/money';
+import { readCart } from '../../lib/cart';
 
 const slug = Astro.params.slug ?? '';
 const product = await getProductBySlug(slug);
@@ -12,6 +13,8 @@ const related = product ? await relatedProducts(product) : [];
 const preview = product ? previewUrl(product.preview_path) : null;
 const buyable = product ? isPurchasable(product.harga) : false;
 const guidelineOk = product?.sumber_guideline_url?.startsWith('https://') ?? false;
+const inCart = product ? readCart(Astro.cookies).includes(product.slug) : false;
+const refused = Astro.url.searchParams.get('e') === 'belum-dijual';
 ---
 
 {
@@ -96,10 +99,18 @@ const guidelineOk = product?.sumber_guideline_url?.startsWith('https://') ?? fal
           <span class="muted small">Harga</span>
           <strong class="price">{formatRupiah(product.harga)}</strong>
         </div>
-        <button type="button" disabled>
-          {buyable ? 'Segera bisa dibeli' : 'Belum bisa dibeli'}
-        </button>
+        {!buyable ? (
+          <button type="button" disabled>Belum bisa dibeli</button>
+        ) : inCart ? (
+          <a class="btn" href="/keranjang">Lihat keranjang</a>
+        ) : (
+          <form method="post" action="/keranjang/tambah">
+            <input type="hidden" name="slug" value={product.slug} />
+            <button type="submit">Tambah ke keranjang</button>
+          </form>
+        )}
       </div>
+      {refused ? <p class="refused" role="alert">Template ini belum bisa dibeli karena harga finalnya belum ditetapkan.</p> : null}
     </Base>
   )
 }
@@ -171,6 +182,14 @@ const guidelineOk = product?.sumber_guideline_url?.startsWith('https://') ?? fal
     background: rgba(255, 255, 255, 0.97);
     border-top: 1px solid var(--line);
     z-index: 40;
+  }
+  .refused {
+    background: var(--badge-bg);
+    border: 1px solid var(--badge-line);
+    color: var(--badge-ink);
+    border-radius: 12px;
+    padding: 0.75rem 1rem;
+    margin-top: 0.75rem;
   }
   .buybar .price {
     font-size: 1.15rem;
