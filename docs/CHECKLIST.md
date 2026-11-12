@@ -93,7 +93,7 @@ Legenda: `[ ]` belum, `[x]` lulus, `[!]` gagal.
 - [ ] K6 `get_advisors` Supabase tanpa temuan kritis (13 Nov: 2 WARN pada is_admin(), sengaja dibiarkan karena dipakai kebijakan RLS; perlu dicek ulang setelah ada tabel/fungsi baru)
 
 ## L. Non-fungsional
-- [ ] L1 Halaman 404 dan 500 ramah
+- [ ] L1 Halaman 404 dan 500 ramah (404 lulus: `/nope` status 404 + halaman ramah. 500 file dibuat, belum dipicu/diuji)
 - [ ] L2 Aksesibilitas dasar: kontras, label form, fokus keyboard, alt gambar
 - [ ] L3 Lighthouse desktop >= 90 performa, >= 90 a11y
 - [ ] L4 Meta title/description/OG per halaman, `robots.txt`, sitemap
@@ -108,17 +108,18 @@ Legenda: `[ ]` belum, `[x]` lulus, `[!]` gagal.
 - [ ] M6 W6 konsultasi tertutup
 
 ## N. Mobile
-- [ ] N1 360, 390, 768px tanpa scroll horizontal di semua halaman
-- [ ] N2 Target sentuh >= 44px
+- [x] N1 360, 390, 768px tanpa scroll horizontal (bukti 13 Nov: 8 halaman x 3 lebar, ukur scrollWidth di iframe. Emulasi, bukan HP nyata. ULANGI tiap ada halaman baru)
+- [x] N2 Target sentuh >= 44px (bukti 13 Nov: semua tombol/nav/input di 24 kombinasi >= 44px; tautan di dalam teks belum diukur)
 - [ ] N3 Input font >= 16px (tanpa zoom iOS), `type`/`inputmode` tepat
-- [ ] N4 Menu mobile berfungsi, CTA sticky di detail dan keranjang
-- [ ] N5 Safe-area (notch) dan tinggi layar (tanpa bug 100vh)
+- [ ] N4 Menu mobile berfungsi, CTA sticky di detail dan keranjang (menu: bottom tab bar jalan, status aktif benar. CTA sticky menunggu halaman detail/keranjang)
+- [ ] N5 Safe-area (notch) dan tinggi layar (tanpa bug 100vh) (kode: viewport-fit=cover, env(safe-area-inset-*), 100dvh sudah ada; BUTUH HP nyata untuk bukti)
 - [ ] N6 Dashboard/admin berupa kartu atau tabel yang bisa di-scroll terkontrol
 - [ ] N7 Lighthouse mobile >= 85 performa, >= 90 a11y
-- [ ] N8 `prefers-reduced-motion` dihormati
+- [ ] N8 `prefers-reduced-motion` dihormati (kode ada di Base.astro; belum diuji dengan pengaturan OS)
 
 ## Rekap hasil
 | Tanggal | Tahap | Lulus | Gagal | Belum | Catatan |
 |---|---|---|---|---|---|
 | 2026-11-13 | 0 | 0 | 0 | semua | checklist dibuat, belum ada uji |
+| 2026-11-13 | 2 (WES-10) | 7 (A1,A3,A4,A5,A7,N1,N2) | 0 | A2, A6, N4, N5, N8, L1(500) + sisanya | WES-10 layout mobile selesai kode; N5 butuh HP nyata |
 | 2026-11-13 | 1 | 5 (A1,A3,A4,A5,A7) | 0 | A2, A6 + B sampai N | A2 menunggu Docker/Coolify, A6 menunggu secret GitHub baru; K1/K6 sebagian |
