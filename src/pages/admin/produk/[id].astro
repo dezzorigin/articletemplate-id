@@ -5,7 +5,7 @@ import { formatRupiah } from '../../../lib/money';
 import { previewUrl } from '../../../lib/catalog';
 import { getSupabaseAdmin } from '../../../lib/supabase';
 import {
-  requireAdmin, adminGetProduct, parseProductForm, uploadProductFile, removeFiles, adminTemplateUrl,
+  requireAdmin, adminGetProduct, parseProductForm, uploadProductFile, checkProductFile, removeFiles, adminTemplateUrl,
   TEMPLATE_EXT, PREVIEW_EXT, type AdminProduct,
 } from '../../../lib/admin';
 
@@ -32,8 +32,9 @@ let v: Record<string, any> = product
 if (Astro.request.method === 'POST') {
   const form = await Astro.request.formData();
   const parsed = parseProductForm(form);
-  if (!parsed.ok) {
-    errors = parsed.errors;
+  const fileErrs = [checkProductFile('templates', form.get('file')), checkProductFile('previews', form.get('preview'))].filter((e): e is string => !!e);
+  if (!parsed.ok || fileErrs.length) {
+    errors = [...(parsed.ok ? [] : parsed.errors), ...fileErrs];
   } else {
     const admin = getSupabaseAdmin();
     const data = parsed.data;

@@ -94,7 +94,7 @@ Legenda: `[ ]` belum, `[x]` lulus, `[!]` gagal.
 
 ## L. Non-fungsional
 - [ ] L1 Halaman 404 dan 500 ramah (404 lulus: `/nope` status 404 + halaman ramah. 500 file dibuat, belum dipicu/diuji)
-- [ ] L2 Aksesibilitas dasar: kontras, label form, fokus keyboard, alt gambar
+- [ ] L2 Aksesibilitas dasar: kontras, label form, fokus keyboard, alt gambar (Lighthouse a11y 100 di Beranda, 13 Nov; fokus keyboard belum dicek manual)
 - [ ] L3 Lighthouse desktop >= 90 performa, >= 90 a11y
 - [x] L4 Meta title/description/OG per halaman, robots.txt, sitemap.xml (produk visible saja)
 - [ ] L5 Backup database terjadwal + monitoring uptime aktif

@@ -126,18 +126,28 @@ const MIME: Record<string, string> = {
 
 export type UploadResult = { ok: true; path: string | null } | { ok: false; error: string };
 
+/** Cek ekstensi dan ukuran tanpa mengunggah. Mengembalikan pesan error atau null. */
+export function checkProductFile(bucket: 'templates' | 'previews', file: FormDataEntryValue | null): string | null {
+  if (!(file instanceof File) || file.size === 0) return null;
+  const allowed = bucket === 'templates' ? TEMPLATE_EXT : PREVIEW_EXT;
+  const ext = (file.name.split('.').pop() ?? '').toLowerCase();
+  const label = bucket === 'templates' ? 'File template' : 'Pratinjau';
+  if (!allowed.includes(ext)) return `${label}: hanya ${allowed.join(', ')}.`;
+  if (file.size > LIMIT[bucket]) return `${label}: maksimal ${LIMIT[bucket] / 1024 / 1024} MB.`;
+  return null;
+}
+
 /** Unggah file (bila ada) ke bucket. path = null kalau tidak ada file yang dipilih. */
 export async function uploadProductFile(
   bucket: 'templates' | 'previews',
   productId: string,
   file: FormDataEntryValue | null,
 ): Promise<UploadResult> {
+  const bad = checkProductFile(bucket, file);
+  if (bad) return { ok: false, error: bad };
   if (!(file instanceof File) || file.size === 0) return { ok: true, path: null };
-  const allowed = bucket === 'templates' ? TEMPLATE_EXT : PREVIEW_EXT;
   const ext = (file.name.split('.').pop() ?? '').toLowerCase();
   const label = bucket === 'templates' ? 'File template' : 'Pratinjau';
-  if (!allowed.includes(ext)) return { ok: false, error: `${label}: hanya ${allowed.join(', ')}.` };
-  if (file.size > LIMIT[bucket]) return { ok: false, error: `${label}: maksimal ${LIMIT[bucket] / 1024 / 1024} MB.` };
 
   const base = file.name
     .replace(/\.[^.]+$/, '')
