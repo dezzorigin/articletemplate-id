@@ -19,23 +19,34 @@ export interface MyOrder {
   items: { product_id: string; judul: string; harga_saat_beli: number; bisa_unduh: boolean }[];
 }
 
-/** Riwayat order milik user (lewat RLS klien sesi, jadi hanya order sendiri). */
+/**
+ * Riwayat order milik user. Order dibaca lewat klien sesi (RLS: hanya milik sendiri).
+ * Judul/file produk dibaca lewat service role karena RLS products menyembunyikan produk
+ * yang is_visible=false; pembeli tetap berhak atas template yang sudah dibelinya.
+ */
 export async function listMyOrders(supabase: SupabaseClient): Promise<MyOrder[]> {
   const { data } = await supabase
     .from('orders')
-    .select('id, total, status, created_at, order_items(product_id, harga_saat_beli, products(judul, file_path))')
+    .select('id, total, status, created_at, order_items(product_id, harga_saat_beli)')
     .order('created_at', { ascending: false })
     .limit(50);
-  return (data ?? []).map((o: any) => ({
+  const orders = data ?? [];
+  const productIds = [...new Set(orders.flatMap((o: any) => (o.order_items ?? []).map((i: any) => i.product_id)))];
+  const info = new Map<string, { judul: string; file_path: string | null }>();
+  if (productIds.length) {
+    const { data: prods } = await getSupabaseAdmin().from('products').select('id, judul, file_path').in('id', productIds);
+    for (const p of prods ?? []) info.set(p.id, { judul: p.judul, file_path: p.file_path });
+  }
+  return orders.map((o: any) => ({
     id: o.id,
     total: Number(o.total),
     status: o.status,
     created_at: o.created_at,
     items: (o.order_items ?? []).map((i: any) => ({
       product_id: i.product_id,
-      judul: i.products?.judul ?? 'Template',
+      judul: info.get(i.product_id)?.judul ?? 'Template',
       harga_saat_beli: Number(i.harga_saat_beli),
-      bisa_unduh: o.status === 'lunas' && !!i.products?.file_path,
+      bisa_unduh: o.status === 'lunas' && !!info.get(i.product_id)?.file_path,
     })),
   }));
 }
