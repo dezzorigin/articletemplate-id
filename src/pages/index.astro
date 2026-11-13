@@ -1,43 +1,103 @@
 ---
 import Base from '../layouts/Base.astro';
+import { listProducts, JENJANG } from '../lib/catalog';
+import { formatRupiah, isPurchasable } from '../lib/money';
+
+// Semua harga di halaman ini dibaca dari data produk (satu sumber harga). Tidak ada angka ketikan.
+const { products } = await listProducts({ urut: 'terbaru' });
+const featured = products.slice(0, 4);
+const prices = products.map((p) => p.harga).filter(isPurchasable);
+const mulai = prices.length ? Math.min(...prices) : null;
+const jenjangAda = JENJANG.filter((j) => products.some((p) => p.jenjang === j));
 ---
 
 <Base title="Beranda">
   <h1>Template artikel untuk peneliti</h1>
   <p>
-    Pilih template sesuai jenjang targetmu, bayar lewat BorderPay, unduh
-    filenya, dan kelola dari akunmu sendiri. Tanpa login untuk lihat-lihat —
-    login hanya untuk dashboard dan booking konsultasi.
+    Template yang sudah disesuaikan dengan jenjang target jurnalmu, lengkap dengan
+    panduan pengisian dan checklist kepatuhan format. Pilih, bayar, unduh, lalu unduh
+    ulang kapan saja dari akunmu.
+  </p>
+  <p>
+    {
+      mulai !== null ? (
+        <>Mulai dari <strong>{formatRupiah(mulai)}</strong>. </>
+      ) : (
+        <>Harga template diumumkan segera. </>
+      )
+    }
+    Lihat-lihat tanpa login.
+  </p>
+  <p><a class="btn" href="/templates">Lihat semua template</a></p>
+
+  <h2>Template terbaru</h2>
+  {
+    featured.length === 0 ? (
+      <div class="card"><p>Template pertama sedang disiapkan. Kembali lagi sebentar.</p></div>
+    ) : (
+      <div class="grid">
+        {featured.map((p) => (
+          <div class="card">
+            <strong><a href={`/templates/${p.slug}`}>{p.judul}</a></strong>
+            <span class="badge">{p.jenjang}</span>
+            <p>{formatRupiah(p.harga)}</p>
+          </div>
+        ))}
+      </div>
+    )
+  }
+
+  {
+    jenjangAda.length > 0 ? (
+      <>
+        <h2>Jenjang tersedia</h2>
+        <p class="chips">
+          {jenjangAda.map((j) => <a class="badge" href={`/templates?jenjang=${j}`}>{j}</a>)}
+        </p>
+      </>
+    ) : null
+  }
+
+  <h2>Apa yang kamu dapat</h2>
+  <ul class="points">
+    <li>File template siap isi, sesuai jenjang yang dituju.</li>
+    <li>Panduan pengisian dan checklist kepatuhan terhadap author guidelines.</li>
+    <li>Unduh ulang kapan saja dari dashboard akun.</li>
+  </ul>
+  <p class="note">
+    Template membantu kerapian format supaya naskah tidak tertahan urusan administratif.
+    Keputusan diterima atau tidaknya naskah tetap di tangan jurnal dan reviewer.
   </p>
 
-  <h2>Template unggulan</h2>
-  <div class="grid">
-    <div class="card">
-      <strong>Template Scopus Q1</strong>
-      <span class="badge">Harga segera hadir</span>
-      <p>Struktur lengkap untuk naskah target Q1. Isi final menyusul.</p>
-      <a href="/templates">Lihat katalog</a>
-    </div>
-    <div class="card">
-      <strong>Template Scopus Q2</strong>
-      <span class="badge">Harga segera hadir</span>
-      <p>Struktur lengkap untuk naskah target Q2. Isi final menyusul.</p>
-      <a href="/templates">Lihat katalog</a>
-    </div>
+  <h2>Pertanyaan umum</h2>
+  <div class="card faq">
+    <details><summary>Perlu daftar dulu untuk membeli?</summary>
+      <p>Tidak. Isi nama dan email saat checkout, akun dibuat otomatis. Masuk lewat "Lupa kata sandi" untuk mengatur kata sandi dan mengunduh.</p></details>
+    <details><summary>Bayar lewat apa?</summary>
+      <p>QRIS atau Virtual Account lewat BorderPay. Pembayaran online belum dibuka; pengumuman menyusul.</p></details>
+    <details><summary>Bisa unduh ulang?</summary>
+      <p>Bisa. Setelah pesanan lunas, file ada di halaman <a href="/akun">Akun</a> selama akunmu aktif.</p></details>
+    <details><summary>Bagaimana dengan refund?</summary>
+      <p>Ada aturan tertulis di <a href="/bantuan#refund">halaman Bantuan</a>.</p></details>
   </div>
 
-  <h2>Konsultasi</h2>
+  <h2>Pendampingan</h2>
   <p>
-    Pendampingan 1-1, jasa editor, bantu publish, dan pembimbing —
-    <span class="badge">segera hadir</span>. Layanan, harga, dan jadwal
-    diumumkan setelah data mentor terverifikasi.
+    Konsultasi 1-1, editor, bantu publish, dan pembimbing: <span class="badge">segera hadir</span>.
+    Layanan, harga, dan jadwal diumumkan setelah data mentor terverifikasi.
     <a href="/konsultasi">Lihat rencana layanan</a>
   </p>
 
   <h2>Kenapa percaya</h2>
-  <p>
-    Tim yang berpengalaman di publikasi jurnal. Daftar publikasi dan bukti
-    verifikasi ditampilkan di sini setelah data mentor lengkap — tanpa angka
-    yang tidak bisa diklik buktinya.
-  </p>
+  <p>Kenali tim di balik toko ini, lengkap dengan tautan bukti yang bisa kamu cek sendiri. <a href="/tentang">Tentang kami</a></p>
 </Base>
+
+<style>
+  .chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  .chips a { text-decoration: none; min-height: 44px; display: inline-flex; align-items: center; padding: 0 0.9rem; }
+  .points { padding-left: 1.2rem; display: grid; gap: 0.4rem; }
+  .note { color: var(--muted); font-size: 0.92rem; }
+  .faq details { border-top: 1px solid var(--line); padding: 0.2rem 0; }
+  .faq details:first-child { border-top: 0; }
+  .faq summary { cursor: pointer; font-weight: 600; min-height: 44px; display: flex; align-items: center; }
+</style>

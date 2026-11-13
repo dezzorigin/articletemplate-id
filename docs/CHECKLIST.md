@@ -73,15 +73,15 @@ Legenda: `[ ]` belum, `[x]` lulus, `[!]` gagal.
 - [ ] H6 Kirim ulang email lunas/download (MENUNGGU provider email WES-18)
 
 ## I. Konten
-- [ ] I1 Beranda: harga tampil dari data, bukan teks karangan
-- [ ] I2 Tentang: hanya klaim terverifikasi PRD 7.8
-- [ ] I3 Tidak ada angka terlarang ("5 Q1/Q2, 9 ongoing") dan label "JCSR Sinta 3"
-- [ ] I4 Tidak ada kata garansi terbit/lolos/acceptance di seluruh situs
-- [ ] I5 Bantuan: cara pakai, lisensi, refund, privasi, kontak tayang
-- [ ] I6 Tidak ada data pribadi Nizam (HP, alamat, email pribadi)
+- [x] I1 Beranda: harga tampil dari data, bukan teks karangan
+- [x] I2 Tentang: hanya klaim terverifikasi PRD 7.8
+- [x] I3 Tidak ada angka terlarang ("5 Q1/Q2, 9 ongoing") dan label "JCSR Sinta 3"
+- [x] I4 Tidak ada kata garansi terbit/lolos/acceptance di seluruh situs
+- [x] I5 Bantuan: cara pakai, lisensi, refund, privasi, kontak tayang (DRAF: kebijakan menunggu persetujuan tim; kanal kontak belum ditetapkan, tulisan sementara "diumumkan sebelum penjualan dibuka")
+- [x] I6 Tidak ada data pribadi Nizam (HP, alamat, email pribadi)
 
 ## J. Konsultasi
-- [ ] J1 Layanan tampil "segera hadir" tanpa harga/jadwal
+- [x] J1 Layanan tampil "segera hadir" tanpa harga/jadwal
 - [ ] J2 Booking nyata tidak bisa dibuat (UI dan API)
 
 ## K. Keamanan

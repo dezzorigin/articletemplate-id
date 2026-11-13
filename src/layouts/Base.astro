@@ -355,6 +355,8 @@ const icons: Record<string, string> = {
         color: var(--accent);
         border: 1px solid var(--accent);
       }
+      .footlinks { display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; }
+      .footlinks a { min-height: 44px; display: inline-flex; align-items: center; }
       footer {
         margin-top: 2.5rem;
         padding-top: 1.25rem;
@@ -466,10 +468,13 @@ const icons: Record<string, string> = {
         <slot />
       </main>
       <footer>
-        <p>
-          ArticleTemplate.id — toko template artikel untuk peneliti. Harga dan
-          layanan konsultasi menyusul.
+        <p class="footlinks">
+          <a href="/tentang">Tentang</a>
+          <a href="/bantuan">Bantuan</a>
+          <a href="/bantuan#refund">Refund</a>
+          <a href="/bantuan#privasi">Privasi</a>
         </p>
+        <p>ArticleTemplate.id, toko template artikel untuk peneliti.</p>
       </footer>
     </div>
     <nav class="tabs" aria-label="Navigasi utama (mobile)">
