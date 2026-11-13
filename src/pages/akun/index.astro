@@ -1,5 +1,7 @@
 ---
 import Base from '../../layouts/Base.astro';
+import { listMyOrders } from '../../lib/downloads';
+import { formatRupiah } from '../../lib/money';
 
 // Middleware sudah memastikan user ada (redirect ke /masuk bila belum).
 const user = Astro.locals.user!;
@@ -10,6 +12,15 @@ const { data: profile } = await Astro.locals.supabase
   .maybeSingle();
 const nama = profile?.nama ?? null;
 const ok = Astro.url.searchParams.get('ok');
+const e = Astro.url.searchParams.get('e');
+const errMsg: Record<string, string> = {
+  'belum-lunas': 'Order ini belum lunas, unduhan belum aktif.',
+  'file-belum-ada': 'File template ini belum tersedia. Coba lagi nanti.',
+  gagal: 'Unduhan gagal diproses. Coba lagi.',
+};
+const orders = await listMyOrders(Astro.locals.supabase);
+const label: Record<string, string> = { menunggu_bayar: 'Menunggu bayar', lunas: 'Lunas', gagal: 'Gagal', kedaluwarsa: 'Kedaluwarsa' };
+const tgl = (s: string) => new Date(s).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
 ---
 
 <Base title="Akun saya">
@@ -25,9 +36,36 @@ const ok = Astro.url.searchParams.get('ok');
   </div>
 
   <h2>Order saya</h2>
-  <div class="card">
-    <p>Riwayat order dan unduhan akan tampil di sini setelah pembayaran tersedia.</p>
-  </div>
+  {e && errMsg[e] ? <p class="notice" role="alert">{errMsg[e]}</p> : null}
+  {
+    orders.length === 0 ? (
+      <div class="card">
+        <p>Belum ada order. <a href="/templates">Lihat katalog template</a>.</p>
+      </div>
+    ) : (
+      orders.map((o) => (
+        <div class="card">
+          <p>
+            <span class="badge">{label[o.status]}</span> {tgl(o.created_at)} · <strong>{formatRupiah(o.total)}</strong>
+          </p>
+          {o.items.map((i) => (
+            <p>
+              {i.judul}
+              {o.status === 'lunas' ? (
+                i.bisa_unduh ? (
+                  <> · <a href={`/unduh/${o.id}/${i.product_id}`}>Unduh</a></>
+                ) : (
+                  <> · <em>file belum tersedia</em></>
+                )
+              ) : o.status === 'menunggu_bayar' ? (
+                <> · <a href={`/checkout/status?order=${o.id}`}>Lanjut bayar</a></>
+              ) : null}
+            </p>
+          ))}
+        </div>
+      ))
+    )
+  }
 
   <div class="linkrow">
     <a href="/atur-password">Ubah kata sandi</a>

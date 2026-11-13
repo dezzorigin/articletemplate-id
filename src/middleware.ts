@@ -3,7 +3,7 @@ import { createSupabaseServer } from './lib/auth';
 
 // Path yang tidak butuh sesi (aset + health check tidak boleh gagal karena env).
 const SKIP = [/^\/_astro\//, /^\/api\/health$/, /^\/favicon/];
-const NEED_LOGIN = ['/akun', '/admin'];
+const NEED_LOGIN = ['/akun', '/admin', '/unduh'];
 
 const startsWithPath = (path: string, base: string) =>
   path === base || path.startsWith(base + '/');

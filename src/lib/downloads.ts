@@ -1,0 +1,79 @@
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { getSupabaseAdmin } from './supabase';
+
+// Unduhan diotorisasi di server SETIAP permintaan: login + order milik user + status lunas + produk ada di order.
+// File penuh ada di bucket private 'templates'; yang keluar hanya signed URL berumur pendek.
+
+export const SIGNED_URL_TTL_S = 60;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export type DownloadResult =
+  | { ok: true; url: string }
+  | { ok: false; reason: 'tidak-valid' | 'tidak-berhak' | 'belum-lunas' | 'file-belum-ada' | 'gagal' };
+
+export interface MyOrder {
+  id: string;
+  total: number;
+  status: 'menunggu_bayar' | 'lunas' | 'gagal' | 'kedaluwarsa';
+  created_at: string;
+  items: { product_id: string; judul: string; harga_saat_beli: number; bisa_unduh: boolean }[];
+}
+
+/** Riwayat order milik user (lewat RLS klien sesi, jadi hanya order sendiri). */
+export async function listMyOrders(supabase: SupabaseClient): Promise<MyOrder[]> {
+  const { data } = await supabase
+    .from('orders')
+    .select('id, total, status, created_at, order_items(product_id, harga_saat_beli, products(judul, file_path))')
+    .order('created_at', { ascending: false })
+    .limit(50);
+  return (data ?? []).map((o: any) => ({
+    id: o.id,
+    total: Number(o.total),
+    status: o.status,
+    created_at: o.created_at,
+    items: (o.order_items ?? []).map((i: any) => ({
+      product_id: i.product_id,
+      judul: i.products?.judul ?? 'Template',
+      harga_saat_beli: Number(i.harga_saat_beli),
+      bisa_unduh: o.status === 'lunas' && !!i.products?.file_path,
+    })),
+  }));
+}
+
+export async function authorizeDownload(userId: string, orderId: string, productId: string): Promise<DownloadResult> {
+  if (!UUID_RE.test(orderId) || !UUID_RE.test(productId)) return { ok: false, reason: 'tidak-valid' };
+  const admin = getSupabaseAdmin();
+
+  const { data: order } = await admin.from('orders').select('id, user_id, status').eq('id', orderId).maybeSingle();
+  // Order orang lain diperlakukan sama dengan tidak ada (jangan bocorkan keberadaan).
+  if (!order || order.user_id !== userId) return { ok: false, reason: 'tidak-berhak' };
+  if (order.status !== 'lunas') return { ok: false, reason: 'belum-lunas' };
+
+  const { data: item } = await admin
+    .from('order_items')
+    .select('product_id')
+    .eq('order_id', orderId)
+    .eq('product_id', productId)
+    .maybeSingle();
+  if (!item) return { ok: false, reason: 'tidak-berhak' };
+
+  const { data: product } = await admin.from('products').select('file_path').eq('id', productId).maybeSingle();
+  if (!product?.file_path) return { ok: false, reason: 'file-belum-ada' };
+
+  const { data: signed, error } = await admin.storage
+    .from('templates')
+    .createSignedUrl(product.file_path as string, SIGNED_URL_TTL_S, { download: true });
+  if (error || !signed?.signedUrl) {
+    console.error('[download] gagal membuat signed URL:', error?.message);
+    return { ok: false, reason: 'file-belum-ada' };
+  }
+
+  const { error: logErr } = await admin
+    .from('downloads')
+    .insert({ user_id: userId, product_id: productId, order_id: orderId });
+  if (logErr) {
+    console.error('[download] gagal mencatat unduhan:', logErr.message);
+    return { ok: false, reason: 'gagal' };
+  }
+  return { ok: true, url: signed.signedUrl };
+}
