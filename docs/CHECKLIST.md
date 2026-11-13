@@ -82,7 +82,7 @@ Legenda: `[ ]` belum, `[x]` lulus, `[!]` gagal.
 
 ## J. Konsultasi
 - [x] J1 Layanan tampil "segera hadir" tanpa harga/jadwal
-- [ ] J2 Booking nyata tidak bisa dibuat (UI dan API)
+- [x] J2 Booking nyata tidak bisa dibuat (UI dan API) (bukti: scripts/e2e-booking-tertutup.cjs 14 cek, RLS menolak insert)
 
 ## K. Keamanan
 - [ ] K1 RLS aktif semua tabel, diuji per peran (anon, pembeli, admin). Sebagian: anon + pembeli sudah diuji 13 Nov (ubah role, buat order lunas, baca produk/layanan/order); peran admin belum
