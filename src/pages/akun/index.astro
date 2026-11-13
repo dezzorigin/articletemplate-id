@@ -17,6 +17,7 @@ const errMsg: Record<string, string> = {
   'belum-lunas': 'Order ini belum lunas, unduhan belum aktif.',
   'file-belum-ada': 'File template ini belum tersedia. Coba lagi nanti.',
   gagal: 'Unduhan gagal diproses. Coba lagi.',
+  email: 'Email belum bisa dikirim. Coba lagi sebentar lagi.',
 };
 const orders = await listMyOrders(Astro.locals.supabase);
 const label: Record<string, string> = { menunggu_bayar: 'Menunggu bayar', lunas: 'Lunas', gagal: 'Gagal', kedaluwarsa: 'Kedaluwarsa' };
@@ -26,6 +27,7 @@ const tgl = (s: string) => new Date(s).toLocaleDateString('id-ID', { day: 'numer
 <Base title="Akun saya">
   <h1>Akun saya</h1>
   {ok === 'sandi' ? <p class="notice ok" role="status">Kata sandi berhasil disimpan.</p> : null}
+  {ok === 'email' ? <p class="notice ok" role="status">Email unduhan sudah dikirim ke {user.email}.</p> : null}
 
   <div class="card">
     <p><strong>{nama ?? 'Pembeli'}</strong></p>
@@ -62,6 +64,12 @@ const tgl = (s: string) => new Date(s).toLocaleDateString('id-ID', { day: 'numer
               ) : null}
             </p>
           ))}
+          {o.status === 'lunas' ? (
+            <form method="post" action="/akun/kirim-ulang">
+              <input type="hidden" name="order" value={o.id} />
+              <button type="submit" class="btn ghost">Kirim ulang email unduhan</button>
+            </form>
+          ) : null}
         </div>
       ))
     )

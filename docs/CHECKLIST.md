@@ -53,7 +53,7 @@ Legenda: `[ ]` belum, `[x]` lulus, `[!]` gagal.
 - [ ] F6 Webhook diulang (idempotent) tidak mengubah hasil
 - [ ] F7 `harga_saat_beli` tersimpan, tidak ikut berubah
 - [ ] F8 Tidak ada order lunas tanpa download aktif, dan sebaliknya
-- [ ] F9 Email: order dibuat, lunas, gagal/kedaluwarsa
+- [ ] F9 Email: order dibuat, lunas, gagal/kedaluwarsa (lunas SUDAH terkirim nyata 14 Nov; order dibuat dan gagal/kedaluwarsa belum ada emailnya)
 
 ## G. Download
 - [ ] G1 Tanpa login ditolak
@@ -70,7 +70,7 @@ Legenda: `[ ]` belum, `[x]` lulus, `[!]` gagal.
 - [x] H3 Ubah harga langsung tercermin di katalog dan checkout (bukti: 1000 -> 2500 tampil di katalog, checkout, total order)
 - [x] H4 Upload file template (bucket private) dan pratinjau (bucket public) (bukti: file tidak bisa dibuka lewat URL publik, file lama terhapus saat diganti, .exe ditolak)
 - [x] H5 Daftar order + cari email/produk (bukti: cari email/slug/judul + filter status)
-- [ ] H6 Kirim ulang email lunas/download (MENUNGGU provider email WES-18)
+- [x] H6 Kirim ulang email lunas/download (14 Nov: Resend terpasang, tombol di /akun, `e2e-kirim-ulang` 6 cek lulus, email nyata masuk Gmail. Pengirim masih onboarding@resend.dev: hanya bisa ke pemilik akun Resend, butuh verifikasi domain sebelum tayang)
 
 ## I. Konten
 - [x] I1 Beranda: harga tampil dari data, bukan teks karangan

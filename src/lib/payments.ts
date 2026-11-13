@@ -1,5 +1,6 @@
 import { getSupabaseAdmin } from './supabase';
 import { optionalEnv } from './env';
+import { sendOrderPaidEmail } from './email';
 
 // Provider pembayaran MOCK (WES-16). BorderPay asli ditunda sampai akun merchant ada (WES-17).
 // Semua perubahan status order lewat applyPaymentResult(): satu pintu, idempotent.
@@ -57,6 +58,11 @@ export async function applyPaymentResult(
       .select('id');
     if (!pay || pay.length === 0) {
       await admin.from('payments').insert({ order_id: orderId, ...patch });
+    }
+    if (result === 'lunas') {
+      // Hanya pemenang update yang mengirim email. Gagal kirim tidak menggagalkan order.
+      const r = await sendOrderPaidEmail(orderId);
+      if (!r.ok) console.warn(`[email] order ${orderId}: ${r.reason}`);
     }
     return { changed: true, status: result };
   }
