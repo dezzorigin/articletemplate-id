@@ -85,18 +85,18 @@ Legenda: `[ ]` belum, `[x]` lulus, `[!]` gagal.
 - [x] J2 Booking nyata tidak bisa dibuat (UI dan API) (bukti: scripts/e2e-booking-tertutup.cjs 14 cek, RLS menolak insert)
 
 ## K. Keamanan
-- [ ] K1 RLS aktif semua tabel, diuji per peran (anon, pembeli, admin). Sebagian: anon + pembeli sudah diuji 13 Nov (ubah role, buat order lunas, baca produk/layanan/order); peran admin belum
-- [ ] K2 Service role key tidak ada di bundle frontend
-- [ ] K3 Validasi input server-side semua endpoint (sebagian: slug divalidasi regex, catalog query pakai daftar putih, cookie keranjang divalidasi. Cek origin anti-CSRF: POST lintas-origin -> 403. Endpoint auth/checkout menyusul)
-- [ ] K4 Header keamanan terpasang
-- [ ] K5 Rate limit endpoint publik
-- [ ] K6 `get_advisors` Supabase tanpa temuan kritis (13 Nov: 2 WARN pada is_admin(), sengaja dibiarkan karena dipakai kebijakan RLS; perlu dicek ulang setelah ada tabel/fungsi baru)
+- [x] K1 RLS aktif semua tabel, diuji per peran anon, pembeli, admin (bukti: scripts/e2e-keamanan.cjs, 27 cek: pembeli lain tidak melihat order/unduhan/profil orang, tidak bisa tulis order/produk/role, admin bisa)
+- [x] K2 Service role key tidak ada di bundle frontend (dist/client dan HTML halaman diperiksa)
+- [x] K3 Validasi input server-side: POST lintas-origin 403 (auth, checkout, admin), open redirect ?next ditolak, input filter aneh dan path traversal aman, keranjang tak valid tidak 500
+- [x] K4 Header keamanan terpasang (CSP tanpa unsafe-eval dan tanpa skrip inline, X-Frame-Options DENY, nosniff, Referrer-Policy, Permissions-Policy; HSTS hanya mode produksi). Berkas statis di public/ (robots.txt) dilayani tanpa middleware sehingga tanpa header; tidak sensitif
+- [x] K5 Rate limit endpoint publik (dalam memori, satu instance: masuk 10/menit, daftar dan lupa 5/10 menit, checkout 15/10 menit; kunci = entri X-Forwarded-For paling kanan. Jika Coolify dijalankan multi-instance, pindah ke penyimpanan bersama)
+- [x] K6 get_advisors 13 Nov: tidak ada temuan kritis. WARN: is_admin() executable (sengaja), leaked password protection mati (pengaturan dashboard Auth, mungkin butuh paket Pro), 8 auth_rls_initplan dan multiple_permissive_policies (performa, belum berdampak di skala ini)
 
 ## L. Non-fungsional
 - [ ] L1 Halaman 404 dan 500 ramah (404 lulus: `/nope` status 404 + halaman ramah. 500 file dibuat, belum dipicu/diuji)
 - [ ] L2 Aksesibilitas dasar: kontras, label form, fokus keyboard, alt gambar
 - [ ] L3 Lighthouse desktop >= 90 performa, >= 90 a11y
-- [ ] L4 Meta title/description/OG per halaman, `robots.txt`, sitemap
+- [x] L4 Meta title/description/OG per halaman, robots.txt, sitemap.xml (produk visible saja)
 - [ ] L5 Backup database terjadwal + monitoring uptime aktif
 
 ## M. Workflow end-to-end (jalankan di mobile)

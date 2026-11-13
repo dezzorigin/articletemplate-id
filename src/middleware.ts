@@ -1,5 +1,6 @@
 import { defineMiddleware } from 'astro:middleware';
 import { createSupabaseServer } from './lib/auth';
+import { applySecurityHeaders, checkRateLimit, clientKey } from './lib/security';
 
 // Path yang tidak butuh sesi (aset + health check tidak boleh gagal karena env).
 const SKIP = [/^\/_astro\//, /^\/api\/health$/, /^\/favicon/];
@@ -8,7 +9,7 @@ const NEED_LOGIN = ['/akun', '/admin', '/unduh'];
 const startsWithPath = (path: string, base: string) =>
   path === base || path.startsWith(base + '/');
 
-export const onRequest = defineMiddleware(async (context, next) => {
+const inner = defineMiddleware(async (context, next) => {
   const path = context.url.pathname;
   if (SKIP.some((re) => re.test(path))) return next();
 
@@ -38,4 +39,24 @@ export const onRequest = defineMiddleware(async (context, next) => {
   }
 
   return next();
+});
+
+// Lapisan luar: rate limit sebelum pekerjaan berat, header keamanan di SEMUA respons.
+export const onRequest = defineMiddleware(async (context, next) => {
+  const { limited, retryAfterS } = checkRateLimit(
+    context.request.method,
+    context.url.pathname,
+    clientKey(context.request, (() => { try { return context.clientAddress; } catch { return undefined; } })()),
+  );
+  if (limited) {
+    return applySecurityHeaders(
+      new Response('Terlalu banyak permintaan. Coba lagi sebentar lagi.', {
+        status: 429,
+        headers: { 'Retry-After': String(retryAfterS), 'Content-Type': 'text/plain; charset=utf-8' },
+      }),
+      import.meta.env.PROD,
+    );
+  }
+  const res = await inner(context, next);
+  return applySecurityHeaders(res, import.meta.env.PROD);
 });
