@@ -66,11 +66,11 @@ Legenda: `[ ]` belum, `[x]` lulus, `[!]` gagal.
 
 ## H. Admin
 - [x] H1 Hanya role admin bisa masuk, pembeli ditolak (bukti: anon 303, pembeli 404, admin 200 untuk /admin. Login admin terpisah dari pembeli belum dibangun, memakai akun sama dengan role)
-- [ ] H2 Tambah/ubah/hapus produk
-- [ ] H3 Ubah harga langsung tercermin di katalog dan checkout
-- [ ] H4 Upload file template (bucket private) dan pratinjau (bucket public)
-- [ ] H5 Daftar order + cari email/produk
-- [ ] H6 Kirim ulang email lunas/download
+- [x] H2 Tambah/ubah/hapus produk (bukti: scripts/e2e-admin.cjs; produk yang pernah dibeli disembunyikan, bukan dihapus)
+- [x] H3 Ubah harga langsung tercermin di katalog dan checkout (bukti: 1000 -> 2500 tampil di katalog, checkout, total order)
+- [x] H4 Upload file template (bucket private) dan pratinjau (bucket public) (bukti: file tidak bisa dibuka lewat URL publik, file lama terhapus saat diganti, .exe ditolak)
+- [x] H5 Daftar order + cari email/produk (bukti: cari email/slug/judul + filter status)
+- [ ] H6 Kirim ulang email lunas/download (MENUNGGU provider email WES-18)
 
 ## I. Konten
 - [ ] I1 Beranda: harga tampil dari data, bukan teks karangan

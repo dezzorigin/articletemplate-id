@@ -1,0 +1,49 @@
+---
+import Base from '../../../layouts/Base.astro';
+import { formatRupiah } from '../../../lib/money';
+import { requireAdmin, adminListProducts } from '../../../lib/admin';
+
+export const prerender = false;
+if (!(await requireAdmin(Astro.locals.supabase, Astro.locals.user))) return Astro.rewrite('/404');
+
+const products = await adminListProducts();
+const m = Astro.url.searchParams.get('m');
+const msg: Record<string, [string, boolean]> = {
+  dihapus: ['Produk dihapus.', true],
+  disembunyikan: ['Produk ini sudah pernah dibeli, jadi tidak dihapus tapi disembunyikan dari katalog.', true],
+  gagal: ['Produk gagal dihapus.', false],
+};
+const note = m ? msg[m] : undefined;
+---
+
+<Base title="Admin · Produk">
+  <p><a href="/admin">← Admin</a></p>
+  <h1>Produk</h1>
+  {note ? <p class={note[1] ? 'notice ok' : 'notice'} role="status">{note[0]}</p> : null}
+  <p><a class="btn" href="/admin/produk/baru">Tambah produk</a></p>
+
+  {products.length === 0 ? <div class="card"><p>Belum ada produk.</p></div> : (
+    <ul class="list">
+      {products.map((p) => (
+        <li class="card">
+          <a class="title" href={`/admin/produk/${p.id}`}><strong>{p.judul}</strong></a>
+          <p class="meta">
+            <span class="badge">{p.jenjang}</span>
+            <span class={p.is_visible ? 'badge on' : 'badge'}>{p.is_visible ? 'Tampil' : 'Tersembunyi'}</span>
+            {p.harga === null ? <span class="badge">Harga belum ditetapkan</span> : <span>{formatRupiah(p.harga)}</span>}
+            {p.file_path ? null : <span class="badge">Belum ada file</span>}
+          </p>
+          <p class="hint">/{p.slug}</p>
+        </li>
+      ))}
+    </ul>
+  )}
+</Base>
+
+<style>
+  .list { list-style: none; padding: 0; margin: 1rem 0; display: grid; gap: 0.6rem; }
+  .title { text-decoration: none; display: inline-flex; min-height: 44px; align-items: center; }
+  .meta { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; margin: 0.25rem 0; }
+  .badge.on { background: var(--accent-soft); color: var(--accent); }
+  .hint { font-size: 0.85rem; overflow-wrap: anywhere; }
+</style>
