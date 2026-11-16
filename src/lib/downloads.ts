@@ -83,7 +83,9 @@ export async function authorizeDownload(userId: string, orderId: string, product
     .createSignedUrl(product.file_path as string, SIGNED_URL_TTL_S, { download: true });
   if (error || !signed?.signedUrl) {
     console.error('[download] gagal membuat signed URL:', error?.message);
-    return { ok: false, reason: 'file-belum-ada' };
+    // Alasan dibedakan dari 'file-belum-ada': file-nya ada, yang gagal adalah
+    // pembuatan tautan (mis. Storage bermasalah) — jangan menyesatkan pembeli.
+    return { ok: false, reason: 'gagal' };
   }
 
   const { error: logErr } = await admin

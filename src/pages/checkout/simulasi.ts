@@ -4,7 +4,8 @@ import { getOrderView } from '../../lib/orders';
 import { writeCart } from '../../lib/cart';
 
 // POST /checkout/simulasi  (order, aksi = QRIS | VA | lunas | gagal | kedaluwarsa)
-// Pengganti webhook selama BorderPay ditunda. MATI kecuali PAYMENT_PROVIDER=mock.
+// Simulasi bayar untuk mode mock (dev). Webhook BorderPay nyata ada di
+// /api/webhook-borderpay. MATI kecuali PAYMENT_PROVIDER=mock.
 export const POST: APIRoute = async ({ request, cookies, redirect }) => {
   if (!isMockEnabled()) return new Response('Not found', { status: 404 });
 

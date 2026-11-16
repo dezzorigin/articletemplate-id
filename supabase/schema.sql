@@ -1,7 +1,9 @@
 -- ============================================================
 -- ArticleTemplate.id — skema Supabase (Postgres + RLS)
 -- Cara pakai: tempel seluruh file ini di Supabase Dashboard -> SQL Editor
--- -> New query -> Run. Jalankan SEKALI di project baru (region Singapura).
+-- -> New query -> Run. Jalankan SEKALI di project baru (backend kanonis:
+-- Supabase self-hosted). Skema ini SUDAH berisi policy hasil hardening
+-- (dulu di migrasi 20261113_harden_rls.sql) — jangan pakai policy lama.
 -- Bucket Storage dibuat terpisah di dashboard (lihat catatan di bawah).
 -- Sesuai PRD §9 (model data) + §11 (modul konsultasi).
 -- ============================================================
@@ -23,10 +25,12 @@ create or replace function public.is_admin()
 returns boolean
 language sql
 stable
+security definer
+set search_path = ''
 as $$
   select exists (
     select 1 from public.profiles
-    where id = auth.uid() and role = 'admin'
+    where id = (select auth.uid()) and role = 'admin'
   );
 $$;
 
@@ -35,6 +39,7 @@ create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
 security definer
+set search_path = ''
 as $$
 begin
   insert into public.profiles (id, email, nama)
@@ -43,6 +48,7 @@ begin
   return new;
 end;
 $$;
+revoke execute on function public.handle_new_user() from public, anon, authenticated;
 
 drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
@@ -141,11 +147,15 @@ alter table public.downloads enable row level security;
 alter table public.services enable row level security;
 alter table public.bookings enable row level security;
 
--- profiles: baca/ubah milik sendiri; admin baca semua
+-- profiles: baca/ubah milik sendiri; admin baca semua.
+-- Pembeli hanya boleh mengubah kolom nama (bukan role): tanpa revoke/grant
+-- di bawah, policy update ini membiarkan pembeli mengubah role sendiri jadi admin.
 create policy "profiles_read_own" on public.profiles
   for select using (id = auth.uid() or public.is_admin());
 create policy "profiles_update_own" on public.profiles
   for update using (id = auth.uid());
+revoke update on public.profiles from anon, authenticated;
+grant update (nama) on public.profiles to authenticated;
 
 -- products: publik hanya yang visible; admin semua
 create policy "products_read_public" on public.products
@@ -153,9 +163,12 @@ create policy "products_read_public" on public.products
 create policy "products_admin_all" on public.products
   for all using (public.is_admin());
 
--- orders: pemilik + admin
-create policy "orders_owner" on public.orders
-  for all using (user_id = auth.uid() or public.is_admin());
+-- orders: pemilik hanya BACA. Buat/ubah status lewat server (service role) —
+-- policy lama `for all` membiarkan pembeli UPDATE ordernya sendiri jadi `lunas`.
+create policy "orders_read_own" on public.orders
+  for select using (user_id = auth.uid());
+create policy "orders_admin_all" on public.orders
+  for all using (public.is_admin());
 
 -- order_items: lewat kepemilikan order-nya
 create policy "order_items_owner" on public.order_items
@@ -164,6 +177,8 @@ create policy "order_items_owner" on public.order_items
             where id = order_items.order_id
             and (user_id = auth.uid() or public.is_admin()))
   );
+create policy "order_items_admin_all" on public.order_items
+  for all using (public.is_admin());
 
 -- payments: pemilik (baca) + admin (semua)
 create policy "payments_owner_read" on public.payments
@@ -175,9 +190,12 @@ create policy "payments_owner_read" on public.payments
 create policy "payments_admin_all" on public.payments
   for all using (public.is_admin());
 
--- downloads: pemilik + admin
-create policy "downloads_owner" on public.downloads
-  for all using (user_id = auth.uid() or public.is_admin());
+-- downloads: pemilik hanya BACA (audit trail). Pencatatan lewat server —
+-- policy lama `for all` membiarkan pembeli menulis tabel audit unduhan.
+create policy "downloads_read_own" on public.downloads
+  for select using (user_id = auth.uid());
+create policy "downloads_admin_all" on public.downloads
+  for all using (public.is_admin());
 
 -- services: publik hanya yang visible; admin semua
 create policy "services_read_public" on public.services
@@ -185,9 +203,26 @@ create policy "services_read_public" on public.services
 create policy "services_admin_all" on public.services
   for all using (public.is_admin());
 
--- bookings: pemilik + admin
-create policy "bookings_owner" on public.bookings
-  for all using (user_id = auth.uid() or public.is_admin());
+-- bookings: baca milik sendiri; buat hanya status 'menunggu' untuk layanan visible.
+create policy "bookings_read_own" on public.bookings
+  for select using (user_id = auth.uid());
+create policy "bookings_insert_own" on public.bookings
+  for insert with check (
+    user_id = auth.uid() and status = 'menunggu'
+    and exists (select 1 from public.services s where s.id = service_id and s.is_visible = true));
+create policy "bookings_admin_all" on public.bookings
+  for all using (public.is_admin());
+
+-- Index foreign key.
+create index if not exists orders_user_id_idx on public.orders (user_id);
+create index if not exists order_items_order_id_idx on public.order_items (order_id);
+create index if not exists order_items_product_id_idx on public.order_items (product_id);
+create index if not exists payments_order_id_idx on public.payments (order_id);
+create index if not exists downloads_user_id_idx on public.downloads (user_id);
+create index if not exists downloads_order_id_idx on public.downloads (order_id);
+create index if not exists downloads_product_id_idx on public.downloads (product_id);
+create index if not exists bookings_user_id_idx on public.bookings (user_id);
+create index if not exists bookings_service_id_idx on public.bookings (service_id);
 
 -- ============================================================
 -- SEED PLACEHOLDER: 6 jenjang, harga NULL, is_visible = false.

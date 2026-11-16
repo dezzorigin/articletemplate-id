@@ -1,0 +1,225 @@
+---
+import Base from '../layouts/Base.astro';
+import { getSupabaseAdmin } from '../lib/supabase';
+import { formatRupiah, isPurchasable } from '../lib/money';
+
+export const prerender = false;
+
+// Halaman harga mandiri (/harga) — matriks perbandingan mengikuti referensi
+// "Comparison Table" (21st.dev/@mohammadshehadeh/components/comparison-02,
+// PETA.md §7.2 baris 5): baris = fitur, kolom = paket, satu kolom di-highlight,
+// CTA di tiap kolom. Adaptasi: 7 jenjang tidak muat sebagai 7 kolom di HP,
+// jadi halaman ini memakai kartu harga (mobile-first) + tabel perbandingan
+// yang bisa di-scroll horizontal; kolom yang di-highlight adalah Paket Lengkap
+// (nilai paling hemat), bukan kolom tengah secara geometris.
+// Semua harga dibaca dari kolom products.harga (satu sumber, PRD §7.10) —
+// tidak ada harga yang ditulis di halaman ini. Baris fitur diturunkan dari
+// data produk (format, jumlah butir checklist, pratinjau, file), bukan karangan.
+// Tombol beli HANYA aktif bila produk sudah visible + berharga + punya file
+// template; bila belum, tampil "Segera hadir" (tidak mengarah ke checkout).
+
+interface Tier {
+  slug: string;
+  label: string;
+  judul: string;
+  keterangan: string;
+  paket: boolean;
+}
+
+const TIERS: Tier[] = [
+  { slug: 'template-q1', label: 'Q1', judul: 'Template Scopus Q1', keterangan: 'Untuk jurnal Scopus kuartil 1.', paket: false },
+  { slug: 'template-q2', label: 'Q2', judul: 'Template Scopus Q2', keterangan: 'Untuk jurnal Scopus kuartil 2.', paket: false },
+  { slug: 'template-q3', label: 'Q3', judul: 'Template Scopus Q3', keterangan: 'Untuk jurnal Scopus kuartil 3.', paket: false },
+  { slug: 'template-q4', label: 'Q4', judul: 'Template Scopus Q4', keterangan: 'Untuk jurnal Scopus kuartil 4.', paket: false },
+  { slug: 'template-sinta', label: 'Sinta', judul: 'Template Sinta', keterangan: 'Untuk jurnal terakreditasi Sinta.', paket: false },
+  { slug: 'template-prosiding', label: 'Prosiding', judul: 'Template Prosiding', keterangan: 'Untuk prosiding seminar/konferensi.', paket: false },
+  { slug: 'paket-lengkap', label: 'Paket', judul: 'Paket Lengkap', keterangan: 'Keenam template sekaligus: Q1–Q4, Sinta, dan Prosiding.', paket: true },
+];
+
+interface Row {
+  slug: string;
+  judul: string;
+  harga: number | null;
+  format: string | null;
+  file_path: string | null;
+  preview_path: string | null;
+  checklist: string[];
+  is_visible: boolean;
+}
+
+// Dibaca lewat service role (server saja): harga jenjang yang belum
+// ditampilkan di katalog tetap harus tampil di halaman ini sebagai
+// "segera hadir". RLS anon menyembunyikan produk is_visible=false,
+// jadi klien anon tidak cukup di sini.
+let rows = new Map<string, Row>();
+try {
+  const { data, error } = await getSupabaseAdmin()
+    .from('products')
+    .select('slug, judul, harga, format, file_path, preview_path, checklist_kepatuhan, is_visible')
+    .in('slug', TIERS.map((t) => t.slug));
+  if (error) console.error('[harga] gagal baca produk:', error.message);
+  for (const p of (data ?? []) as any[]) {
+    rows.set(p.slug as string, {
+      slug: p.slug as string,
+      judul: (p.judul as string) ?? '',
+      harga: p.harga === null ? null : Number(p.harga),
+      format: (p.format as string | null) ?? null,
+      file_path: (p.file_path as string | null) ?? null,
+      preview_path: (p.preview_path as string | null) ?? null,
+      checklist: Array.isArray(p.checklist_kepatuhan) ? (p.checklist_kepatuhan as string[]) : [],
+      is_visible: Boolean(p.is_visible),
+    });
+  }
+} catch (e) {
+  // Basis data tidak terjangkau: halaman tetap tampil dengan semua jenjang
+  // "segera hadir", bukan 500.
+  console.error('[harga] gagal baca produk:', (e as Error)?.message ?? e);
+}
+
+const tiers = TIERS.map((t) => ({ ...t, row: rows.get(t.slug) ?? null }));
+const canBuy = (t: (typeof tiers)[number]) =>
+  Boolean(t.row && t.row.is_visible && isPurchasable(t.row.harga) && t.row.file_path);
+const anyBuyable = tiers.some(canBuy);
+
+// Hemat Paket Lengkap, dihitung dari harga di DB (bukan angka karangan):
+// total satuan keenam template dibanding harga paket.
+const singleTotal = tiers
+  .filter((t) => !t.paket)
+  .reduce((s, t) => s + (isPurchasable(t.row?.harga ?? null) ? Math.round(t.row!.harga!) : 0), 0);
+const singleCount = tiers.filter((t) => !t.paket && isPurchasable(t.row?.harga ?? null)).length;
+const bundle = tiers.find((t) => t.paket);
+const bundlePrice = bundle?.row?.harga ?? null;
+const hemat =
+  singleCount === 6 && isPurchasable(bundlePrice) && singleTotal > bundlePrice!
+    ? { rupiah: singleTotal - Math.round(bundlePrice!), persen: Math.round(((singleTotal - bundlePrice!) / singleTotal) * 100) }
+    : null;
+---
+
+<Base title="Harga template" description="Harga template artikel per jenjang: Scopus Q1 sampai Q4, Sinta, Prosiding, dan Paket Lengkap. Sekali bayar.">
+  <h1>Harga template</h1>
+  <p class="lead">Sekali bayar, file jadi milikmu. Harga diambil dari katalog &mdash; bukan angka yang ditulis di halaman ini.</p>
+
+  {!anyBuyable ? (
+    <p class="notice" role="status">
+      Penjualan belum dibuka: file template masih disiapkan. Harga di bawah ini sudah final, dan tombol beli aktif begitu file tiap jenjang terunggah.
+    </p>
+  ) : null}
+
+  <div class="grid">
+    {tiers.map((t) => {
+      const buyable = canBuy(t);
+      const alasan = !t.row
+        ? 'Jenjang ini belum terdaftar.'
+        : !isPurchasable(t.row.harga)
+          ? 'Harga segera hadir.'
+          : !t.row.file_path
+            ? 'File template belum tersedia.'
+            : !t.row.is_visible
+              ? 'Segera hadir.'
+              : '';
+      return (
+        <article class={`card tier${t.paket ? ' paket' : ''}`}>
+          <span class="badge">{t.label}</span>
+          {t.paket && hemat ? <span class="badge hemat">Hemat {formatRupiah(hemat.rupiah)} (~{hemat.persen}%)</span> : null}
+          <h2>{t.row?.judul || t.judul}</h2>
+          <p class="desc">{t.keterangan}</p>
+          <p class="price">{formatRupiah(t.row?.harga ?? null)}</p>
+          {t.paket && hemat ? <p class="meta">Total satuan: {formatRupiah(singleTotal)}</p> : null}
+          {buyable ? (
+            <form method="post" action="/keranjang/tambah">
+              <input type="hidden" name="slug" value={t.slug} />
+              <button type="submit">Tambah ke keranjang</button>
+            </form>
+          ) : (
+            <>
+              <button type="button" disabled>Segera hadir</button>
+              <p class="meta">{alasan}</p>
+            </>
+          )}
+          {t.row?.is_visible ? <p class="meta"><a href={`/templates/${t.slug}`}>Lihat detail</a></p> : null}
+        </article>
+      );
+    })}
+  </div>
+
+  <h2>Bandingkan jenjang</h2>
+  <div class="tablewrap">
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">Fitur</th>
+          {tiers.map((t) => (
+            <th scope="col" class={t.paket ? 'hl' : undefined}>{t.label}</th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <th scope="row">Harga</th>
+          {tiers.map((t) => (
+            <td class={t.paket ? 'hl' : undefined}>{formatRupiah(t.row?.harga ?? null)}</td>
+          ))}
+        </tr>
+        <tr>
+          <th scope="row">Format file</th>
+          {tiers.map((t) => (
+            <td class={t.paket ? 'hl' : undefined}>{t.row?.format ?? '—'}</td>
+          ))}
+        </tr>
+        <tr>
+          <th scope="row">Checklist kepatuhan jurnal</th>
+          {tiers.map((t) => (
+            <td class={t.paket ? 'hl' : undefined}>
+              {t.row && t.row.checklist.length > 0 ? `${t.row.checklist.length} butir` : '—'}
+            </td>
+          ))}
+        </tr>
+        <tr>
+          <th scope="row">Pratinjau</th>
+          {tiers.map((t) => (
+            <td class={t.paket ? 'hl' : undefined}>{t.row?.preview_path ? 'Tersedia' : '—'}</td>
+          ))}
+        </tr>
+        <tr>
+          <th scope="row">File template</th>
+          {tiers.map((t) => (
+            <td class={t.paket ? 'hl' : undefined}>{t.row?.file_path ? 'Tersedia' : 'Segera hadir'}</td>
+          ))}
+        </tr>
+        <tr>
+          <th scope="row">Bisa dibeli sekarang</th>
+          {tiers.map((t) => (
+            <td class={t.paket ? 'hl' : undefined}>{canBuy(t) ? 'Ya' : 'Belum'}</td>
+          ))}
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="meta">Tanpa garansi terbit atau lolos. Template membantu format naskahmu sesuai panduan jurnal; keputusan akhir tetap di tangan editor dan reviewer jurnal.</p>
+  <p class="linkrow"><a href="/templates">Lihat katalog</a><a href="/bantuan#refund">Kebijakan refund</a></p>
+</Base>
+
+<style>
+  .lead { font-size: 1.05rem; }
+  .tier h2 { font-size: 1.15rem; margin: 0.5rem 0 0.35rem; }
+  .tier .desc { color: var(--muted); font-size: 0.92rem; margin: 0 0 0.5rem; }
+  .tier .price { font-size: 1.35rem; font-weight: 700; margin: 0.5rem 0 0.75rem; }
+  .tier .meta { color: var(--muted); font-size: 0.9rem; margin: 0.5rem 0 0; }
+  .tier.paket { border: 2px solid var(--accent); background: var(--accent-soft); }
+  .badge.hemat { background: var(--accent); color: #fff; border-color: var(--accent); margin-left: 0.4rem; }
+  .tier form { margin: 0; }
+  .tier button { width: 100%; }
+  .tablewrap { overflow-x: auto; margin: 1rem 0; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; min-width: 640px; font-size: 0.92rem; }
+  th, td { padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
+  thead th { font-family: Georgia, "Times New Roman", serif; font-size: 1rem; }
+  tbody th { font-weight: 600; }
+  tbody tr:last-child th, tbody tr:last-child td { border-bottom: 0; }
+  th.hl, td.hl { background: var(--accent-soft); }
+  @media (min-width: 720px) {
+    .grid { grid-template-columns: 1fr 1fr; }
+  }
+  @media (min-width: 1020px) {
+    .grid { grid-template-columns: 1fr 1fr 1fr; }
+  }
+</style>
