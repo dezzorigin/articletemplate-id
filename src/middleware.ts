@@ -3,7 +3,10 @@ import { createSupabaseServer } from './lib/auth';
 import { applySecurityHeaders, checkRateLimit, clientKey } from './lib/security';
 
 // Path yang tidak butuh sesi (aset + health check tidak boleh gagal karena env).
-const SKIP = [/^\/_astro\//, /^\/api\/health$/, /^\/favicon/];
+// /sitemap.xml publik dan tidak butuh sesi: jangan lewati getUser() ke Supabase
+// Auth — bila Auth down, sitemap ikut gagal padahal sitemap.xml.ts sudah punya
+// fallback halaman statis (F-P2-12).
+const SKIP = [/^\/_astro\//, /^\/api\/health$/, /^\/favicon/, /^\/sitemap\.xml$/];
 const NEED_LOGIN = ['/akun', '/admin', '/unduh'];
 // Login admin terpisah (PRD §7.10): halaman ini harus bisa dibuka tanpa sesi,
 // dan tidak boleh kena rewrite 404 admin — gerbang role-nya ada di halaman itu sendiri.

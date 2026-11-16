@@ -58,11 +58,13 @@ Legenda: `[ ]` belum, `[x]` lulus, `[!]` gagal.
 > `https://borderpay.id/api/v1` terkonfirmasi; `bank_code` wajib untuk VA/E-Wallet;
 > `return_url` dikirim; masa berlaku dari `expires_at` respons (tanpa durasi asumsi);
 > E-Wallet ditambahkan sebagai metode ketiga. Item F tetap belum dicentang — uji
-> live masih menunggu (key test + migrasi + env var + endpoint webhook).
+> live masih menunggu (key test + env var + endpoint webhook; migrasi pay_url
+> SUDAH di-apply ke database self-hosted & terverifikasi 16 Nov 2026).
 - [ ] F1 Form nama + email tervalidasi
 - [ ] F2 Bayar sukses: order `lunas`, download aktif
 - [ ] F3 Bayar gagal: order `gagal`, download tidak aktif
-- [ ] F4 Kedaluwarsa: order `kedaluwarsa`, bisa checkout ulang tanpa order ganda- [ ] F5 Webhook palsu/tanpa signature ditolak
+- [ ] F4 Kedaluwarsa: order `kedaluwarsa`, bisa checkout ulang tanpa order ganda
+- [ ] F5 Webhook palsu/tanpa signature ditolak
 - [ ] F6 Webhook diulang (idempotent) tidak mengubah hasil
 - [ ] F7 `harga_saat_beli` tersimpan, tidak ikut berubah
 - [ ] F8 Tidak ada order lunas tanpa download aktif, dan sebaliknya
@@ -86,7 +88,7 @@ Legenda: `[ ]` belum, `[x]` lulus, `[!]` gagal.
 - [x] H5 Daftar order + cari email/produk (bukti: cari email/slug/judul + filter status)
 - [x] H6 Kirim ulang email lunas/download (14 Nov: Resend terpasang, tombol di /akun, `e2e-kirim-ulang` 6 cek lulus, email nyata masuk Gmail. Pengirim masih onboarding@resend.dev: hanya bisa ke pemilik akun Resend, butuh verifikasi domain sebelum tayang)
 - [x] H7 Login admin terpisah di `/admin/masuk` (bukti: halaman login khusus admin + gerbang role — pembeli yang mencoba masuk langsung dikeluarkan lagi; middleware mengecualikan `/admin/masuk` dari redirect login dan rewrite 404 admin; tautan dari `/masuk`, 16 Nov 2026; belum e2e live. Catatan jujur: "terpisah" = alur + gerbang role yang terpisah; sesi tetap memakai cookie Supabase Auth yang sama, bukan penyimpanan kredensial kedua)
-- [x] H8 Kelola konten di `/admin/konten` (bukti: tabel `site_content` + migrasi `20261116_site_content.sql`, daftar 3 kunci + form ubah teks polos, halaman Beranda/Tentang/Bantuan membaca dari DB dengan fallback teks bawaan, 16 Nov 2026; WAJIB apply migrasi ke database self-hosted sebelum deploy — sebelum itu simpan konten gagal dan halaman memakai teks bawaan; belum e2e live)
+- [x] H8 Kelola konten di `/admin/konten` (bukti: tabel `site_content` + migrasi `20261116_site_content.sql`, daftar 3 kunci + form ubah teks polos, halaman Beranda/Tentang/Bantuan membaca dari DB dengan fallback teks bawaan, 16 Nov 2026; migrasi SUDAH di-apply ke database self-hosted & terverifikasi 16 Nov 2026; belum e2e live)
 
 ## I. Konten
 - [x] I1 Beranda: harga tampil dari data, bukan teks karangan
@@ -137,6 +139,7 @@ Legenda: `[ ]` belum, `[x]` lulus, `[!]` gagal.
 ## Rekap hasil
 | Tanggal | Tahap | Lulus | Gagal | Belum | Catatan |
 |---|---|---|---|---|---|
+| 2026-11-16 | tindak lanjut audit | 0 (tidak ada centang baru — semua item terbuka butuh uji live/manual) | 0 | A8, F1–F9, G1–G7, M1–M6 + sisanya | F-P1-1 diperbaiki (startBorderPayPayment kembalikan {ok, payUrlMissing}, pemanggil ?e=tautan), /sitemap.xml di-SKIP middleware, dokumen (README/FRAMEWORK/CHECKLIST) diperbarui ke main f32af646; F-P2-8 + komentar simulasi ternyata sudah tutup di main; guard race DB dievaluasi — TIDAK dibangun (lihat body PR); tsc 0 error, build lolos, npm test 26 unit + 55 cek BorderPay lolos, smoke 6 rute 200 |
 | 2026-11-16 | Lanjutan audit | B8, C6, E7, H7, H8, L6 (+catatan H1) | 0 | A8, F1–F9, G1–G7, M1–M6 + sisanya | beli sekarang, filter bidang/jurnal, edit profil, login admin terpisah, kelola konten (migrasi site_content — WAJIB apply sebelum deploy), test runner `npm test` lolos; e2e live belum dijalankan |
 | 2026-11-16 | WES-17 BorderPay | 0 (kode selesai, bukti live belum ada) | 0 | A8, F1–F9, G1–G7, M1–M6 + sisanya | klien BorderPay + webhook nyata (verifikasi token x-borderpay-token) + halaman bayar + migrasi pay_url; uji lokal scripts/test-borderpay.mjs lolos; F2–F6 butuh uji bayar live (sandbox) |
 | 2026-11-16 | fix audit batch 1 | A2 (+catatan G4, H4, K5, L1, A6) | 0 | A8, F1–F9, G1–G7, M1–M6 + sisanya | tsc 0 error, React dihapus, keepalive dihapus, e2e-download host-agnostic, 500 status, race createOrder dikunci per user, clientKey XFF kiri, magic-bytes upload, tautan unduh di status lunas, expiry ditegakkan di daftar order |

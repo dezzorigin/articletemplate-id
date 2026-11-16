@@ -30,6 +30,10 @@ import { optionalEnv } from '../../lib/env';
 // - Pembayaran yang masih berlaku dipakai ulang (tidak membuat tagihan ganda);
 //   yang sudah kedaluwarsa diganti dengan yang baru.
 // - Gagal menghubungi BorderPay -> kembali ke status dengan ?e=bayar.
+// - Jejak tersimpan tanpa pay_url (migrasi belum diterapkan) -> kembali ke
+//   status dengan ?e=tautan: halaman status harus menampilkan tombol
+//   buat-ulang (form buat pembayaran baru sudah ada di halaman itu) —
+//   teks ?e=tautan ditambahkan PR redesign di src/pages/checkout/status.astro.
 export const POST: APIRoute = async ({ request, redirect }) => {
   if (!isBorderPayEnabled()) return new Response('Not found', { status: 404 });
 
@@ -83,9 +87,13 @@ export const POST: APIRoute = async ({ request, redirect }) => {
     payUrl: payment.payUrl,
     expiresAt: payment.expiresAt,
   });
-  if (!stored) {
-    console.error('[checkout/borderpay] pembayaran dibuat tapi jejaknya gagal disimpan:', payment.id);
-    return redirect(`/checkout/status?order=${order.id}&e=bayar`, 303);
+  if (!stored.ok) {
+    console.error('[checkout/borderpay] pembayaran dibuat tapi jejaknya belum tersimpan lengkap:', payment.id);
+    // payUrlMissing: borderpay_ref tersimpan tapi pay_url tidak — pembeli
+    // harus membuat pembayaran baru (?e=tautan), bukan diarahkan seolah
+    // tautan bayar sudah tersimpan.
+    const code = stored.payUrlMissing ? 'tautan' : 'bayar';
+    return redirect(`/checkout/status?order=${order.id}&e=${code}`, 303);
   }
   return redirect(`/checkout/status?order=${order.id}`, 303);
 };

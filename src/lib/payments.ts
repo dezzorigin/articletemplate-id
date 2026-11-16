@@ -2,7 +2,8 @@ import { getSupabaseAdmin } from './supabase';
 import { optionalEnv } from './env';
 import { sendOrderPaidEmail } from './email';
 
-// Provider pembayaran MOCK (WES-16). BorderPay asli ditunda sampai akun merchant ada (WES-17).
+// Provider pembayaran MOCK (WES-16, dev saja). BorderPay nyata (WES-17)
+// sudah terpasang sejak 16 Nov 2026 — mode test dulu, live setelah KYC.
 // Semua perubahan status order lewat applyPaymentResult(): satu pintu, idempotent.
 // Webhook BorderPay nanti cukup memanggil fungsi yang sama setelah signature valid.
 
@@ -145,20 +146,35 @@ export async function getBorderPayPayment(orderId: string): Promise<StoredBorder
 }
 
 /**
+ * Hasil simpan jejak pembayaran BorderPay.
+ * - ok: true bila jejak LENGKAP (termasuk pay_url) tersimpan.
+ * - payUrlMissing: true bila borderpay_ref tersimpan tapi pay_url TIDAK
+ *   (migrasi 20261116 belum diterapkan di DB) — pemanggil harus menampilkan
+ *   tombol buat-ulang, bukan redirect seolah tautan bayar tersimpan.
+ *   (Perbaikan F-P1-1: sebelumnya fungsi mengembalikan boolean true bila
+ *   simpan minimal berhasil, padahal komentarnya menjanjikan false.)
+ */
+export interface StartBorderPayResult {
+  ok: boolean;
+  payUrlMissing: boolean;
+}
+
+/**
  * Simpan jejak pembayaran BorderPay (satu baris payments per order).
  * Best-effort untuk kolom migrasi: bila update/insert dengan pay_url gagal
  * (migrasi belum diterapkan), ulangi tanpa kolom baru supaya borderpay_ref
- * tetap tersimpan — lalu kembalikan false agar pemanggil tahu tautan bayar
- * belum tersimpan dan menampilkan tombol buat-ulang.
+ * tetap tersimpan — lalu kembalikan { ok: false, payUrlMissing: true } agar
+ * pemanggil tahu tautan bayar belum tersimpan dan menampilkan tombol
+ * buat-ulang (bukan redirect seolah tersimpan).
  */
 export async function startBorderPayPayment(
   orderId: string,
   metode: Metode,
   payment: { id: string; payUrl: string; expiresAt: string | undefined },
-): Promise<boolean> {
+): Promise<StartBorderPayResult> {
   const admin = getSupabaseAdmin();
   const { data: order } = await admin.from('orders').select('status').eq('id', orderId).maybeSingle();
-  if (!order || order.status !== 'menunggu_bayar') return false;
+  if (!order || order.status !== 'menunggu_bayar') return { ok: false, payUrlMissing: false };
 
   const full = {
     metode,
@@ -178,16 +194,16 @@ export async function startBorderPayPayment(
     const { error } = await admin.from('payments').update(full).eq('id', existing.id);
     if (error) {
       console.warn('[payments] kolom pay_url belum ada (migrasi 20261116 belum diterapkan?), simpan minimal:', error.message);
-      const retry = await admin.from('payments').update(minimal).eq('id', existing.id);
-      return !retry.error;
+      await admin.from('payments').update(minimal).eq('id', existing.id);
+      return { ok: false, payUrlMissing: true };
     }
-    return true;
+    return { ok: true, payUrlMissing: false };
   }
   const { error } = await admin.from('payments').insert({ order_id: orderId, ...full });
   if (error) {
     console.warn('[payments] kolom pay_url belum ada (migrasi 20261116 belum diterapkan?), simpan minimal:', error.message);
-    const retry = await admin.from('payments').insert({ order_id: orderId, ...minimal });
-    return !retry.error;
+    await admin.from('payments').insert({ order_id: orderId, ...minimal });
+    return { ok: false, payUrlMissing: true };
   }
-  return true;
+  return { ok: true, payUrlMissing: false };
 }
