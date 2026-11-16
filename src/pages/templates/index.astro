@@ -8,6 +8,8 @@ import {
   listCatalogFacets,
   isPurchasable,
   formatLabel,
+  previewUrl,
+  isPreviewImage,
 } from '../../lib/catalog';
 import { formatRupiah } from '../../lib/money';
 
@@ -122,6 +124,11 @@ const activeCount =
           {products.map((p) => (
             <article class="card product">
               <span class="badge">{p.jenjang}</span>
+              {isPreviewImage(p.preview_path) ? (
+                <a class="thumb" href={`/templates/${p.slug}`} tabindex="-1" aria-hidden="true">
+                  <img src={previewUrl(p.preview_path)!} alt="" loading="lazy" width="640" />
+                </a>
+              ) : null}
               <h2><a href={`/templates/${p.slug}`}>{p.judul}</a></h2>
               {formatLabel(p.format) ? <p class="meta">Format: {formatLabel(p.format)}</p> : null}
               {p.deskripsi ? <p class="desc">{p.deskripsi}</p> : null}
@@ -218,6 +225,19 @@ const activeCount =
   .product h2 {
     font-size: 1.15rem;
     margin: 0.5rem 0 0.35rem;
+  }
+  /* Thumbnail pratinjau: gambar halaman pertama (potret A4); tanpa height
+     tetap supaya rasio asli tiap gambar terjaga. */
+  .thumb {
+    display: block;
+    margin-top: 0.5rem;
+  }
+  .thumb img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border: 1px solid var(--line);
+    border-radius: 12px;
   }
   .product h2 a {
     color: var(--ink);

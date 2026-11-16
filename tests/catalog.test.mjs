@@ -4,8 +4,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { loadLib } from './helpers.mjs';
 
+// Nilai DUMMY supaya previewUrl() bisa membangun URL publik tanpa kredensial
+// asli: getPublicUrl() hanya merangkai URL, tidak memanggil jaringan.
+process.env.PUBLIC_SUPABASE_URL = 'https://contoh.supabase.co';
+process.env.PUBLIC_SUPABASE_ANON_KEY = 'anon-dummy-untuk-tes';
+
 const catalog = await loadLib('catalog.ts');
-const { parseCatalogQuery, uniqueSorted, jenjangRank, sortByJenjang, formatLabel } = catalog;
+const { parseCatalogQuery, uniqueSorted, jenjangRank, sortByJenjang, formatLabel, previewUrl, isPreviewImage, isPreviewPdf } = catalog;
 
 const q = (s) => parseCatalogQuery(new URLSearchParams(s));
 
@@ -78,4 +83,26 @@ test('uniqueSorted: buang kosong/duplikat, urut abjad', () => {
   );
   assert.deepEqual(uniqueSorted([]), []);
   assert.deepEqual(uniqueSorted([null, undefined, '']), []);
+});
+
+test('previewUrl: null -> null; path -> URL publik bucket previews', () => {
+  assert.equal(previewUrl(null), null);
+  const url = previewUrl('uuid-1/mkwx1y2z-pratinjau-q1.png');
+  assert.ok(url.includes('/storage/v1/object/public/previews/uuid-1/mkwx1y2z-pratinjau-q1.png'));
+  assert.ok(url.startsWith('https://contoh.supabase.co/'));
+});
+
+test('isPreviewImage/isPreviewPdf: klasifikasi dari ekstensi', () => {
+  for (const ext of ['png', 'jpg', 'jpeg', 'webp', 'PNG', 'JPG']) {
+    assert.equal(isPreviewImage(`x/f.${ext}`), true, ext);
+    assert.equal(isPreviewPdf(`x/f.${ext}`), false, ext);
+  }
+  assert.equal(isPreviewImage('x/f.pdf'), false);
+  assert.equal(isPreviewImage('x/f.PDF'), false);
+  assert.equal(isPreviewPdf('x/f.pdf'), true);
+  assert.equal(isPreviewPdf('x/f.PDF'), true);
+  assert.equal(isPreviewImage(null), false);
+  assert.equal(isPreviewPdf(null), false);
+  assert.equal(isPreviewImage('x/tanpa-ekstensi'), false);
+  assert.equal(isPreviewPdf('x/tanpa-ekstensi'), false);
 });

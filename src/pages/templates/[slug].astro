@@ -1,6 +1,6 @@
 ---
 import Base from '../../layouts/Base.astro';
-import { getProductBySlug, relatedProducts, previewUrl, isPurchasable, formatLabel } from '../../lib/catalog';
+import { getProductBySlug, relatedProducts, previewUrl, isPreviewImage, isPreviewPdf, isPurchasable, formatLabel } from '../../lib/catalog';
 import { formatRupiah } from '../../lib/money';
 import { readCart } from '../../lib/cart';
 
@@ -74,7 +74,14 @@ const refused = Astro.url.searchParams.get('e') === 'belum-dijual';
           <section>
             <h2>Pratinjau</h2>
             <p class="muted">Pratinjau parsial. File lengkap hanya tersedia setelah pembayaran lunas.</p>
-            <p><a class="btn ghost" href={preview} rel="noopener noreferrer" target="_blank">Buka pratinjau</a></p>
+            <div class="preview">
+              {isPreviewImage(product.preview_path) ? (
+                <img src={preview} alt={`Pratinjau ${product.judul}`} loading="lazy" />
+              ) : isPreviewPdf(product.preview_path) ? (
+                <iframe src={preview} title={`Pratinjau ${product.judul}`} loading="lazy"></iframe>
+              ) : null}
+            </div>
+            <p><a class="btn ghost" href={preview} rel="noopener noreferrer" target="_blank">Buka pratinjau di tab baru</a></p>
           </section>
         ) : null
       }
@@ -180,6 +187,19 @@ const refused = Astro.url.searchParams.get('e') === 'belum-dijual';
     background: transparent;
     color: var(--ink);
     border: 1px solid var(--line-strong);
+  }
+  /* Viewer pratinjau inline: gambar halaman pertama, atau iframe untuk PDF. */
+  .preview img {
+    max-width: 100%;
+    height: auto;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+  }
+  .preview iframe {
+    width: 100%;
+    min-height: 480px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
   }
   .rel {
     display: grid;

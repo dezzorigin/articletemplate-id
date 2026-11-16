@@ -17,6 +17,8 @@ const CSP = [
   `img-src 'self' data: ${SUPABASE_HOST}`.trim(),
   "font-src 'self'",
   `connect-src 'self' ${SUPABASE_HOST}`.trim(),
+  // Iframe pratinjau PDF dari Supabase Storage publik (halaman detail template).
+  `frame-src 'self' ${SUPABASE_HOST}`.trim(),
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",
