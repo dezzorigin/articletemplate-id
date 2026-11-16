@@ -176,4 +176,18 @@ export function previewUrl(path: string | null): string | null {
   return getSupabase().storage.from('previews').getPublicUrl(path).data.publicUrl;
 }
 
+const PREVIEW_IMAGE_EXT = ['png', 'jpg', 'jpeg', 'webp'];
+
+/** True bila preview berupa gambar (bisa di-<img>); PDF tampil lewat iframe. */
+export function isPreviewImage(path: string | null): boolean {
+  if (!path) return false;
+  const ext = path.split('.').pop()?.toLowerCase() ?? '';
+  return PREVIEW_IMAGE_EXT.includes(ext);
+}
+
+/** True bila preview berupa PDF (tampil lewat iframe). */
+export function isPreviewPdf(path: string | null): boolean {
+  return !!path && path.toLowerCase().endsWith('.pdf');
+}
+
 export { isPurchasable };
