@@ -1,9 +1,12 @@
 ---
 import Base from '../layouts/Base.astro';
+import { getContent } from '../lib/content';
 
 // DRAF KEBIJAKAN: isi mengikuti aturan PRD 7.7 dan 7.9. Refund, lisensi final, dan kanal kontak
 // adalah keputusan tim (PRD 13 no. 8). Jangan menambah janji di luar PRD; kontak sengaja belum
 // diisi karena kanal support belum ditetapkan (jangan diisi dengan data pribadi siapa pun).
+// Bagian Kontak bisa diubah admin di /admin/konten (kunci bantuan.kontak).
+const kontak = await getContent('bantuan.kontak');
 ---
 
 <Base title="Bantuan" description="Cara memakai template, lisensi, refund, privasi, dan kontak.">
@@ -65,10 +68,7 @@ import Base from '../layouts/Base.astro';
 
   <section id="kontak">
     <h2>Kontak</h2>
-    <p>
-      Kanal bantuan resmi akan diumumkan di halaman ini sebelum penjualan dibuka. Sampai saat itu, pembelian
-      belum bisa dilakukan.
-    </p>
+    <p>{kontak}</p>
   </section>
 </Base>
 

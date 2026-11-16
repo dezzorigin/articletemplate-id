@@ -1,0 +1,83 @@
+---
+import Base from '../../layouts/Base.astro';
+import { cleanEmail, validPassword, safeNext } from '../../lib/auth';
+import { getSupabaseAdmin } from '../../lib/supabase';
+
+// Login admin TERPISAH dari login pembeli (PRD §7.10). Halaman ini hanya
+// menerima akun dengan role 'admin' — pembeli yang mencoba masuk di sini
+// langsung dikeluarkan lagi (sesi tidak dipertahankan).
+// Catatan jujur: "terpisah" di sini berarti alur + gerbang role yang terpisah.
+// Sesi tetap memakai cookie Supabase Auth yang sama dengan pembeli (satu sistem
+// auth); tidak ada penyimpanan kredensial admin kedua.
+if (Astro.locals.user) {
+  const { data: mine } = await Astro.locals.supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', Astro.locals.user.id)
+    .maybeSingle();
+  if (mine?.role === 'admin') return Astro.redirect('/admin');
+}
+
+const next = safeNext(Astro.url.searchParams.get('next'), '/admin');
+let error: string | undefined;
+const messages: Record<string, string> = {
+  salah: 'Email atau kata sandi salah.',
+  konfirmasi: 'Email kamu belum dikonfirmasi. Cek kotak masuk untuk tautan konfirmasi.',
+  'bukan-admin': 'Akun ini bukan admin. Masuk lewat halaman pembeli.',
+};
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  const email = cleanEmail(form.get('email'));
+  const password = form.get('password');
+  if (!email || !validPassword(password)) {
+    error = messages.salah;
+  } else {
+    const { data, error: signErr } = await Astro.locals.supabase.auth.signInWithPassword({ email, password });
+    if (signErr || !data.user) {
+      error = messages[signErr?.message.toLowerCase().includes('not confirmed') ? 'konfirmasi' : 'salah'];
+    } else {
+      // Cek role lewat service role (bukan sesi yang baru dibuat — sesi dari
+      // signIn belum tentu terbaca cookie di request yang sama).
+      const { data: profile } = await getSupabaseAdmin()
+        .from('profiles')
+        .select('role')
+        .eq('id', data.user.id)
+        .maybeSingle();
+      if (profile?.role !== 'admin') {
+        await Astro.locals.supabase.auth.signOut();
+        error = messages['bukan-admin'];
+      } else {
+        return Astro.redirect(next, 303);
+      }
+    }
+  }
+} else {
+  const code = Astro.url.searchParams.get('e');
+  error = code ? messages[code] : undefined;
+}
+---
+
+<Base title="Masuk admin">
+  <h1>Masuk admin</h1>
+  <p class="hint">Halaman khusus pengelola toko. Pembeli masuk lewat halaman biasa.</p>
+  {error ? <p class="notice" role="alert">{error}</p> : null}
+
+  <form class="form" method="post">
+    <input type="hidden" name="next" value={next} />
+    <label class="field">
+      <span>Email admin</span>
+      <input type="email" name="email" required autocomplete="email" inputmode="email" autocapitalize="none" autocorrect="off" maxlength="254" />
+    </label>
+    <label class="field">
+      <span>Kata sandi</span>
+      <input type="password" name="password" required autocomplete="current-password" minlength="8" maxlength="72" />
+    </label>
+    <button type="submit">Masuk sebagai admin</button>
+  </form>
+
+  <div class="linkrow">
+    <a href="/masuk">Masuk sebagai pembeli</a>
+    <a href="/lupa-password">Lupa kata sandi</a>
+  </div>
+</Base>

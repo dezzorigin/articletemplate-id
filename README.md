@@ -20,6 +20,8 @@ paket delegasi tim, bukan di repo — ringkasan eksekusi di `docs/FRAMEWORK.md`)
 - `src/lib/env.ts` — baca env runtime, gagal jelas bila wajib kosong
 - `src/lib/supabase.ts` — `getSupabase()` (anon + RLS), `getSupabaseAdmin()` (service role, server saja)
 - `src/lib/money.ts` — satu-satunya format harga + hitung total
+- `src/lib/content.ts` — kelola konten halaman (`site_content`, kunci `beranda.intro` / `tentang.intro` / `bantuan.kontak`)
+- `tests/` — tes unit `node:test` (`npm test` menjalankan `tests/` + `scripts/test-borderpay.mjs`)
 - `docs/FRAMEWORK.md`, `docs/CHECKLIST.md` — rencana kerja + checklist uji
 - `supabase/schema.sql` — skema + RLS + seed placeholder (jalankan sekali),
   lalu `supabase/migrations/` (wajib: `20261113_harden_rls.sql` +
@@ -41,6 +43,7 @@ paket delegasi tim, bukan di repo — ringkasan eksekusi di `docs/FRAMEWORK.md`)
 npm install
 cp .env.example .env   # lalu isi nilai Supabase self-hosted (dari Environment Variables aplikasi Coolify)
 npm run dev
+npm test               # tes unit (node:test) + scripts/test-borderpay.mjs
 ```
 
 ## Setup Supabase self-hosted (sekali, saat service dibuat)
@@ -53,8 +56,9 @@ dari dashboard Supabase Cloud.
 1. Coolify → project "ArticleTemplate.id" → service Supabase → pastikan jalan.
 2. SQL Editor di dashboard Supabase self-hosted → tempel `supabase/schema.sql` → Run,
    lalu tempel `supabase/migrations/20261113_harden_rls.sql`,
-   `supabase/migrations/20261113_products_compliance_columns.sql`, dan
-   `supabase/migrations/20261116_borderpay_pay_url.sql` → Run.
+   `supabase/migrations/20261113_products_compliance_columns.sql`,
+   `supabase/migrations/20261116_borderpay_pay_url.sql`, dan
+   `supabase/migrations/20261116_site_content.sql` → Run.
    Jangan lewati migrasi: skema saja masih berisi policy lama.
 3. Storage → buat bucket `templates` (private) dan `previews` (public).
 4. Authentication → aktifkan Email + Google login.

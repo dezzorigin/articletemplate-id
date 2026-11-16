@@ -5,6 +5,9 @@ import { applySecurityHeaders, checkRateLimit, clientKey } from './lib/security'
 // Path yang tidak butuh sesi (aset + health check tidak boleh gagal karena env).
 const SKIP = [/^\/_astro\//, /^\/api\/health$/, /^\/favicon/];
 const NEED_LOGIN = ['/akun', '/admin', '/unduh'];
+// Login admin terpisah (PRD §7.10): halaman ini harus bisa dibuka tanpa sesi,
+// dan tidak boleh kena rewrite 404 admin — gerbang role-nya ada di halaman itu sendiri.
+const ADMIN_LOGIN = '/admin/masuk';
 
 const startsWithPath = (path: string, base: string) =>
   path === base || path.startsWith(base + '/');
@@ -20,14 +23,15 @@ const inner = defineMiddleware(async (context, next) => {
   const { data } = await supabase.auth.getUser();
   context.locals.user = data.user ?? null;
 
-  if (NEED_LOGIN.some((base) => startsWithPath(path, base))) {
+  if (NEED_LOGIN.some((base) => startsWithPath(path, base)) && path !== ADMIN_LOGIN) {
     if (!context.locals.user) {
       return context.redirect(`/masuk?next=${encodeURIComponent(path)}`, 303);
     }
   }
 
   // Admin: hanya role 'admin'. Selain itu 404 (jangan membocorkan keberadaan halaman).
-  if (startsWithPath(path, '/admin') && context.locals.user) {
+  // Halaman login admin dikecualikan: gerbang role-nya ada di halaman itu sendiri.
+  if (startsWithPath(path, '/admin') && path !== ADMIN_LOGIN && context.locals.user) {
     const { data: profile } = await supabase
       .from('profiles')
       .select('role')

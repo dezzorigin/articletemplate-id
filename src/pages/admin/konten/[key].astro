@@ -1,0 +1,63 @@
+---
+import Base from '../../../layouts/Base.astro';
+import { requireAdmin } from '../../../lib/admin';
+import {
+  CONTENT_KEYS, DEFAULT_CONTENT, CONTENT_BODY_MAX,
+  isContentKey, parseContentForm, saveContent, getContent,
+  type ContentKey,
+} from '../../../lib/content';
+
+export const prerender = false;
+if (!(await requireAdmin(Astro.locals.supabase, Astro.locals.user))) return Astro.rewrite('/404');
+
+const rawKey = Astro.params.key ?? '';
+if (!isContentKey(rawKey)) return Astro.rewrite('/404');
+const key = rawKey as ContentKey;
+
+let body = await getContent(key);
+let errors: string[] = [];
+const saved = Astro.url.searchParams.get('ok') === '1';
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  const parsed = parseContentForm(form);
+  if (!parsed.ok) {
+    errors = parsed.errors;
+    const raw = form.get('body');
+    body = typeof raw === 'string' ? raw : body;
+  } else if (!(await saveContent(parsed.data.key, parsed.data.body))) {
+    errors = ['Konten gagal disimpan. Coba lagi sebentar lagi.'];
+    body = parsed.data.body;
+  } else {
+    return Astro.redirect(`/admin/konten/${key}?ok=1`, 303);
+  }
+}
+---
+
+<Base title={`Admin · ${CONTENT_KEYS[key]}`}>
+  <p><a href="/admin/konten">← Kelola konten</a></p>
+  <h1>{CONTENT_KEYS[key]}</h1>
+  <p class="hint">Kunci: <code>{key}</code> · teks polos, maksimal {CONTENT_BODY_MAX} karakter. Isi wajib ada — untuk mengembalikan teks bawaan, salin teks di bawah kolom isian.</p>
+  {saved ? <p class="notice ok" role="status">Konten tersimpan dan langsung tampil di halaman.</p> : null}
+  {errors.length ? (
+    <div class="notice" role="alert">
+      <ul class="errs">{errors.map((e) => <li>{e}</li>)}</ul>
+    </div>
+  ) : null}
+
+  <form class="form wide" method="post">
+    <input type="hidden" name="key" value={key} />
+    <label class="field">
+      <span>Isi</span>
+      <textarea name="body" required rows="8" maxlength={CONTENT_BODY_MAX}>{body}</textarea>
+      <span class="hint">Teks bawaan: “{DEFAULT_CONTENT[key]}”</span>
+    </label>
+    <button type="submit">Simpan konten</button>
+  </form>
+</Base>
+
+<style>
+  .errs { margin: 0; padding-left: 1.2rem; }
+  .hint { color: var(--muted); font-size: 0.92rem; }
+  textarea { width: 100%; border: 1px solid var(--line); border-radius: 12px; padding: 0.6rem 0.8rem; background: var(--surface); color: var(--ink); font-family: inherit; line-height: 1.5; }
+</style>

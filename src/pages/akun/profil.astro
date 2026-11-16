@@ -1,0 +1,69 @@
+---
+import Base from '../../layouts/Base.astro';
+import { cleanName } from '../../lib/auth';
+
+// Ubah profil (PRD §6): nama pembeli. Kata sandi tidak diubah di sini —
+// alurnya lewat tautan email ("Lupa kata sandi" / "Ubah kata sandi").
+// Middleware sudah memastikan user ada (redirect ke /masuk bila belum).
+// RLS mengizinkan pembeli mengubah kolom `nama` miliknya sendiri.
+const user = Astro.locals.user!;
+const { data: profile } = await Astro.locals.supabase
+  .from('profiles')
+  .select('nama')
+  .eq('id', user.id)
+  .maybeSingle();
+
+let nama = profile?.nama ?? '';
+let errors: string[] = [];
+const saved = Astro.url.searchParams.get('ok') === '1';
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  const next = cleanName(form.get('nama'));
+  if (!next) {
+    errors.push('Nama wajib diisi (maksimal 80 karakter).');
+  } else {
+    const { error } = await Astro.locals.supabase
+      .from('profiles')
+      .update({ nama: next })
+      .eq('id', user.id);
+    if (error) {
+      console.error('[akun] gagal simpan profil:', error.message);
+      errors.push('Profil gagal disimpan. Coba lagi sebentar lagi.');
+    } else {
+      return Astro.redirect('/akun/profil?ok=1', 303);
+    }
+  }
+  const raw = form.get('nama');
+  nama = typeof raw === 'string' ? raw : nama;
+}
+---
+
+<Base title="Ubah profil">
+  <p><a href="/akun">← Akun saya</a></p>
+  <h1>Ubah profil</h1>
+  {saved ? <p class="notice ok" role="status">Profil berhasil disimpan.</p> : null}
+  {errors.length ? (
+    <div class="notice" role="alert">
+      <ul class="errs">{errors.map((e) => <li>{e}</li>)}</ul>
+    </div>
+  ) : null}
+
+  <form class="form" method="post">
+    <label class="field">
+      <span>Nama</span>
+      <input type="text" name="nama" required autocomplete="name" maxlength="80" value={nama} />
+      <span class="hint">Nama tampil di akun dan pesananmu.</span>
+    </label>
+    <p class="hint">Email tidak bisa diubah di sini ({user.email}).</p>
+    <button type="submit">Simpan profil</button>
+  </form>
+
+  <div class="linkrow">
+    <a href="/atur-password">Ubah kata sandi</a>
+  </div>
+</Base>
+
+<style>
+  .errs { margin: 0; padding-left: 1.2rem; }
+</style>

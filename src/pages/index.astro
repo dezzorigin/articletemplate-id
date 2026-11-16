@@ -2,9 +2,12 @@
 import Base from '../layouts/Base.astro';
 import { listProducts, JENJANG } from '../lib/catalog';
 import { formatRupiah, isPurchasable } from '../lib/money';
+import { getContent } from '../lib/content';
 
 // Semua harga di halaman ini dibaca dari data produk (satu sumber harga). Tidak ada angka ketikan.
+// Paragraf pembuka bisa diubah admin di /admin/konten (kunci beranda.intro).
 const { products } = await listProducts({ urut: 'terbaru' });
+const intro = await getContent('beranda.intro');
 const featured = products.slice(0, 4);
 const prices = products.map((p) => p.harga).filter(isPurchasable);
 const mulai = prices.length ? Math.min(...prices) : null;
@@ -15,11 +18,7 @@ const jenjangAda = JENJANG.filter((j) => products.some((p) => p.jenjang === j));
   <section class="hero">
     <div class="hero-text">
       <h1>Template artikel untuk peneliti</h1>
-      <p>
-        Template yang sudah disesuaikan dengan jenjang target jurnalmu, lengkap dengan
-        panduan pengisian dan checklist kepatuhan format. Pilih, bayar, unduh, lalu unduh
-        ulang kapan saja dari akunmu.
-      </p>
+      <p>{intro}</p>
       <p class="from">
         {
           mulai !== null ? (

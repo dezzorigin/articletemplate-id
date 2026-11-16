@@ -5,14 +5,16 @@ import {
   URUTAN,
   parseCatalogQuery,
   listProducts,
+  listCatalogFacets,
   isPurchasable,
 } from '../../lib/catalog';
 import { formatRupiah } from '../../lib/money';
 
 const query = parseCatalogQuery(Astro.url.searchParams);
-const { products, error } = await listProducts(query);
-const filtered = Boolean(query.jenjang || query.q);
-const activeCount = (query.jenjang ? 1 : 0) + (query.q ? 1 : 0);
+const [{ products, error }, facets] = await Promise.all([listProducts(query), listCatalogFacets()]);
+const filtered = Boolean(query.jenjang || query.bidang || query.jurnal || query.q);
+const activeCount =
+  (query.jenjang ? 1 : 0) + (query.bidang ? 1 : 0) + (query.jurnal ? 1 : 0) + (query.q ? 1 : 0);
 ---
 
 <Base title="Katalog template" description="Katalog template artikel per jenjang: Scopus Q1 sampai Q4, Sinta, dan Prosiding.">
@@ -31,7 +33,7 @@ const activeCount = (query.jenjang ? 1 : 0) + (query.q ? 1 : 0);
         autocomplete="off"
       />
     </label>
-    <details class="more" open={Boolean(query.jenjang) || query.urut !== 'terbaru'}>
+    <details class="more" open={Boolean(query.jenjang || query.bidang || query.jurnal) || query.urut !== 'terbaru'}>
       <summary>
         Filter dan urutan{activeCount > 0 ? ` (${activeCount})` : ''}
       </summary>
@@ -49,6 +51,32 @@ const activeCount = (query.jenjang ? 1 : 0) + (query.q ? 1 : 0);
             }
           </select>
         </label>
+        {facets.bidang.length > 0 ? (
+          <label class="field">
+            <span>Bidang</span>
+            <select name="bidang">
+              <option value="">Semua bidang</option>
+              {facets.bidang.map((b) => (
+                <option value={b} selected={query.bidang === b}>
+                  {b}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
+        {facets.jurnal.length > 0 ? (
+          <label class="field">
+            <span>Jurnal target</span>
+            <select name="jurnal">
+              <option value="">Semua jurnal</option>
+              {facets.jurnal.map((j) => (
+                <option value={j} selected={query.jurnal === j}>
+                  {j}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
         <label class="field">
           <span>Urutkan</span>
           <select name="urut">
