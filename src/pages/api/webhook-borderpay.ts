@@ -5,10 +5,14 @@ import { getOrderView } from '../../lib/orders';
 
 // Webhook BorderPay — POST /api/webhook-borderpay.
 // Event: payment.paid -> lunas, payment.expired -> kedaluwarsa,
-// payment.failed -> gagal (dokumen: borderpay.id/docs + blog REST API).
+// payment.failed -> gagal (Referensi API resmi, dibaca penuh 16 Nov 2026:
+// https://borderpay.id/api-reference — verifikasi HANYA pencocokan token
+// header x-borderpay-token; TIDAK ADA HMAC. Payload:
+// {event, mode, data: {slug, mode, reference_id, order_id, status, amount,
+// fee, merchant_receives, method}}; balas 2xx untuk ACK.)
 //
-// KEAMANAN (fail-closed) — skema verifikasi TERKONFIRMASI pemilik akun
-// 16 Nov 2026: header `x-borderpay-token` harus sama dengan token verifikasi
+// KEAMANAN (fail-closed) — skema verifikasi TERKONFIRMASI Referensi API +
+// pemilik akun 16 Nov 2026: header `x-borderpay-token` harus sama dengan token verifikasi
 // dari env BORDERPAY_WEBHOOK_TOKEN; tidak cocok -> 401, tidak diproses.
 // Verifikasi HMAC hanya LEGACY untuk integrasi lama dan sengaja tidak
 // dipakai di sini.

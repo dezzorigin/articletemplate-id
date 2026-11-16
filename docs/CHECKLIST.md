@@ -51,11 +51,15 @@ Legenda: `[ ]` belum, `[x]` lulus, `[!]` gagal.
 > bayar, migrasi `20261116_borderpay_pay_url.sql`. Semua item F tetap BELUM dicentang
 > karena butuh uji live (bayar nyata di sandbox): F2–F6 tidak bisa dibuktikan dari
 > kode saja.
+> Koreksi 16 Nov 2026 (dari Referensi API resmi, dibaca penuh): base URL
+> `https://borderpay.id/api/v1` terkonfirmasi; `bank_code` wajib untuk VA/E-Wallet;
+> `return_url` dikirim; masa berlaku dari `expires_at` respons (tanpa durasi asumsi);
+> E-Wallet ditambahkan sebagai metode ketiga. Item F tetap belum dicentang — uji
+> live masih menunggu (key test + migrasi + env var + endpoint webhook).
 - [ ] F1 Form nama + email tervalidasi
 - [ ] F2 Bayar sukses: order `lunas`, download aktif
 - [ ] F3 Bayar gagal: order `gagal`, download tidak aktif
-- [ ] F4 Kedaluwarsa: order `kedaluwarsa`, bisa checkout ulang tanpa order ganda
-- [ ] F5 Webhook palsu/tanpa signature ditolak
+- [ ] F4 Kedaluwarsa: order `kedaluwarsa`, bisa checkout ulang tanpa order ganda- [ ] F5 Webhook palsu/tanpa signature ditolak
 - [ ] F6 Webhook diulang (idempotent) tidak mengubah hasil
 - [ ] F7 `harga_saat_beli` tersimpan, tidak ikut berubah
 - [ ] F8 Tidak ada order lunas tanpa download aktif, dan sebaliknya

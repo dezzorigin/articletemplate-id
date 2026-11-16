@@ -8,12 +8,19 @@ Sumber: PRD v3.0 (paket delegasi v2). Dokumen ini menerjemahkan PRD jadi urutan 
 - Supabase: proyek lama (`azazbeufwmkaiajosunh`, pause) tidak terjangkau. Dibuat proyek baru milik Westindo `articletemplate-id` (ref `kckivepafrmyihoigcnb`, Singapura) dengan skema + migrasi pengamanan RLS + bucket. Migrasi di `supabase/migrations/`.
 - Update 16 Nov 2026 (keputusan Nabil): backend kanonis = Supabase SELF-HOSTED di Coolify (service `supabase-kfuuqefxogdl5q4bam7t93vu`, project Coolify "ArticleTemplate.id"). Project Supabase Cloud `azazbeufwmkaiajosunh` (Nabil, dipulihkan 16 Nov 2026, ACTIVE_HEALTHY) = CADANGAN. Project Supabase Cloud Westindo (`kckivepafrmyihoigcnb`) = dev/test. Status migrasi pengamanan RLS (`supabase/migrations/20261113_harden_rls.sql`) di database self-hosted: BELUM TERVERIFIKASI — menunggu konfirmasi Westindo.
 - Update 16 Nov 2026 (WES-17): integrasi BorderPay selesai di kode — klien
-  `src/lib/borderpay.ts` (POST /api/v1/payments, QRIS/VA), webhook nyata
+  `src/lib/borderpay.ts` (POST /api/v1/payments, QRIS/VA/E-Wallet), webhook nyata
   (verifikasi token `x-borderpay-token`, fail-closed), halaman status menampilkan tautan
-  bayar. Key test sudah ada; key live + KYC menyusul. Yang masih harus
-  dikonfirmasi dari Referensi API/dashboard BorderPay: host API, skema auth,
-  nilai method, nama field respons (asumsi A1–A8 di
-  `src/lib/borderpay.ts`). Migrasi `20261116_borderpay_pay_url.sql` wajib
+  bayar. Key test sudah ada; key live + KYC menyusul.
+- Koreksi 16 Nov 2026 (dari Referensi API resmi, dibaca penuh):
+  base URL satu-satunya `https://borderpay.id/api/v1` (mode dari prefix key,
+  tanpa host sandbox terpisah); `bank_code` WAJIB untuk VA/E-Wallet (pembeli
+  memilih bank dari GET /payment-methods, fallback daftar umum bila discovery
+  gagal); `return_url` dikirim ke halaman status order; masa berlaku SELALU
+  dari `expires_at` respons (durasi tidak ditulis di referensi — tidak ada
+  asumsi di kode); biaya (`fee_borne_by`) DEPRECATED, diatur di dashboard.
+  Endpoint simulate (`POST /payments/{reference}/simulate`, hanya mode test)
+  untuk uji end-to-end; cancel (`POST /payments/{reference}/cancel`) untuk
+  pembatalan. Migrasi `20261116_borderpay_pay_url.sql` wajib
   diterapkan ke database self-hosted SEBELUM merge/deploy. Uji bayar live
   (F2–F6) belum dilakukan — bagian F CHECKLIST tetap belum dicentang.
 - Situs live https://articletemplate.id 200, `/api/health` OK.
@@ -31,7 +38,7 @@ Sumber: PRD v3.0 (paket delegasi v2). Dokumen ini menerjemahkan PRD jadi urutan 
 ```
 Browser (mobile) -> Astro SSR (Node, Docker, Coolify)
   -> Supabase SELF-HOSTED di Coolify (Postgres + Auth + Storage, RLS)
-  -> BorderPay (QRIS/VA) -> POST /api/webhook-borderpay -> orders.status
+  -> BorderPay (QRIS/VA/E-Wallet) -> POST /api/webhook-borderpay -> orders.status
   -> Email transaksional (provider dipilih tim)
 ```
 Perubahan dari scaffold: adapter `@astrojs/cloudflare` jadi `@astrojs/node` (standalone) + Dockerfile untuk Coolify.
