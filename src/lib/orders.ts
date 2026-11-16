@@ -43,6 +43,18 @@ export async function ensureBuyer(email: string, nama: string | null): Promise<s
  * lalu sama-sama insert — yang kedua menemukan order hasil yang pertama dan
  * memakainya ulang. Berlaku satu instance Coolify (asumsi sama seperti rate
  * limit in-memory di src/lib/security.ts); tanpa migrasi DB.
+ *
+ * Catatan guard race level DB (evaluasi 16 Nov 2026, tindak lanjut audit):
+ * - Unique partial index (user_id) WHERE status='menunggu_bayar' DITOLAK:
+ *   createOrder sengaja membolehkan beberapa order menunggu_bayar berisi
+ *   BERBEDA per user (hanya isi SAMA yang dipakai ulang) — index itu akan
+ *   mematahkan checkout kedua yang sah dengan galat unik.
+ * - Advisory lock Postgres (pg_advisory_xact_lock per user) butuh satu
+ *   transaksi utuh lewat fungsi RPC — PostgREST tidak bisa menahan lock
+ *   antar panggilan REST, dan fungsi itu belum bisa diuji tanpa akses DB,
+ *   jadi TIDAK dibangun di PR ini (evaluasi lengkap di body PR). Risiko
+ *   sisa hanya bila Coolify dijalankan multi-instance; sampai saat itu
+ *   kunci dalam proses di bawah sudah cukup.
  */
 const orderTails = new Map<string, Promise<void>>();
 

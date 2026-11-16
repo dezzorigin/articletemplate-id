@@ -12,7 +12,7 @@ paket delegasi tim, bukan di repo — ringkasan eksekusi di `docs/FRAMEWORK.md`)
 
 ## Struktur
 
-- `src/pages/` — Beranda, `/templates`, `/keranjang`, `/checkout`,
+- `src/pages/` — Beranda, `/templates`, `/harga`, `/keranjang`, `/checkout`,
   `/konsultasi`, `/akun`, `/admin`, `/api/health`,
   `/api/webhook-borderpay` (handler nyata WES-17 — verifikasi token
   `x-borderpay-token`, petakan payment.paid/expired/failed ke status order; lihat "BorderPay" di bawah)
@@ -25,13 +25,20 @@ paket delegasi tim, bukan di repo — ringkasan eksekusi di `docs/FRAMEWORK.md`)
 - `docs/FRAMEWORK.md`, `docs/CHECKLIST.md` — rencana kerja + checklist uji
 - `supabase/schema.sql` — skema + RLS + seed placeholder (jalankan sekali),
   lalu `supabase/migrations/` (wajib: `20261113_harden_rls.sql` +
-  `20261113_products_compliance_columns.sql` — jangan lewati, skema saja
+  `20261113_products_compliance_columns.sql` +
+  `20261116_borderpay_pay_url.sql` + `20261116_site_content.sql` +
+  `20261116_seed_harga.sql` — jangan lewati, skema saja
   masih berisi policy lama)
 
 ## Placeholder yang masih menunggu (bukan bug)
 
-- Harga template: TBD di semua tempat (produk seed `harga = NULL`,
-  `is_visible = false` — tidak tampil/bisa dibeli sampai diisi admin).
+- Harga template: SUDAH final (ditetapkan Nabil 16 Nov 2026, PR #7) —
+  seed di `supabase/migrations/20261116_seed_harga.sql` (Q1 Rp249.000,
+  Q2 Rp199.000, Q3 Rp149.000, Q4 Rp99.000, Sinta Rp79.000, Prosiding
+  Rp59.000, Paket Lengkap Rp549.000; halaman `/harga` membaca dari
+  `products.harga`, bukan angka karangan). Produk tetap
+  `is_visible = false` sampai file template + pratinjau diunggah admin —
+  tidak bisa dibeli sebelum itu.
 - Portofolio Nizam: belum ada datanya — halaman kredibilitas memakai kalimat
   umum tanpa angka.
 - Layanan konsultasi: struktur dibangun, `is_visible = false` — pintu
@@ -57,8 +64,9 @@ dari dashboard Supabase Cloud.
 2. SQL Editor di dashboard Supabase self-hosted → tempel `supabase/schema.sql` → Run,
    lalu tempel `supabase/migrations/20261113_harden_rls.sql`,
    `supabase/migrations/20261113_products_compliance_columns.sql`,
-   `supabase/migrations/20261116_borderpay_pay_url.sql`, dan
-   `supabase/migrations/20261116_site_content.sql` → Run.
+   `supabase/migrations/20261116_borderpay_pay_url.sql`,
+   `supabase/migrations/20261116_site_content.sql`, dan
+   `supabase/migrations/20261116_seed_harga.sql` → Run.
    Jangan lewati migrasi: skema saja masih berisi policy lama.
 3. Storage → buat bucket `templates` (private) dan `previews` (public).
 4. Authentication → aktifkan Email + Google login.
@@ -90,8 +98,10 @@ mengirim webhook ke `https://articletemplate.id/api/webhook-borderpay` →
 order jadi `lunas`/`kedaluwarsa`/`gagal` + email lunas terkirim.
 
 Aktivasi (yang harus dilakukan pemilik akun BorderPay):
-1. Terapkan migrasi `supabase/migrations/20261116_borderpay_pay_url.sql` ke
-   database self-hosted (kolom `payments.pay_url`, `pay_expires_at`).
+1. Migrasi `supabase/migrations/20261116_borderpay_pay_url.sql` SUDAH
+   diterapkan ke database self-hosted dan terverifikasi 16 Nov 2026
+   (kolom `payments.pay_url`, `pay_expires_at`). Bila setup DB baru dari
+   nol, terapkan file ini sebelum transaksi BorderPay.
 2. Coolify → Environment Variables aplikasi: isi `BORDERPAY_API_KEY` (key test
    `bp_test_...` dulu; key live `bp_live_...` setelah KYC),
    `BORDERPAY_BASE_URL` (opsional — default `https://borderpay.id/api/v1`),

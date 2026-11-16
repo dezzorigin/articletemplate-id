@@ -2,11 +2,11 @@
 
 Sumber: PRD v3.0 (paket delegasi v2). Dokumen ini menerjemahkan PRD jadi urutan kerja. Kalau berubah, ubah ini dulu, baru eksekusi.
 
-## 1. Kondisi nyata (diverifikasi 13 Nov 2026)
-- Repo `dezzorigin/articletemplate-id`, 4 commit. Astro 5 + React 19 + adapter Cloudflare. Build lulus (di path tanpa `#`).
-- Semua halaman placeholder. Webhook BorderPay 501. Tidak ada auth, keranjang, checkout, download, admin berfungsi.
-- Supabase: proyek lama (`azazbeufwmkaiajosunh`, pause) tidak terjangkau. Dibuat proyek baru milik Westindo `articletemplate-id` (ref `kckivepafrmyihoigcnb`, Singapura) dengan skema + migrasi pengamanan RLS + bucket. Migrasi di `supabase/migrations/`.
-- Update 16 Nov 2026 (keputusan Nabil): backend kanonis = Supabase SELF-HOSTED di Coolify (service `supabase-kfuuqefxogdl5q4bam7t93vu`, project Coolify "ArticleTemplate.id"). Project Supabase Cloud `azazbeufwmkaiajosunh` (Nabil, dipulihkan 16 Nov 2026, ACTIVE_HEALTHY) = CADANGAN. Project Supabase Cloud Westindo (`kckivepafrmyihoigcnb`) = dev/test. Status migrasi pengamanan RLS (`supabase/migrations/20261113_harden_rls.sql`) di database self-hosted: BELUM TERVERIFIKASI — menunggu konfirmasi Westindo.
+## 1. Kondisi nyata (diverifikasi 16 Nov 2026, main f32af646 — PR #7)
+- Repo `dezzorigin/articletemplate-id`. Astro 5 + adapter Node (standalone, Docker/Coolify). React SUDAH dihapus 16 Nov 2026 (fix audit batch 1); tidak ada adapter Cloudflare. Build lulus (di path tanpa `#`).
+- Fitur selesai di kode: katalog + filter bidang/jurnal, detail produk, keranjang + beli sekarang, auth email + Google (gated), checkout mock (dev) + BorderPay nyata (WES-17), webhook BorderPay, download bertanda tangan, dashboard akun + edit profil, admin (produk, order, konten, login terpisah), halaman harga, sitemap. Uji live (F/G/M end-to-end) masih terbuka.
+- Supabase kanonis = SELF-HOSTED di Coolify (service `supabase-kfuuqefxogdl5q4bam7t93vu`, project Coolify "ArticleTemplate.id"). Project Supabase Cloud `azazbeufwmkaiajosunh` (Nabil, dipulihkan 16 Nov 2026, ACTIVE_HEALTHY) = CADANGAN. Project Supabase Cloud Westindo (`kckivepafrmyihoigcnb`) = dev/test.
+- Migrasi ke database self-hosted — SUDAH diterapkan & terverifikasi 16 Nov 2026: `20261116_borderpay_pay_url.sql` (kolom `payments.pay_url`, `pay_expires_at`), `20261116_site_content.sql` (tabel `site_content`), dan `20261116_seed_harga.sql` (harga final 7 produk, PR #7). Status migrasi pengamanan RLS (`supabase/migrations/20261113_harden_rls.sql`) di database self-hosted: BELUM TERVERIFIKASI — menunggu konfirmasi Westindo.
 - Update 16 Nov 2026 (WES-17): integrasi BorderPay selesai di kode — klien
   `src/lib/borderpay.ts` (POST /api/v1/payments, QRIS/VA/E-Wallet), webhook nyata
   (verifikasi token `x-borderpay-token`, fail-closed), halaman status menampilkan tautan
@@ -20,15 +20,17 @@ Sumber: PRD v3.0 (paket delegasi v2). Dokumen ini menerjemahkan PRD jadi urutan 
   asumsi di kode); biaya (`fee_borne_by`) DEPRECATED, diatur di dashboard.
   Endpoint simulate (`POST /payments/{reference}/simulate`, hanya mode test)
   untuk uji end-to-end; cancel (`POST /payments/{reference}/cancel`) untuk
-  pembatalan. Migrasi `20261116_borderpay_pay_url.sql` wajib
-  diterapkan ke database self-hosted SEBELUM merge/deploy. Uji bayar live
-  (F2–F6) belum dilakukan — bagian F CHECKLIST tetap belum dicentang.
+  pembatalan. Uji bayar live (F2–F6) belum dilakukan — bagian F CHECKLIST tetap belum dicentang.
 - Situs live https://articletemplate.id 200, `/api/health` OK.
 - Update 16 Nov 2026 (lanjutan audit): Beli sekarang (detail → checkout langsung), filter katalog
   bidang/jurnal, edit profil (`/akun/profil`), login admin terpisah (`/admin/masuk` + gerbang role),
   kelola konten (`/admin/konten`, tabel `site_content`, migrasi `20261116_site_content.sql`),
-  test runner `node:test` (`npm test`). Migrasi `site_content` WAJIB di-apply ke database
-  self-hosted sebelum deploy — sebelum itu halaman memakai teks bawaan dan simpan konten gagal.
+  test runner `node:test` (`npm test`).
+- Update 16 Nov 2026 (PR #7): halaman harga (`/harga`, baca `products.harga` — bukan angka
+  karangan), seed harga final (`20261116_seed_harga.sql`: Q1 Rp249.000, Q2 Rp199.000,
+  Q3 Rp149.000, Q4 Rp99.000, Sinta Rp79.000, Prosiding Rp59.000, Paket Lengkap Rp549.000),
+  pengaman produk tanpa file (order ditolak utuh bila ada item tanpa `file_path` —
+  `src/lib/orders.ts`).
 
 ## 2. Prinsip
 1. Mobile-first: rancang di 360px, baru naik ke tablet/desktop.
@@ -71,7 +73,7 @@ Perubahan dari scaffold: adapter `@astrojs/cloudflare` jadi `@astrojs/node` (sta
 | 1 | Coolify-ready: adapter Node, Dockerfile, env | container jalan lokal, `/api/health` 200 |
 | 2 | Katalog + detail produk dari Supabase | A, B, C lulus |
 | 3 | Auth + keranjang | D, E lulus |
-| 4 | Checkout + pembayaran (mock dulu, BorderPay setelah akun ada) | F lulus (kode BorderPay selesai 16 Nov 2026 — WES-17; F2–F6 butuh uji live) |
+| 4 | Checkout + pembayaran (mock dev + BorderPay nyata di kode sejak 16 Nov 2026 — WES-17) | F lulus (kode selesai; F1–F9 butuh uji live) |
 | 5 | Dashboard + download aman | G lulus |
 | 6 | Admin | H lulus |
 | 7 | Tentang, Bantuan, Konsultasi tertutup | I, J lulus |
@@ -93,4 +95,4 @@ Perubahan dari scaffold: adapter `@astrojs/cloudflare` jadi `@astrojs/node` (sta
    + `scripts/test-borderpay.mjs`.
 
 ## 8. Blocker di luar kode (butuh keputusan tim)
-Harga final + fee BorderPay, akun merchant BorderPay (key test sudah ada; key live + KYC sebelum uang asli), provider email, kebijakan refund/lisensi, format file template, review draf Q1 oleh Nizam, akses ke project Coolify "ArticleTemplate.id" (service Supabase + aplikasi) untuk URL + kunci backend.
+Harga final SUDAH di-seed 16 Nov 2026 (PR #7 — bukan blocker lagi). Fee BorderPay, akun merchant BorderPay (key test sudah ada; key live + KYC sebelum uang asli), provider email (Resend terpasang; verifikasi domain pengirim masih menunggu sebelum tayang), kebijakan refund/lisensi, format file template, review draf Q1 oleh Nizam, akses ke project Coolify "ArticleTemplate.id" (service Supabase + aplikasi) untuk URL + kunci backend.
