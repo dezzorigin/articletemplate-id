@@ -4,7 +4,38 @@ import { isPurchasable, type Price } from './money';
 export const JENJANG = ['Q1', 'Q2', 'Q3', 'Q4', 'Sinta', 'Prosiding'] as const;
 export type Jenjang = (typeof JENJANG)[number];
 
+/** Urutan jenjang di katalog: Q1 -> Q2 -> Q3 -> Q4 -> Sinta -> Prosiding -> Paket Lengkap. */
+export const JENJANG_ORDER = [...JENJANG, 'Paket'] as const;
+
+/** Peringkat urutan jenjang (0 = pertama). Jenjang tak dikenal -> paling akhir. */
+export function jenjangRank(jenjang: string | null | undefined): number {
+  const i = (JENJANG_ORDER as readonly string[]).indexOf(jenjang ?? '');
+  return i === -1 ? JENJANG_ORDER.length : i;
+}
+
+/** Urutkan daftar produk (atau apa pun yang punya jenjang) mengikuti JENJANG_ORDER. */
+export function sortByJenjang<T extends { jenjang: string }>(items: T[]): T[] {
+  return [...items].sort((a, b) => jenjangRank(a.jenjang) - jenjangRank(b.jenjang));
+}
+
+/** Label ramah untuk kolom products.format ('docx' / 'zip' / ...). */
+export function formatLabel(format: string | null | undefined): string | null {
+  switch ((format ?? '').trim().toLowerCase()) {
+    case 'docx':
+      return 'Word (.docx)';
+    case 'zip':
+      return 'ZIP (.zip)';
+    case 'latex':
+      return 'LaTeX (.tex)';
+    case 'docx+latex':
+      return 'Word + LaTeX (.docx, .tex)';
+    default:
+      return format?.trim() ? format.trim() : null;
+  }
+}
+
 export const URUTAN = {
+  jenjang: 'Jenjang (Q1 ke Paket Lengkap)',
   terbaru: 'Terbaru',
   'harga-naik': 'Harga rendah ke tinggi',
   'harga-turun': 'Harga tinggi ke rendah',
@@ -19,6 +50,8 @@ export interface Product {
   bidang: string | null;
   deskripsi: string | null;
   format: string | null;
+  /** Daftar isi produk ("yang didapat") — dari kolom products.isi_template. */
+  isi_template: string[];
   harga: Price;
   preview_path: string | null;
   jurnal: string | null;
@@ -55,12 +88,12 @@ export function parseCatalogQuery(params: URLSearchParams): CatalogQuery {
     bidang: cleanFilterText(params.get('bidang')),
     jurnal: cleanFilterText(params.get('jurnal')),
     q,
-    urut: u in URUTAN ? (u as Urutan) : 'terbaru',
+    urut: u in URUTAN ? (u as Urutan) : 'jenjang',
   };
 }
 
 const COLUMNS =
-  'id, slug, judul, jenjang, bidang, deskripsi, format, harga, preview_path, jurnal, sumber_guideline_url, checklist_kepatuhan';
+  'id, slug, judul, jenjang, bidang, deskripsi, format, isi_template, harga, preview_path, jurnal, sumber_guideline_url, checklist_kepatuhan';
 
 /** Hanya produk is_visible (dijaga juga oleh RLS). Harga NULL tetap tampil tapi tidak bisa dibeli. */
 export async function listProducts(
@@ -77,7 +110,12 @@ export async function listProducts(
 
   const { data, error } = await req;
   if (error) return { products: [], error: 'Katalog sedang tidak bisa dimuat. Coba lagi sebentar.' };
-  return { products: (data ?? []) as Product[], error: null };
+  const products = (data ?? []) as Product[];
+  // Urutan default = urutan jenjang (Q1 -> ... -> Paket Lengkap), bukan
+  // created_at: created_at tidak membedakan produk yang dibuat bersamaan,
+  // jadi urutannya tampak acak. Diurutkan di sini karena PostgREST tidak
+  // punya urutan kustom per jenjang.
+  return { products: query.urut === 'jenjang' ? sortByJenjang(products) : products, error: null };
 }
 
 const SLUG_RE = /^[a-z0-9][a-z0-9-]{0,80}$/;
@@ -103,7 +141,9 @@ export async function relatedProducts(p: Product): Promise<Product[]> {
     .neq('id', p.id)
     .limit(3);
   return ((data ?? []) as Product[]).sort(
-    (a, b) => Number(b.bidang === p.bidang && !!p.bidang) - Number(a.bidang === p.bidang && !!p.bidang),
+    (a, b) =>
+      Number(b.bidang === p.bidang && !!p.bidang) - Number(a.bidang === p.bidang && !!p.bidang) ||
+      jenjangRank(a.jenjang) - jenjangRank(b.jenjang),
   );
 }
 

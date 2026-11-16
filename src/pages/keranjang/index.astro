@@ -27,11 +27,29 @@ const payable = view.lines.filter((l) => l.buyable);
                 <span class="badge">{l.product.jenjang}</span>
                 <a class="title" href={`/templates/${l.product.slug}`}>{l.product.judul}</a>
                 {l.buyable ? (
-                  <span class="price">{formatRupiah(l.product.harga)}</span>
+                  <span class="price">
+                    {formatRupiah(l.product.harga)} / template
+                    {l.qty > 1 ? ` — subtotal ${formatRupiah(l.subtotal)}` : ''}
+                  </span>
                 ) : (
                   <span class="warn">Harga belum final. Produk ini tidak ikut ditagih.</span>
                 )}
               </div>
+              {l.buyable ? (
+                <div class="qty" role="group" aria-label={`Jumlah ${l.product.judul}`}>
+                  <form method="post" action="/keranjang/ubah-jumlah">
+                    <input type="hidden" name="slug" value={l.product.slug} />
+                    <input type="hidden" name="aksi" value="kurang" />
+                    <button type="submit" class="ghost qty-btn" aria-label={`Kurangi jumlah ${l.product.judul}`}>−</button>
+                  </form>
+                  <span class="qty-num" aria-live="polite">{l.qty}</span>
+                  <form method="post" action="/keranjang/ubah-jumlah">
+                    <input type="hidden" name="slug" value={l.product.slug} />
+                    <input type="hidden" name="aksi" value="tambah" />
+                    <button type="submit" class="ghost qty-btn" aria-label={`Tambah jumlah ${l.product.judul}`}>+</button>
+                  </form>
+                </div>
+              ) : null}
               <form method="post" action="/keranjang/hapus">
                 <input type="hidden" name="slug" value={l.product.slug} />
                 <button type="submit" class="ghost" aria-label={`Hapus ${l.product.judul} dari keranjang`}>Hapus</button>
@@ -46,7 +64,7 @@ const payable = view.lines.filter((l) => l.buyable);
 
         <div class="summary">
           <div>
-            <span class="muted">Total ({payable.length} template)</span>
+            <span class="muted">Total ({view.totalQty} template)</span>
             <strong class="total">{formatRupiah(view.total)}</strong>
           </div>
           {payable.length > 0 ? (
@@ -90,6 +108,23 @@ const payable = view.lines.filter((l) => l.buyable);
   .warn {
     color: var(--warn-ink);
     font-size: 0.9rem;
+  }
+  .qty {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex: none;
+  }
+  .qty-btn {
+    min-width: 44px;
+    padding: 0.6rem 0;
+    font-size: 1.1rem;
+    line-height: 1;
+  }
+  .qty-num {
+    min-width: 1.5rem;
+    text-align: center;
+    font-weight: 700;
   }
   .muted {
     color: var(--muted);

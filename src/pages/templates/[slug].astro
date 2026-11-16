@@ -1,6 +1,6 @@
 ---
 import Base from '../../layouts/Base.astro';
-import { getProductBySlug, relatedProducts, previewUrl, isPurchasable } from '../../lib/catalog';
+import { getProductBySlug, relatedProducts, previewUrl, isPurchasable, formatLabel } from '../../lib/catalog';
 import { formatRupiah } from '../../lib/money';
 import { readCart } from '../../lib/cart';
 
@@ -33,10 +33,21 @@ const refused = Astro.url.searchParams.get('e') === 'belum-dijual';
       {product.deskripsi ? <p class="lead">{product.deskripsi}</p> : null}
 
       <dl class="facts">
-        <div><dt>Format file</dt><dd>{product.format ?? 'Segera diumumkan'}</dd></div>
+        <div><dt>Format file</dt><dd>{formatLabel(product.format) ?? 'Segera diumumkan'}</dd></div>
         {product.bidang ? <div><dt>Bidang</dt><dd>{product.bidang}</dd></div> : null}
         <div><dt>Harga</dt><dd class="price">{formatRupiah(product.harga)}</dd></div>
       </dl>
+
+      {
+        product.isi_template.length > 0 ? (
+          <section>
+            <h2>Yang didapat</h2>
+            <ul class="check">
+              {product.isi_template.map((item) => <li>{item}</li>)}
+            </ul>
+          </section>
+        ) : null
+      }
 
       {
         product.checklist_kepatuhan.length > 0 ? (
@@ -175,6 +186,11 @@ const refused = Astro.url.searchParams.get('e') === 'belum-dijual';
     gap: 0.25rem;
     text-decoration: none;
     color: var(--ink);
+  }
+  /* Badge di dalam kartu grid membentang selebar kartu (grid item stretch);
+     paksa selebar isi saja supaya tidak tampak seperti bar penuh. */
+  .rel .badge {
+    justify-self: start;
   }
   .buybar {
     position: sticky;

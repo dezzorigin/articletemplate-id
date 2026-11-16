@@ -60,6 +60,7 @@ export const RULES: Rule[] = [
   { name: 'checkout', match: (m, p) => m === 'POST' && p === '/checkout/buat', max: 15, windowMs: 10 * MIN },
   { name: 'keranjang', match: (m, p) => m === 'POST' && p.startsWith('/keranjang/'), max: 60, windowMs: MIN },
   { name: 'kirim-ulang', match: (m, p) => m === 'POST' && p === '/akun/kirim-ulang', max: 3, windowMs: 10 * MIN },
+  { name: 'kirim-ulang-konfirmasi', match: (m, p) => m === 'POST' && p === '/auth/kirim-ulang-konfirmasi', max: 5, windowMs: 10 * MIN },
   { name: 'unduh', match: (_m, p) => p.startsWith('/unduh/'), max: 30, windowMs: MIN },
   { name: 'webhook', match: (m, p) => m === 'POST' && p === '/api/webhook-borderpay', max: 120, windowMs: MIN },
 ];

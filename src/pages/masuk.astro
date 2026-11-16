@@ -7,18 +7,40 @@ if (Astro.locals.user) return Astro.redirect('/akun');
 
 const next = safeNext(Astro.url.searchParams.get('next'));
 const code = Astro.url.searchParams.get('e');
+const ok = Astro.url.searchParams.get('ok');
+// Email dipertahankan saat gagal (dikirim balik sebagai ?email= oleh POST /auth/masuk).
+const emailVal = (Astro.url.searchParams.get('email') ?? '').slice(0, 254);
 const messages: Record<string, string> = {
   salah: 'Email atau kata sandi salah.',
   konfirmasi: 'Email kamu belum dikonfirmasi. Cek kotak masuk untuk tautan konfirmasi.',
   tautan: 'Tautan tidak valid atau sudah kedaluwarsa. Minta tautan baru.',
   google: 'Masuk dengan Google belum tersedia.',
+  'kirim-gagal': 'Tidak bisa mengirim ulang tautan konfirmasi. Coba lagi sebentar.',
+};
+const okMessages: Record<string, string> = {
+  'kirim-ulang':
+    'Tautan konfirmasi baru sudah dikirim. Cek kotak masuk (dan folder spam) email kamu.',
 };
 const error = code ? messages[code] : undefined;
+const okMessage = ok ? okMessages[ok] : undefined;
 ---
 
 <Base title="Masuk">
   <AuthSplit title="Masuk" lead="Masuk untuk melihat order dan mengunduh template yang sudah kamu beli.">
     {error ? <p class="notice" role="alert">{error}</p> : null}
+    {okMessage ? <p class="notice ok" role="status">{okMessage}</p> : null}
+
+    {
+      code === 'konfirmasi' ? (
+        <form class="form resend" method="post" action="/auth/kirim-ulang-konfirmasi">
+          <label class="field">
+            <span>Email</span>
+            <input type="email" name="email" required autocomplete="email" inputmode="email" autocapitalize="none" autocorrect="off" maxlength="254" value={emailVal} />
+          </label>
+          <button type="submit">Kirim ulang tautan konfirmasi</button>
+        </form>
+      ) : null
+    }
 
     {
       googleEnabled() ? (
@@ -35,7 +57,7 @@ const error = code ? messages[code] : undefined;
       <input type="hidden" name="next" value={next} />
       <label class="field">
         <span>Email</span>
-        <input type="email" name="email" required autocomplete="email" inputmode="email" autocapitalize="none" autocorrect="off" maxlength="254" />
+        <input type="email" name="email" required autocomplete="email" inputmode="email" autocapitalize="none" autocorrect="off" maxlength="254" value={emailVal} />
       </label>
       <label class="field">
         <span>Kata sandi</span>

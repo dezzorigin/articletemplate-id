@@ -92,6 +92,15 @@ async function createOrderInner(userId: string, slugs: string[]): Promise<OrderR
   const buyable = (products ?? []).filter((p) => isPurchasable(p.harga as number | null));
   if (buyable.length === 0) return { ok: false, reason: 'tidak-ada-harga' };
 
+  // Jumlah unit = kemunculan tiap slug di keranjang (qty > 1 diizinkan untuk
+  // produk digital; lihat src/lib/cart.ts). Satu baris order_items per unit,
+  // supaya total dan harga snapshot per unit tetap konsisten tanpa kolom qty.
+  const qtyBySlug = new Map<string, number>();
+  for (const s of slugs) qtyBySlug.set(s, (qtyBySlug.get(s) ?? 0) + 1);
+  const units = buyable.flatMap((p) =>
+    Array(qtyBySlug.get(p.slug as string) ?? 1).fill(p),
+  );
+
   // Jaring pengaman: produk tanpa file template TIDAK BOLEH dijual, lewat jalur
   // apa pun. Pembeli yang membayar produk tanpa file tidak akan pernah bisa
   // mengunduh (authorizeDownload mengembalikan 'file-belum-ada'), jadi order
@@ -105,7 +114,7 @@ async function createOrderInner(userId: string, slugs: string[]): Promise<OrderR
     return { ok: false, reason: 'tanpa-file' };
   }
 
-  const total = cartTotal(buyable.map((p) => ({ harga: p.harga as number })));
+  const total = cartTotal(units.map((p) => ({ harga: p.harga as number })));
 
   // Re-checkout: pakai ulang order menunggu_bayar yang isinya sama (tidak membuat order ganda).
   const reused = await findReusableOrder(userId, buyable.map((p) => p.id as string), total);
@@ -122,7 +131,7 @@ async function createOrderInner(userId: string, slugs: string[]): Promise<OrderR
   }
 
   const { error: itemsErr } = await admin.from('order_items').insert(
-    buyable.map((p) => ({
+    units.map((p) => ({
       order_id: order.id,
       product_id: p.id,
       harga_saat_beli: Math.round(p.harga as number),

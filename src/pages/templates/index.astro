@@ -7,6 +7,7 @@ import {
   listProducts,
   listCatalogFacets,
   isPurchasable,
+  formatLabel,
 } from '../../lib/catalog';
 import { formatRupiah } from '../../lib/money';
 
@@ -33,7 +34,7 @@ const activeCount =
         autocomplete="off"
       />
     </label>
-    <details class="more" open={Boolean(query.jenjang || query.bidang || query.jurnal) || query.urut !== 'terbaru'}>
+    <details class="more" open={Boolean(query.jenjang || query.bidang || query.jurnal) || query.urut !== 'jenjang'}>
       <summary>
         Filter dan urutan{activeCount > 0 ? ` (${activeCount})` : ''}
       </summary>
@@ -90,11 +91,11 @@ const activeCount =
           </select>
         </label>
       </div>
+      <div class="actions">
+        <button type="submit">Terapkan</button>
+        {filtered || query.urut !== 'jenjang' ? <a class="reset" href="/templates">Atur ulang</a> : null}
+      </div>
     </details>
-    <div class="actions">
-      <button type="submit">Terapkan</button>
-      {filtered || query.urut !== 'terbaru' ? <a class="reset" href="/templates">Atur ulang</a> : null}
-    </div>
   </form>
 
   {error ? <p class="notice" role="alert">{error}</p> : null}
@@ -122,8 +123,16 @@ const activeCount =
             <article class="card product">
               <span class="badge">{p.jenjang}</span>
               <h2><a href={`/templates/${p.slug}`}>{p.judul}</a></h2>
-              {p.format ? <p class="meta">Format: {p.format}</p> : null}
+              {formatLabel(p.format) ? <p class="meta">Format: {formatLabel(p.format)}</p> : null}
               {p.deskripsi ? <p class="desc">{p.deskripsi}</p> : null}
+              {p.isi_template.length > 0 ? (
+                <ul class="isi">
+                  {p.isi_template.slice(0, 4).map((item) => <li>{item}</li>)}
+                  {p.isi_template.length > 4 ? (
+                    <li class="more-isi">+{p.isi_template.length - 4} isi lainnya — lihat detail</li>
+                  ) : null}
+                </ul>
+              ) : null}
               <p class="price">{formatRupiah(p.harga)}</p>
               <div class="cta">
                 <a class="btn ghost" href={`/templates/${p.slug}`}>Lihat detail</a>
@@ -181,6 +190,9 @@ const activeCount =
     gap: 0.75rem;
     padding: 0 0.9rem 0.9rem;
   }
+  .more .actions {
+    padding: 0 0.9rem 0.9rem;
+  }
   .actions {
     display: flex;
     align-items: center;
@@ -216,6 +228,21 @@ const activeCount =
     color: var(--muted);
     font-size: 0.92rem;
     margin: 0 0 0.5rem;
+  }
+  .isi {
+    list-style: disc;
+    padding-left: 1.1rem;
+    color: var(--muted);
+    font-size: 0.9rem;
+    margin: 0 0 0.5rem;
+  }
+  .isi li {
+    margin-bottom: 0.15rem;
+  }
+  .more-isi {
+    list-style: none;
+    margin-left: -1.1rem;
+    font-style: italic;
   }
   .price {
     font-weight: 700;

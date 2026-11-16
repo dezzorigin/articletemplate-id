@@ -7,10 +7,23 @@ if (Astro.locals.user) return Astro.redirect('/akun');
 
 const code = Astro.url.searchParams.get('e');
 const ok = Astro.url.searchParams.get('ok') === 'cek-email';
+// Isian dipertahankan saat gagal (dikirim balik sebagai ?nama= & ?email=
+// oleh POST /auth/daftar; sandi tidak pernah dibawa — selalu kosong).
+const namaVal = (Astro.url.searchParams.get('nama') ?? '').slice(0, 80);
+const emailVal = (Astro.url.searchParams.get('email') ?? '').slice(0, 254);
 const messages: Record<string, string> = {
   email: 'Format email tidak valid.',
   sandi: 'Kata sandi harus 8 sampai 72 karakter.',
   gagal: 'Pendaftaran belum berhasil. Coba lagi sebentar.',
+  domain:
+    'Domain email ini tidak bisa dipakai untuk pendaftaran (misalnya domain contoh/tes). Gunakan alamat email aktif yang bisa menerima email.',
+  nonaktif:
+    'Pendaftaran akun baru sedang nonaktif di server. Coba lagi nanti atau hubungi admin.',
+  email:
+    'Email konfirmasi tidak bisa dikirim dari server. Coba lagi sebentar lagi, atau hubungi admin bila terus gagal.',
+  batas: 'Terlalu banyak percobaan pendaftaran. Tunggu sebentar lalu coba lagi.',
+  tautan:
+    'Tautan konfirmasi tidak bisa dibuat (alamat pengalihan belum diizinkan server). Hubungi admin.',
 };
 const error = code ? messages[code] : undefined;
 ---
@@ -38,11 +51,11 @@ const error = code ? messages[code] : undefined;
           <form class="form" method="post" action="/auth/daftar">
             <label class="field">
               <span>Nama</span>
-              <input type="text" name="nama" autocomplete="name" maxlength="80" />
+              <input type="text" name="nama" autocomplete="name" maxlength="80" value={namaVal} />
             </label>
             <label class="field">
               <span>Email</span>
-              <input type="email" name="email" required autocomplete="email" inputmode="email" autocapitalize="none" autocorrect="off" maxlength="254" />
+              <input type="email" name="email" required autocomplete="email" inputmode="email" autocapitalize="none" autocorrect="off" maxlength="254" value={emailVal} />
             </label>
             <label class="field">
               <span>Kata sandi</span>

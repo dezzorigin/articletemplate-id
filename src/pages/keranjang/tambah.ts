@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { readCart, writeCart, isValidSlug } from '../../lib/cart';
+import { readCartItems, writeCartItems, isValidSlug } from '../../lib/cart';
 import { getProductBySlug } from '../../lib/catalog';
 import { getSupabaseAdmin } from '../../lib/supabase';
 import { isPurchasable } from '../../lib/money';
@@ -29,7 +29,8 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
     return redirect(`/templates/${slug}?e=belum-dijual`, 303);
   }
 
-  const cart = readCart(cookies);
-  if (!cart.includes(slug)) writeCart(cookies, [...cart, slug]);
+  // Sudah di keranjang: biarkan jumlahnya (diatur dari halaman keranjang).
+  const items = readCartItems(cookies);
+  if (!items.some((i) => i.slug === slug)) writeCartItems(cookies, [...items, { slug, qty: 1 }]);
   return redirect('/keranjang', 303);
 };
