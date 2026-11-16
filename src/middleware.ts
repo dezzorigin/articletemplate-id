@@ -58,5 +58,13 @@ export const onRequest = defineMiddleware(async (context, next) => {
     );
   }
   const res = await inner(context, next);
+  // inner() selalu mengembalikan Response di semua jalur kode; guard ini hanya
+  // memuaskan type-checker (void | Response) bila Astro mengubah kontraknya.
+  if (!res) {
+    return applySecurityHeaders(
+      new Response('Terjadi kesalahan.', { status: 500, headers: { 'Content-Type': 'text/plain; charset=utf-8' } }),
+      import.meta.env.PROD,
+    );
+  }
   return applySecurityHeaders(res, import.meta.env.PROD);
 });

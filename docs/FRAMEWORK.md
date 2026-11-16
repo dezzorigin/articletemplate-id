@@ -63,7 +63,10 @@ Perubahan dari scaffold: adapter `@astrojs/cloudflare` jadi `@astrojs/node` (sta
 4. Sentralkan format harga (Rp) dan perhitungan total di satu modul.
 5. Validasi env saat start (gagal jelas, bukan placeholder diam-diam seperti `supabase.ts` sekarang).
 6. Header keamanan (CSP, X-Frame-Options, Referrer-Policy) dan rate limit endpoint publik.
-7. Keepalive: workflow GitHub Actions menjaga project Supabase Cloud CADANGAN (`azazbeufwmkaiajosunh`) agar tidak pause; backend kanonis self-hosted tidak butuh keepalive. Plus health check Supabase terpisah.
+7. Keepalive: DIHAPUS 16 Nov 2026 (keputusan Nabil — workflow `.github/workflows/keepalive.yml`
+   dihapus dari repo). Project Supabase Cloud CADANGAN (`azazbeufwmkaiajosunh`) tidak lagi
+   dijaga otomatis; bila pause, pulihkan manual lewat dashboard Supabase. Backend kanonis
+   self-hosted tidak pernah pause, jadi tidak butuh keepalive. Plus health check Supabase terpisah.
 8. Tes otomatis untuk logika kritis (total, status order, otorisasi download).
 
 ## 8. Blocker di luar kode (butuh keputusan tim)

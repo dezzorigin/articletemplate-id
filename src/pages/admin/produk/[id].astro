@@ -32,7 +32,7 @@ let v: Record<string, any> = product
 if (Astro.request.method === 'POST') {
   const form = await Astro.request.formData();
   const parsed = parseProductForm(form);
-  const fileErrs = [checkProductFile('templates', form.get('file')), checkProductFile('previews', form.get('preview'))].filter((e): e is string => !!e);
+  const fileErrs = (await Promise.all([checkProductFile('templates', form.get('file')), checkProductFile('previews', form.get('preview'))])).filter((e): e is string => !!e);
   if (!parsed.ok || fileErrs.length) {
     errors = [...(parsed.ok ? [] : parsed.errors), ...fileErrs];
   } else {

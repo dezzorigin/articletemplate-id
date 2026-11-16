@@ -1,5 +1,9 @@
 ---
 import Base from '../layouts/Base.astro';
+
+// Status 500 eksplisit — seperti 404.astro. Tanpa ini, halaman error bisa
+// terkirim sebagai HTTP 200 (menyesatkan monitoring dan SEO).
+Astro.response.status = 500;
 ---
 
 <Base title="Terjadi kesalahan">

@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getSupabaseAdmin } from './supabase';
+import { expireIfStale } from './payments';
 
 // Unduhan diotorisasi di server SETIAP permintaan: login + order milik user + status lunas + produk ada di order.
 // File penuh ada di bucket private 'templates'; yang keluar hanya signed URL berumur pendek.
@@ -31,6 +32,12 @@ export async function listMyOrders(supabase: SupabaseClient): Promise<MyOrder[]>
     .order('created_at', { ascending: false })
     .limit(50);
   const orders = data ?? [];
+  // Kedaluwarsakan order yang lewat masa berlaku saat daftar dimuat — konsisten
+  // dengan halaman status order (sebelumnya hanya halaman itu yang memanggil
+  // expireIfStale, sehingga dashboard bisa menampilkan `menunggu_bayar` basi).
+  for (const o of orders as any[]) {
+    if (o.status === 'menunggu_bayar') o.status = await expireIfStale(o.id, o.created_at, o.status);
+  }
   const productIds = [...new Set(orders.flatMap((o: any) => (o.order_items ?? []).map((i: any) => i.product_id)))];
   const info = new Map<string, { judul: string; file_path: string | null }>();
   if (productIds.length) {
