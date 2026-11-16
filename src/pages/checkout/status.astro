@@ -76,6 +76,19 @@ const icons: Record<string, string> = {
 
 <Base title="Status pesanan">
   <h1>Status pesanan</h1>
+  <p class="order-no">
+    Nomor pesanan <strong>#{order.id.slice(0, 8).toUpperCase()}</strong>
+  </p>
+  {
+    !Astro.locals.user ? (
+      <p class="notice">
+        Pesanan ini terhubung ke akun yang dibuat otomatis dari email saat checkout — akun itu belum punya kata
+        sandi. Untuk masuk dan mengunduh dari dashboard, buka{' '}
+        <a href="/lupa-password">Lupa kata sandi</a>, masukkan email yang sama, lalu ikuti tautan yang kami
+        kirim untuk mengatur kata sandi.
+      </p>
+    ) : null
+  }
 
   <section class={`status-card ${statusClass[order.status]}`} aria-label={`Status: ${label[order.status]}`}>
     <span class="status-ico" aria-hidden="true">
@@ -227,6 +240,7 @@ const icons: Record<string, string> = {
 </Base>
 
 <style>
+  .order-no { color: var(--muted); margin-top: -0.5rem; }
   .sim {
     display: grid;
     gap: 0.75rem;

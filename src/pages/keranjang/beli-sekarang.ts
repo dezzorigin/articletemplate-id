@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { writeCart, isValidSlug } from '../../lib/cart';
+import { writeCartItems, isValidSlug } from '../../lib/cart';
 import { getProductBySlug } from '../../lib/catalog';
 import { getSupabaseAdmin } from '../../lib/supabase';
 import { isPurchasable } from '../../lib/money';
@@ -31,6 +31,6 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
     return redirect(`/templates/${slug}?e=belum-dijual`, 303);
   }
 
-  writeCart(cookies, [slug]);
+  writeCartItems(cookies, [{ slug, qty: 1 }]);
   return redirect('/checkout', 303);
 };

@@ -35,6 +35,12 @@ as $$
 $$;
 
 -- Otomatis buat baris profiles saat user daftar (email/Google).
+-- PENTING: fungsi ini TIDAK BOLEH menggagalkan signup. Insert profil adalah
+-- best-effort: bila gagal (mis. bentrok tak terduga), catat WARNING dan
+-- biarkan user auth tetap terbuat — aplikasi memastikan baris profil lewat
+-- service role setelah signup (src/pages/auth/daftar.ts). Tanpa pengaman
+-- ini, SATU error di trigger me-rollback INSERT auth.users sehingga
+-- pendaftaran gagal total tanpa pesan yang jelas.
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
@@ -45,6 +51,9 @@ begin
   insert into public.profiles (id, email, nama)
   values (new.id, new.email, coalesce(new.raw_user_meta_data ->> 'nama', null))
   on conflict (id) do nothing;
+  return new;
+exception when others then
+  raise warning 'handle_new_user gagal untuk %: %', new.id, sqlerrm;
   return new;
 end;
 $$;
@@ -61,10 +70,11 @@ create table public.products (
   slug text not null unique,
   judul text not null,
   jenjang text not null
-    check (jenjang in ('Q1', 'Q2', 'Q3', 'Q4', 'Sinta', 'Prosiding')),
+    check (jenjang in ('Q1', 'Q2', 'Q3', 'Q4', 'Sinta', 'Prosiding', 'Paket')),
   bidang text,
   deskripsi text,
-  format text, -- 'docx' / 'latex' / 'docx+latex' (diisi tim)
+  format text, -- 'docx' / 'zip' / 'latex' / 'docx+latex' (diisi tim)
+  isi_template text[] not null default '{}', -- daftar isi ("yang didapat")
   harga numeric, -- NULL = belum ditetapkan -> TIDAK BOLEH dibeli (PRD §7.2)
   file_path text, -- path di bucket Storage 'templates' (private)
   preview_path text, -- path di bucket Storage 'previews' (public)
@@ -225,17 +235,48 @@ create index if not exists bookings_user_id_idx on public.bookings (user_id);
 create index if not exists bookings_service_id_idx on public.bookings (service_id);
 
 -- ============================================================
--- SEED PLACEHOLDER: 6 jenjang, harga NULL, is_visible = false.
--- Artinya: ruang sudah ada, tapi TIDAK ADA yang tampil/bisa dibeli
--- sampai tim mengisi harga + file + is_visible = true di admin.
+-- SEED PLACEHOLDER: 7 produk (6 jenjang + Paket Lengkap), harga NULL,
+-- is_visible = false. Artinya: ruang sudah ada, tapi TIDAK ADA yang
+-- tampil/bisa dibeli sampai tim mengisi harga + file + is_visible = true
+-- di admin. Deskripsi/format/isi di bawah = isi migrasi
+-- 20261116_isi_produk.sql (sumber: templates-built/CATATAN.md).
 -- ============================================================
-insert into public.products (slug, judul, jenjang, harga, is_visible) values
-  ('template-q1', 'Template Scopus Q1', 'Q1', null, false),
-  ('template-q2', 'Template Scopus Q2', 'Q2', null, false),
-  ('template-q3', 'Template Scopus Q3', 'Q3', null, false),
-  ('template-q4', 'Template Scopus Q4', 'Q4', null, false),
-  ('template-sinta', 'Template Sinta', 'Sinta', null, false),
-  ('template-prosiding', 'Template Prosiding', 'Prosiding', null, false);
+insert into public.products (slug, judul, jenjang, deskripsi, format, isi_template, harga, is_visible) values
+  ('template-q1', 'Template Scopus Q1', 'Q1',
+   'Template Word (.docx) 8 halaman mengikuti struktur template resmi JCCE (Journal of Computational and Cognitive Engineering): title page dan abstrak, pendahuluan, related work, metodologi, hasil dan diskusi, kesimpulan, pernyataan, dan referensi — plus checklist pra-submit dan kerangka cover letter.',
+   'docx',
+   array['Cara memakai template ini', 'Title Page + Abstract', '1. Introduction (Background, Research Gap, Research Questions, Contributions, Abbreviations)', '2. Related Work / Literature Review', '3. Methodology', '4. Results and Discussion', '5. Conclusion', '6. Statements', 'References', 'Lampiran A — Checklist Pra-Submit (Kacamata Reviewer Q1)', 'Lampiran B — Kerangka Cover Letter'],
+   null, false),
+  ('template-q2', 'Template Scopus Q2', 'Q2',
+   'Template Word (.docx) 8 halaman mengikuti guideline Narra X: author information, abstrak dan keywords, introduction, methods, results, discussion, conclusions, declarations, dan references — plus checklist kepatuhan Narra X dan kerangka cover letter.',
+   'docx',
+   array['Cara memakai template ini', 'Author Information + Abstract + Keywords', 'Introduction', 'Methods', 'Results', 'Discussion', 'Conclusions', 'Declarations', 'References', 'Tables dan Figures', 'Lampiran A — Checklist Kepatuhan Narra X (Pra-Submit)', 'Lampiran B — Kerangka Cover Letter'],
+   null, false),
+  ('template-q3', 'Template Scopus Q3', 'Q3',
+   'Template Word (.docx) 13 halaman mengikuti guideline Drug Target Insights: title page dan abstrak terstruktur, acknowledgments, disclosures, kontribusi penulis (CRediT), data availability, IMRaD, figure legends, tabel, dan referensi — plus checklist kepatuhan DTI dan kerangka cover letter.',
+   'docx',
+   array['Cara memakai template ini', 'Title Page + Abstract', 'Acknowledgments, Disclosures, Author Contributions (CRediT), Data Availability Statement', '1. Introduction', '2. Materials and Methods', '3. Results', '4. Discussion', '5. Conclusions', 'Figure Legends dan Tables', 'References', 'Lampiran A — Checklist Kepatuhan Drug Target Insights', 'Lampiran B — Kerangka Cover Letter'],
+   null, false),
+  ('template-q4', 'Template Scopus Q4', 'Q4',
+   'Template Word (.docx) 6 halaman mengikuti Instructions for Authors Ratarstvo i povrtarstvo (double-blind): title, summary, introduction, materials and methods, results, discussion, conclusions, tabel dan gambar, acknowledgments dan author statements, dan referensi — plus checklist kepatuhan dan kerangka surat pengantar.',
+   'docx',
+   array['Cara memakai template ini', 'Title dan Summary', '1. Introduction', '2. Materials and Methods', '3. Results', '4. Discussion', '5. Conclusions', 'Tables and Figures', 'Acknowledgments and Author Statements', 'References', 'Lampiran A — Checklist Kepatuhan Ratarstvo i povrtarstvo', 'Lampiran B — Kerangka Surat Pengantar'],
+   null, false),
+  ('template-sinta', 'Template Sinta', 'Sinta',
+   'Template Word (.docx) 5 halaman berbahasa Indonesia mengikuti author guidelines Jurnal Pendidikan (Sinta 5): halaman judul, abstrak Indonesia dan Inggris, pendahuluan, metode, hasil dan pembahasan, kesimpulan, ucapan terima kasih, dan daftar pustaka — plus checklist pra-submit.',
+   'docx',
+   array['Cara memakai template ini', 'Halaman Judul', 'Abstrak (Indonesia dan Inggris)', 'Pendahuluan', 'Metode (Desain, Data dan Sumber Data, Prosedur dan Analisis Data)', 'Hasil dan Pembahasan', 'Kesimpulan', 'Ucapan Terima Kasih', 'Daftar Pustaka', 'Lampiran A — Checklist Pra-Submit'],
+   null, false),
+  ('template-prosiding', 'Template Prosiding', 'Prosiding',
+   'Template Word (.docx) 4 halaman mengikuti panduan persiapan naskah AIP Conference Proceedings: introduction, methods, results and discussion, conclusion, acknowledgments, dan references — plus checklist pra-submit. Tanpa header, footer, dan nomor halaman, sesuai ketentuan AIP.',
+   'docx',
+   array['How to Use This Template', 'Introduction', 'Methods (Research Design, Data and Procedures, Analysis)', 'Results and Discussion', 'Conclusion', 'Acknowledgments', 'References', 'Appendix A — Pre-Submission Checklist'],
+   null, false),
+  ('paket-lengkap', 'Paket Lengkap', 'Paket',
+   'Satu file ZIP berisi keenam template Word (.docx): Scopus Q1, Q2, Q3, Q4, Sinta, dan Prosiding — lengkap dengan checklist pra-submit dan kerangka cover letter di tiap template.',
+   'zip',
+   array['Template_Scopus_Q1.docx', 'Template_Scopus_Q2.docx', 'Template_Scopus_Q3.docx', 'Template_Scopus_Q4.docx', 'Template_Sinta.docx', 'Template_Prosiding.docx'],
+   null, false);
 
 insert into public.services (slug, judul, harga, is_visible) values
   ('konsultasi-1-1', 'Konsultasi private 1-1', null, false),

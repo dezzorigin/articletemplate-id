@@ -50,8 +50,6 @@ const jenjangAda = JENJANG.filter((j) => products.some((p) => p.jenjang === j));
           <p class="fs-auth">Nama Penulis, Afiliasi</p>
           <p class="fs-h">Abstrak</p>
           <p class="fs-body">Latar belakang, tujuan, metode, hasil, dan simpulan dalam satu paragraf.</p>
-          <p class="fs-h">1. Pendahuluan</p>
-          <p class="fs-body">Paragraf pembuka menjelaskan masalah, celah kajian, dan tujuan artikel.</p>
         </div>
         <div class="col-sheet primary">
           <p class="fs-meta">Scopus Q1</p>
@@ -120,9 +118,8 @@ const jenjangAda = JENJANG.filter((j) => products.some((p) => p.jenjang === j));
 
   <h2>Pendampingan</h2>
   <p>
-    Konsultasi 1-1, editor, bantu publish, dan pembimbing: <span class="badge">segera hadir</span>.
-    Layanan, harga, dan jadwal diumumkan setelah data mentor terverifikasi.
-    <a href="/konsultasi">Lihat rencana layanan</a>
+    Butuh bantuan lebih dari sekadar template? Rencana layanan konsultasi 1-1, editor, bantu publish, dan
+    pembimbing ada di <a href="/konsultasi">halaman Konsultasi</a>.
   </p>
 
   <h2>Tim di balik toko</h2>
@@ -192,7 +189,11 @@ const jenjangAda = JENJANG.filter((j) => products.some((p) => p.jenjang === j));
   .proof li { font-size: 0.92rem; color: var(--muted); }
   .proof strong { color: var(--accent-dark); font-family: Georgia, "Times New Roman", serif; font-size: 1.05rem; }
   .proof-more { font-size: 0.9rem; margin-top: 0.25rem; }
-  /* Kolase: dua lembar tipografis tumpang tindih di atas wash krem hangat. */
+  /* Kolase: dua lembar tipografis tumpang tindih di atas wash krem hangat.
+     Batas yang dijaga: kartu depan (primary) harus mulai DI BAWAH baris teks
+     terakhir lembar belakang (secondary) — teksnya tidak boleh tertutup kartu
+     depan. Karena itu secondary hanya berisi sampai Abstrak, dan margin-top
+     primary + min-height wash memberi ruang vertikal yang cukup di semua lebar. */
   .hero-collage {
     animation: rise 0.6s var(--ease-out) both;
   }
@@ -202,7 +203,7 @@ const jenjangAda = JENJANG.filter((j) => products.some((p) => p.jenjang === j));
     border: 1px solid var(--line);
     border-radius: 20px;
     padding: 1.75rem 1.25rem 1.5rem;
-    min-height: 340px;
+    min-height: 420px;
     overflow: hidden;
   }
   .col-sheet {
@@ -218,16 +219,16 @@ const jenjangAda = JENJANG.filter((j) => products.some((p) => p.jenjang === j));
     position: absolute;
     top: 1.25rem;
     left: 1.25rem;
-    width: 62%;
+    width: 58%;
     transform: rotate(-5deg);
     opacity: 0.92;
   }
   .col-sheet.primary {
     position: relative;
     z-index: 2;
-    width: 68%;
+    width: 66%;
     margin-left: auto;
-    margin-top: 4.5rem;
+    margin-top: 9rem;
     transform: rotate(2.5deg);
   }
   .fs-meta { font-family: var(--mono); font-size: 0.6rem; color: var(--muted); }
@@ -255,6 +256,7 @@ const jenjangAda = JENJANG.filter((j) => products.some((p) => p.jenjang === j));
       gap: 2.5rem;
       padding-top: 1rem;
     }
+    .wash { min-height: 440px; }
     .fs-meta { font-size: 0.65rem; }
     .fs-title { font-size: 0.95rem; }
     .fs-auth { font-size: 0.65rem; }

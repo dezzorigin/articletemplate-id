@@ -38,7 +38,11 @@ const error = code ? messages[code] : undefined;
             <label class="field">
               <span>Email</span>
               <input type="email" name="email" required autocomplete="email" inputmode="email" autocapitalize="none" autocorrect="off" maxlength="254" />
-              <span class="hint">Akun dibuat otomatis dari email ini. Kamu masuk lewat "Lupa kata sandi".</span>
+              <span class="hint">
+                Akun dibuat otomatis dari email ini — akun itu belum punya kata sandi. Setelah pesanan dibuat,
+                buka <a href="/lupa-password">Lupa kata sandi</a>, masukkan email ini, lalu ikuti tautan yang
+                kami kirim untuk mengatur kata sandi dan mengunduh file.
+              </span>
             </label>
           </>
         )
@@ -55,20 +59,20 @@ const error = code ? messages[code] : undefined;
     <aside class="co-side" aria-label="Ringkasan pesanan">
       <div class="card summary">
         <details open>
-          <summary>Ringkasan pesanan ({payable.length} item)</summary>
+          <summary>Ringkasan pesanan ({view.totalQty} item)</summary>
           <ul class="lines">
             {
               payable.map((l) => (
                 <li class="line">
-                  <span>{l.product.judul}</span>
-                  <strong>{formatRupiah(l.product.harga)}</strong>
+                  <span>{l.product.judul}{l.qty > 1 ? ` × ${l.qty}` : ''}</span>
+                  <strong>{formatRupiah(l.subtotal)}</strong>
                 </li>
               ))
             }
           </ul>
         </details>
         <p class="total"><span>Total</span> <strong>{formatRupiah(view.total)}</strong></p>
-        <button type="submit" data-submit>Buat pesanan</button>
+        <button type="submit" data-submit>Buat pesanan &amp; lanjut ke pembayaran</button>
         <p class="hint">Sekali bayar. Tanpa biaya tambahan dari kami.</p>
       </div>
     </aside>

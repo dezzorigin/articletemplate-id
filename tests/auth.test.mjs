@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { loadLib } from './helpers.mjs';
 
 const auth = await loadLib('auth.ts');
-const { cleanName, cleanEmail, validPassword, safeNext } = auth;
+const { cleanName, cleanEmail, validPassword, safeNext, isExampleDomain, signUpErrorCode, isNotConfirmedError } = auth;
 
 test('cleanName: ciutkan spasi, trim, maks 80 karakter', () => {
   assert.equal(cleanName('  Nabil   Aulia  Dika '), 'Nabil Aulia Dika');
@@ -32,6 +32,54 @@ test('validPassword: panjang 8..72 (batas bcrypt)', () => {
   assert.equal(validPassword(''), false);
   assert.equal(validPassword(null), false);
   assert.equal(validPassword(12345678), false);
+});
+
+test('cleanEmail: tolak domain contoh/tes (GoTrue menolaknya dengan email_address_invalid)', () => {
+  assert.equal(cleanEmail('user@example.com'), null);
+  assert.equal(cleanEmail('user@example.net'), null);
+  assert.equal(cleanEmail('user@example.org'), null);
+  assert.equal(cleanEmail('USER@EXAMPLE.COM'), null);
+  assert.equal(cleanEmail('user@gmail.com'), 'user@gmail.com');
+  assert.equal(cleanEmail('user@nabil.ai.id'), 'user@nabil.ai.id');
+});
+
+test('isExampleDomain: hanya domain contoh/tes', () => {
+  assert.equal(isExampleDomain('a@example.com'), true);
+  assert.equal(isExampleDomain('a@example.edu'), true);
+  assert.equal(isExampleDomain('a@gmail.com'), false);
+  assert.equal(isExampleDomain('bukan-email'), false);
+  assert.equal(isExampleDomain(null), false);
+});
+
+test('signUpErrorCode: petakan kode + pesan GoTrue ke kode ?e=...', () => {
+  // Domain contoh/tes ditolak GoTrue.
+  assert.equal(signUpErrorCode({ code: 'email_address_invalid', message: 'Email address is invalid', status: 422 }), 'domain');
+  assert.equal(signUpErrorCode({ code: 'unexpected_failure', message: 'Email address is invalid', status: 422 }), 'domain');
+  // Email sudah terdaftar (ditangani khusus di daftar.ts: balas seperti sukses).
+  assert.equal(signUpErrorCode({ code: 'user_already_exists', message: 'User already registered', status: 422 }), 'terdaftar');
+  assert.equal(signUpErrorCode({ code: 'unexpected_failure', message: 'User already registered', status: 422 }), 'terdaftar');
+  // Pendaftaran dimatikan di server.
+  assert.equal(signUpErrorCode({ code: 'signup_disabled', message: 'Sign ups are disabled', status: 422 }), 'nonaktif');
+  assert.equal(signUpErrorCode({ code: 'email_provider_disabled', message: 'Signups are disabled for email and password', status: 422 }), 'nonaktif');
+  // Email konfirmasi tidak bisa dikirim (SMTP self-hosted belum dikonfigurasi).
+  assert.equal(signUpErrorCode({ code: 'unexpected_failure', message: 'Error sending confirmation mail', status: 500 }), 'email');
+  assert.equal(signUpErrorCode({ code: 'email_address_not_authorized', message: 'Email address not authorized', status: 400 }), 'email');
+  // Rate limit kirim email Auth.
+  assert.equal(signUpErrorCode({ code: 'over_email_send_rate_limit', message: 'Email rate limit exceeded', status: 429 }), 'batas');
+  assert.equal(signUpErrorCode({ code: 'unexpected_failure', message: 'Rate limit exceeded', status: 429 }), 'batas');
+  // URL pengalihan tidak diizinkan.
+  assert.equal(signUpErrorCode({ code: 'validation_failed', message: 'Redirect URL not allowed', status: 422 }), 'tautan');
+  // Tidak dikenal / kosong -> generik.
+  assert.equal(signUpErrorCode({ code: 'unexpected_failure', message: 'Database error', status: 500 }), 'gagal');
+  assert.equal(signUpErrorCode(null), 'gagal');
+  assert.equal(signUpErrorCode(undefined), 'gagal');
+});
+
+test('isNotConfirmedError: kode atau pesan GoTrue', () => {
+  assert.equal(isNotConfirmedError({ code: 'email_not_confirmed', message: 'Email not confirmed', status: 401 }), true);
+  assert.equal(isNotConfirmedError({ code: 'unexpected_failure', message: 'Email not confirmed', status: 401 }), true);
+  assert.equal(isNotConfirmedError({ code: 'invalid_credentials', message: 'Invalid login credentials', status: 400 }), false);
+  assert.equal(isNotConfirmedError(null), false);
 });
 
 test('safeNext: hanya path internal', () => {

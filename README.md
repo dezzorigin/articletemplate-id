@@ -27,8 +27,8 @@ paket delegasi tim, bukan di repo — ringkasan eksekusi di `docs/FRAMEWORK.md`)
   lalu `supabase/migrations/` (wajib: `20261113_harden_rls.sql` +
   `20261113_products_compliance_columns.sql` +
   `20261116_borderpay_pay_url.sql` + `20261116_site_content.sql` +
-  `20261116_seed_harga.sql` — jangan lewati, skema saja
-  masih berisi policy lama)
+  `20261116_seed_harga.sql` + `20261116_fix_register.sql` — jangan lewati,
+  skema saja masih berisi policy lama dan fungsi trigger lama)
 
 ## Placeholder yang masih menunggu (bukan bug)
 
@@ -65,9 +65,12 @@ dari dashboard Supabase Cloud.
    lalu tempel `supabase/migrations/20261113_harden_rls.sql`,
    `supabase/migrations/20261113_products_compliance_columns.sql`,
    `supabase/migrations/20261116_borderpay_pay_url.sql`,
-   `supabase/migrations/20261116_site_content.sql`, dan
-   `supabase/migrations/20261116_seed_harga.sql` → Run.
-   Jangan lewati migrasi: skema saja masih berisi policy lama.
+   `supabase/migrations/20261116_site_content.sql`,
+   `supabase/migrations/20261116_seed_harga.sql`, dan
+   `supabase/migrations/20261116_fix_register.sql` → Run.
+   Jangan lewati migrasi: skema saja masih berisi policy lama dan fungsi trigger lama.
+   Bila database sudah jalan sebelum 16 Nov 2026, cukup terapkan
+   `20261116_fix_register.sql` (idempotent, aman diulang).
 3. Storage → buat bucket `templates` (private) dan `previews` (public).
 4. Authentication → aktifkan Email + Google login.
 5. Isi `.env` dari Environment Variables aplikasi Coolify (URL Kong + anon key +
@@ -76,6 +79,59 @@ dari dashboard Supabase Cloud.
    ACTIVE_HEALTHY) adalah CADANGAN, bukan backend kanonis. Workflow keepalive
    yang dulu menjaganya sudah DIHAPUS dari repo 16 Nov 2026 (keputusan Nabil);
    bila project cadangan pause, pulihkan manual lewat dashboard Supabase.
+
+## Auth — bila pendaftaran gagal (P0, 16 Nov 2026)
+
+Gejala: POST /auth/daftar selalu kembali ke `/daftar?e=gagal`, lalu login
+dengan akun itu menjawab "Email atau kata sandi salah." — BUKAN "Email kamu
+belum dikonfirmasi." Artinya akun memang tidak terbuat (signup gagal keras),
+bukan sekadar belum konfirmasi.
+
+**Akar masalah #1 (terbukti): domain email tes.** Walkthrough 16 Nov 2026
+memakai `...@example.com`. GoTrue (Supabase Auth) MENOLAK domain contoh/tes
+saat signup — error `email_address_invalid` ("Example and test domains are
+currently not supported", lihat docs Supabase: Auth error codes). Tim sudah
+pernah mencatat ini di `docs/CHECKLIST.md` (E1, 13 Nov 2026) lalu memakai
+domain yang sama lagi di walkthrough. Perbaikannya di kode: error GoTrue kini
+dipetakan ke kode spesifik (`?e=domain`, `?e=nonaktif`, `?e=email`,
+`?e=batas`, `?e=tautan` — lihat `signUpErrorCode` di `src/lib/auth.ts`),
+domain contoh ditolak lebih awal dengan pesan jelas, dan error lengkap
+dicatat di log server (`[auth] daftar gagal`) agar penyebabnya terlihat.
+**Uji pendaftaran SELALU dengan email domain nyata (mis. Gmail), jangan
+pernah dengan example.com.**
+
+**Akar masalah #2 (masih harus dicek live): konfigurasi GoTrue self-hosted.**
+Bila pendaftaran domain ASLI juga gagal, penyebabnya di server Auth, bukan
+di kode aplikasi. Cek berurutan (satu-satunya petunjuk pasti adalah kode di
+log aplikasi — Coolify → aplikasi → Logs, cari `[auth] daftar gagal`):
+
+1. Terapkan `supabase/migrations/20261116_fix_register.sql` di SQL Editor
+   (membuat trigger `on_auth_user_created` tahan-gagal: error di fungsi
+   `handle_new_user()` tidak lagi me-rollback pembuatan user auth).
+   Verifikasi: `select tgname from pg_trigger where tgname =
+   'on_auth_user_created';` harus 1 baris.
+2. Dashboard Supabase → Authentication → Providers → Email: pastikan aktif.
+   Bila "Confirm email" AKTIF, email konfirmasi HARUS bisa terkirim — bila
+   tidak, signup gagal 500 (`Error sending confirmation mail`) dan user
+   tidak jadi dibuat. Self-hosted TIDAK punya SMTP bawaan, jadi pilih satu:
+   - (a) Konfigurasi SMTP di service Supabase (Coolify → service Supabase →
+     Environment Variables): `GOTRUE_SMTP_HOST`, `GOTRUE_SMTP_PORT`,
+     `GOTRUE_SMTP_USER`, `GOTRUE_SMTP_PASS`, `GOTRUE_SMTP_ADMIN_EMAIL`,
+     `GOTRUE_MAILER_AUTOCONFIRM=false` → redeploy service Auth; atau
+   - (b) Matikan konfirmasi email sementara: `GOTRUE_MAILER_AUTOCONFIRM=true`
+     di Environment Variables service Supabase → redeploy (pendaftaran
+     langsung login, tanpa email konfirmasi).
+3. Authentication → URL Configuration: Site URL harus
+   `https://articletemplate.id`, dan Redirect URLs harus memuat
+   `https://articletemplate.id/auth/callback` (bila tidak, signup ditolak
+   dengan error redirect).
+4. Pastikan pendaftaran tidak dimatikan: `GOTRUE_DISABLE_SIGNUP=false` dan
+   `GOTRUE_EXTERNAL_EMAIL_ENABLED=true` di Environment Variables service
+   Supabase.
+5. Uji ulang end-to-end dengan Gmail nyata: daftar → user muncul di
+   Authentication → Users + baris `profiles` terbuat → login berhasil →
+   `/akun` terbuka. Bila masih gagal, salin baris log `[auth] daftar gagal`
+   dan cocokkan kodenya dengan `signUpErrorCode` (`src/lib/auth.ts`).
 
 ## Deploy ke Coolify
 
