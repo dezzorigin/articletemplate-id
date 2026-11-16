@@ -10,8 +10,9 @@ Legenda: `[ ]` belum, `[x]` lulus, `[!]` gagal.
 - [x] A3 `GET /api/health` 200 `{ok:true}` (bukti: `node dist/server/entry.mjs`, HTTP 200, 13 Nov 2026; `/` dan `/templates` juga 200)
 - [x] A4 Tidak ada nilai rahasia di repo (bukti: `git grep` hanya menemukan nama variabel + placeholder)
 - [x] A5 `.env.example` lengkap, aplikasi gagal jelas bila env wajib kosong (bukti: tes `requireEnv` melempar pesan jelas)
-- [ ] A6 Keepalive GitHub Actions hijau 1 run (secret repo harus diganti ke proyek Supabase baru, lalu jalankan manual)
-- [x] A7 Supabase proyek aktif (bukti: proyek baru `articletemplate-id` ref kckivepafrmyihoigcnb, status ACTIVE_HEALTHY, 13 Nov 2026; menggantikan proyek lama yang pause)
+- [ ] A6 Keepalive GitHub Actions hijau 1 run — workflow ini menjaga project Supabase Cloud CADANGAN (`azazbeufwmkaiajosunh`), bukan backend kanonis self-hosted (secret repo SUPABASE_URL/SUPABASE_ANON_KEY menunjuk project cadangan; jalankan manual)
+- [x] A7 Supabase proyek aktif (bukti: proyek baru `articletemplate-id` ref kckivepafrmyihoigcnb, status ACTIVE_HEALTHY, 13 Nov 2026; menggantikan proyek lama yang pause) — Catatan 16 Nov 2026: proyek Cloud ini sekarang dev/test milik Westindo, bukan backend kanonis. Backend kanonis = Supabase self-hosted di Coolify, lihat A8.
+- [ ] A8 Backend kanonis self-hosted terverifikasi: migrasi pengamanan RLS (`supabase/migrations/20261113_harden_rls.sql`) sudah diterapkan di database self-hosted Coolify (BELUM TERVERIFIKASI — menunggu konfirmasi Westindo); skema + bucket + Auth di self-hosted sudah sesuai `supabase/schema.sql`
 
 ## B. Katalog
 - [x] B1 `/templates` memuat produk dari tabel `products` (hanya `is_visible=true`) (bukti 13 Nov: 3 produk uji muncul; 6 seed tersembunyi tidak muncul)

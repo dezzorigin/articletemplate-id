@@ -6,7 +6,7 @@ Toko template artikel + modul konsultasi (dibangun sekaligus, PRD `../prd.md`).
 
 - **Astro + React** (halaman + pulau interaktif) — adapter Node (standalone)
 - **Coolify** — hosting lewat Docker (domain/Cloudflare DNS diurus belakangan)
-- **Supabase Cloud** — Postgres + Auth + Storage (free tier + cron keepalive)
+- **Supabase self-hosted di Coolify** — Postgres + Auth + Storage (service `supabase-kfuuqefxogdl5q4bam7t93vu`, project Coolify "ArticleTemplate.id"; tidak pernah pause, tanpa keepalive)
 - **BorderPay** — checkout QRIS/VA (mode test dulu, merchant menyusul)
 
 ## Struktur
@@ -20,7 +20,7 @@ Toko template artikel + modul konsultasi (dibangun sekaligus, PRD `../prd.md`).
 - `src/lib/money.ts` — satu-satunya format harga + hitung total
 - `docs/FRAMEWORK.md`, `docs/CHECKLIST.md` — rencana kerja + checklist uji
 - `supabase/schema.sql` — skema + RLS + seed placeholder (jalankan sekali)
-- `.github/workflows/keepalive.yml` — cron harian anti-pause Supabase free
+- `.github/workflows/keepalive.yml` — cron harian menjaga project Supabase Cloud CADANGAN (`azazbeufwmkaiajosunh`) agar tidak pause; backend kanonis self-hosted tidak butuh keepalive
 
 ## Placeholder yang masih menunggu (bukan bug)
 
@@ -35,20 +35,26 @@ Toko template artikel + modul konsultasi (dibangun sekaligus, PRD `../prd.md`).
 
 ```bash
 npm install
-cp .env.example .env   # lalu isi nilai Supabase
+cp .env.example .env   # lalu isi nilai Supabase self-hosted (dari Environment Variables aplikasi Coolify)
 npm run dev
 ```
 
-## Setup Supabase (sekali, saat project dibuat)
+## Setup Supabase self-hosted (sekali, saat service dibuat)
 
-1. Buat project Supabase Cloud (region **Singapura**).
-2. SQL Editor → tempel `supabase/schema.sql` → Run.
+Backend kanonis = Supabase self-hosted di Coolify (service
+`supabase-kfuuqefxogdl5q4bam7t93vu` dalam project Coolify "ArticleTemplate.id").
+URL + kunci diambil dari Environment Variables aplikasi Coolify — jangan isi
+dari dashboard Supabase Cloud.
+
+1. Coolify → project "ArticleTemplate.id" → service Supabase → pastikan jalan.
+2. SQL Editor di dashboard Supabase self-hosted → tempel `supabase/schema.sql` → Run.
 3. Storage → buat bucket `templates` (private) dan `previews` (public).
 4. Authentication → aktifkan Email + Google login.
-5. Isi `.env` (URL + anon key + service role key). Service role key HANYA
-   di server — tidak pernah ke repo/chat.
-6. GitHub repo → Secrets `SUPABASE_URL` + `SUPABASE_ANON_KEY` → workflow
-   keepalive aktif otomatis tiap hari (10:00 WIB).
+5. Isi `.env` dari Environment Variables aplikasi Coolify (URL Kong + anon key +
+   service role key). Service role key HANYA di server — tidak pernah ke repo/chat.
+6. Project Supabase Cloud `azazbeufwmkaiajosunh` (Nabil, dipulihkan 16 Nov 2026,
+   ACTIVE_HEALTHY) adalah CADANGAN, bukan backend kanonis. Workflow keepalive
+   (`.github/workflows/keepalive.yml`) menjaga project cadangan itu — bukan self-hosted.
 
 ## Deploy ke Coolify
 
@@ -67,6 +73,6 @@ Tanpa Docker: `npm run build && node dist/server/entry.mjs`.
 
 ## Yang belum bisa jalan tanpa akses berikut
 
-- Supabase Cloud (project + kunci) — akses utama yang diminta ke pemilik akun Supabase.
+- Akses ke project Coolify "ArticleTemplate.id" (service Supabase + aplikasi) — akses utama untuk URL + kunci backend.
 - Akun merchant BorderPay — sebelum transaksi uang asli (mode test dulu).
 - Domainesia — verifikasi invoice `articletemplate.id` (Pending) + DNS nanti.

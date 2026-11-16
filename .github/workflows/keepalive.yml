@@ -1,10 +1,14 @@
 name: Supabase keepalive
 
-# Mencegah project Supabase free tier pause setelah 7 hari tanpa aktivitas.
+# Menjaga project Supabase Cloud CADANGAN (azazbeufwmkaiajosunh, milik Nabil,
+# dipulihkan 16 Nov 2026) agar tidak pause setelah 7 hari tanpa aktivitas.
+# Backend kanonis aplikasi adalah Supabase SELF-HOSTED di Coolify — self-hosted
+# tidak pernah pause, jadi workflow ini TIDAK menyentuh backend kanonis.
+# Nasib workflow ini (tetap jalan untuk cadangan / dimatikan) diputuskan Nabil.
 # Query ringan ke endpoint REST Supabase (OpenAPI spec) setiap hari.
 # Setup: isi GitHub secrets (repo Settings -> Secrets and variables -> Actions):
-#   - SUPABASE_URL      : https://<project-ref>.supabase.co
-#   - SUPABASE_ANON_KEY : anon/public key dari dashboard Supabase
+#   - SUPABASE_URL      : https://<project-ref>.supabase.co (project cadangan)
+#   - SUPABASE_ANON_KEY : anon/public key dari dashboard Supabase (project cadangan)
 # Workflow ini tidak butuh service role key.
 on:
   schedule:
