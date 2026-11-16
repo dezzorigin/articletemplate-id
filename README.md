@@ -67,6 +67,6 @@ Tanpa Docker: `npm run build && node dist/server/entry.mjs`.
 
 ## Yang belum bisa jalan tanpa akses berikut
 
-- Supabase Cloud (project + kunci) — akses utama yang diminta ke Nabil.
+- Supabase Cloud (project + kunci) — akses utama yang diminta ke pemilik akun Supabase.
 - Akun merchant BorderPay — sebelum transaksi uang asli (mode test dulu).
 - Domainesia — verifikasi invoice `articletemplate.id` (Pending) + DNS nanti.

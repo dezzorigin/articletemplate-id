@@ -5,7 +5,7 @@ Sumber: PRD v3.0 (paket delegasi v2). Dokumen ini menerjemahkan PRD jadi urutan 
 ## 1. Kondisi nyata (diverifikasi 13 Nov 2026)
 - Repo `dezzorigin/articletemplate-id`, 4 commit. Astro 5 + React 19 + adapter Cloudflare. Build lulus (di path tanpa `#`).
 - Semua halaman placeholder. Webhook BorderPay 501. Tidak ada auth, keranjang, checkout, download, admin berfungsi.
-- Supabase: proyek lama Nabil (`azazbeufwmkaiajosunh`, pause) tidak terjangkau. Dibuat proyek baru milik Westindo `articletemplate-id` (ref `kckivepafrmyihoigcnb`, Singapura) dengan skema + migrasi pengamanan RLS + bucket. Migrasi di `supabase/migrations/`.
+- Supabase: proyek lama (`azazbeufwmkaiajosunh`, pause) tidak terjangkau. Dibuat proyek baru milik Westindo `articletemplate-id` (ref `kckivepafrmyihoigcnb`, Singapura) dengan skema + migrasi pengamanan RLS + bucket. Migrasi di `supabase/migrations/`.
 - Situs live https://articletemplate.id 200, `/api/health` OK.
 
 ## 2. Prinsip
