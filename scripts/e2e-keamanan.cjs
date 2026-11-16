@@ -42,7 +42,7 @@ const form = (p, fields, ip, extra = {}) => fetch(BASE + p, {
     let r = await fetch(BASE + '/admin', { redirect: 'manual' });
     check('K4 header ada juga di redirect (303)', r.status === 303 && r.headers.get('x-frame-options') === 'DENY', r.status);
     const html = await (await fetch(BASE + '/')).text();
-    check('K4 CSP aman: tanpa <script> inline/eksternal di beranda', !/<script/i.test(html));
+    check('K4 CSP aman: tanpa <script> inline di beranda (hanya src sendiri)', !/<script(?![^>]*\ssrc="\/)/i.test(html));
     const csp = (await fetch(BASE + '/')).headers.get('content-security-policy') || '';
     check("K4 CSP: tanpa 'unsafe-eval' dan script-src 'self' saja", !csp.includes('unsafe-eval') && /script-src 'self'(;|$)/.test(csp), csp.slice(0, 120));
 

@@ -17,6 +17,8 @@ export default defineConfig({
   output: 'server',
   adapter: node({ mode: 'standalone' }),
   server: { host: true },
+  // CSP script-src 'self': jangan sisipkan skrip hasil bundle ke dalam HTML.
+  vite: { build: { assetsInlineLimit: 0 } },
   security: {
     allowedDomains: [
       { hostname: 'articletemplate.id' },
