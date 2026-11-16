@@ -1,7 +1,8 @@
 ---
-import Base from '../../layouts/Base.astro';
+import Admin from '../../layouts/Admin.astro';
 import { getSupabaseAdmin } from '../../lib/supabase';
-import { requireAdmin } from '../../lib/admin';
+import { requireAdmin, adminListOrders, adminListProducts } from '../../lib/admin';
+import { formatRupiah } from '../../lib/money';
 
 export const prerender = false;
 // Middleware sudah menolak non-admin (404); dicek ulang di sini sebelum memakai service role.
@@ -9,36 +10,248 @@ if (!(await requireAdmin(Astro.locals.supabase, Astro.locals.user))) return Astr
 
 const admin = getSupabaseAdmin();
 const head = { count: 'exact' as const, head: true };
-const [tampil, total, lunas, menunggu] = await Promise.all([
+const [tampil, totalProduk, lunas, menunggu, gagal, kedaluwarsa, lunasRows] = await Promise.all([
   admin.from('products').select('id', head).eq('is_visible', true),
   admin.from('products').select('id', head),
   admin.from('orders').select('id', head).eq('status', 'lunas'),
   admin.from('orders').select('id', head).eq('status', 'menunggu_bayar'),
+  admin.from('orders').select('id', head).eq('status', 'gagal'),
+  admin.from('orders').select('id', head).eq('status', 'kedaluwarsa'),
+  admin.from('orders').select('total').eq('status', 'lunas'),
 ]);
+// Total lunas = jumlah `total` semua order lunas (angka dari DB, bukan contoh).
+const totalLunas = (lunasRows.data ?? []).reduce((s: number, r: { total: unknown }) => s + Number(r.total ?? 0), 0);
+const recent = (await adminListOrders({})).slice(0, 5);
+// Produk tanpa harga atau tanpa file = belum bisa dijual (aturan: produk tanpa
+// file tidak boleh tampil; harga NULL tidak bisa dibeli).
+const warnings = (await adminListProducts()).filter((p) => p.harga === null || !p.file_path);
+const label: Record<string, string> = { menunggu_bayar: 'Menunggu bayar', lunas: 'Lunas', gagal: 'Gagal', kedaluwarsa: 'Kedaluwarsa' };
+const waktu = (s: string) => new Date(s).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
 ---
 
-<Base title="Admin">
-  <h1>Admin</h1>
-  <div class="grid">
-    <a class="card tile" href="/admin/produk">
-      <strong>Produk</strong>
-      <p>{tampil.count ?? 0} tampil dari {total.count ?? 0}. Tambah/ubah produk, harga, file, pratinjau, status tampil.</p>
-    </a>
-    <a class="card tile" href="/admin/order">
-      <strong>Order</strong>
-      <p>{lunas.count ?? 0} lunas, {menunggu.count ?? 0} menunggu bayar. Cari per email atau produk.</p>
-    </a>
-    <a class="card tile" href="/admin/konten">
-      <strong>Konten</strong>
-      <p>Ubah teks halaman Beranda, Tentang, dan Bantuan tanpa edit kode.</p>
-    </a>
-    <div class="card">
-      <strong>Belum tersedia</strong>
-      <p>Kirim ulang email lunas/unduhan (menunggu provider email) dan layanan konsultasi (tertutup sampai data mentor masuk).</p>
+<Admin title="Admin">
+  <h1>Dashboard</h1>
+
+  <div class="stat-grid">
+    <div class="stat">
+      <p class="stat-angka">{menunggu.count ?? 0}</p>
+      <p class="stat-label">Menunggu bayar</p>
+    </div>
+    <div class="stat">
+      <p class="stat-angka">{lunas.count ?? 0}</p>
+      <p class="stat-label">Lunas</p>
+    </div>
+    <div class="stat">
+      <p class="stat-angka">{gagal.count ?? 0}</p>
+      <p class="stat-label">Gagal</p>
+    </div>
+    <div class="stat">
+      <p class="stat-angka">{kedaluwarsa.count ?? 0}</p>
+      <p class="stat-label">Kedaluwarsa</p>
+    </div>
+    <div class="stat utama">
+      <p class="stat-angka">{formatRupiah(totalLunas)}</p>
+      <p class="stat-label">Total lunas</p>
+    </div>
+    <div class="stat">
+      <p class="stat-angka">{tampil.count ?? 0} dari {totalProduk.count ?? 0}</p>
+      <p class="stat-label">Produk tampil</p>
     </div>
   </div>
-</Base>
+
+  <h2>Order terbaru</h2>
+  {recent.length === 0 ? (
+    <div class="card"><p>Belum ada order.</p></div>
+  ) : (
+    <ul class="list">
+      {recent.map((o) => (
+        <li class="card baris">
+          <p class="meta">
+            <span class={`badge st-${o.status}`}>{label[o.status]}</span>
+            <strong>{formatRupiah(o.total)}</strong>
+            <span class="hint">{waktu(o.created_at)}</span>
+          </p>
+          <p class="who">{o.nama ? `${o.nama} · ` : ''}{o.email}</p>
+          <p class="hint">{o.items.map((i) => i.judul).join(', ')}</p>
+        </li>
+      ))}
+    </ul>
+  )}
+  <p><a class="btn ghost" href="/admin/order">Lihat semua order</a></p>
+
+  <h2>Produk belum bisa dijual</h2>
+  {warnings.length === 0 ? (
+    <div class="card"><p>Semua produk sudah punya harga dan file.</p></div>
+  ) : (
+    <ul class="list">
+      {warnings.map((p) => (
+        <li class="card baris">
+          <a class="title" href={`/admin/produk/${p.id}`}><strong>{p.judul}</strong></a>
+          <p class="meta">
+            {p.harga === null ? <span class="badge warn">Harga belum ditetapkan</span> : <span>{formatRupiah(p.harga)}</span>}
+            {p.file_path ? null : <span class="badge warn">Belum ada file</span>}
+          </p>
+          <p class="hint">/{p.slug}</p>
+        </li>
+      ))}
+    </ul>
+  )}
+
+  <div class="card note">
+    <strong>Belum tersedia</strong>
+    <p>Kirim ulang email lunas/unduhan (menunggu provider email) dan layanan konsultasi (tertutup sampai data mentor masuk).</p>
+  </div>
+</Admin>
 
 <style>
-  .tile { text-decoration: none; color: inherit; display: block; }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+  }
+  .card p:last-child {
+    margin-bottom: 0;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    background: var(--accent);
+    color: #fff;
+    border: 0;
+    border-radius: 8px;
+    padding: 0.6rem 1.25rem;
+    font: inherit;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .btn.ghost {
+    background: transparent;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+  }
+  .badge {
+    display: inline-block;
+    border: 1px solid var(--line);
+    color: var(--muted);
+    padding: 0.05rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.78rem;
+    white-space: nowrap;
+  }
+  .badge.st-lunas {
+    background: #e9efea;
+    border-color: #b9ccc1;
+    color: #1b4d3e;
+  }
+  .badge.st-menunggu_bayar {
+    background: #f6f1e4;
+    border-color: #dcd0ad;
+    color: #5e4a14;
+  }
+  .badge.st-gagal {
+    background: #fdf0ed;
+    border-color: #e8c4bc;
+    color: #8a2f23;
+  }
+  .badge.st-kedaluwarsa {
+    background: #f1efe9;
+    border-color: #e7e2d6;
+    color: #5b6470;
+  }
+  .badge.warn {
+    background: #f6f1e4;
+    border-color: #dcd0ad;
+    color: #5e4a14;
+  }
+  .hint {
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+  /* ---------- grid kartu statistik ---------- */
+  .stat-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    margin: 1rem 0;
+  }
+  .stat {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 0.9rem 1rem;
+  }
+  .stat.utama {
+    background: #1b4d3e;
+    border-color: #1b4d3e;
+    color: #fbfaf7;
+  }
+  .stat.utama .stat-label {
+    color: #dcd0ad;
+  }
+  .stat-angka {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 1.5rem;
+    line-height: 1.2;
+    margin: 0 0 0.25rem;
+  }
+  .stat-label {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+  /* ---------- daftar ---------- */
+  .list {
+    list-style: none;
+    padding: 0;
+    margin: 1rem 0;
+    display: grid;
+    gap: 0.6rem;
+  }
+  .baris .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 0.75rem;
+    align-items: center;
+    margin: 0 0 0.25rem;
+  }
+  .baris .who {
+    overflow-wrap: anywhere;
+    margin: 0 0 0.25rem;
+  }
+  .baris .hint {
+    margin: 0;
+  }
+  .title {
+    text-decoration: none;
+    display: inline-flex;
+    min-height: 44px;
+    align-items: center;
+    color: inherit;
+  }
+  .title strong {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 1.08rem;
+    font-weight: 500;
+  }
+  .note {
+    margin-top: 1.5rem;
+  }
+  .note strong {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 1.08rem;
+    font-weight: 500;
+  }
+  .note p {
+    color: var(--muted);
+  }
+  @media (min-width: 720px) {
+    .stat-grid {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+    }
+  }
 </style>

@@ -1,5 +1,7 @@
 ---
 import Base from '../layouts/Base.astro';
+import AuthSplit from '../components/AuthSplit.astro';
+import { googleEnabled } from '../lib/auth';
 
 if (Astro.locals.user) return Astro.redirect('/akun');
 
@@ -14,33 +16,75 @@ const error = code ? messages[code] : undefined;
 ---
 
 <Base title="Daftar">
-  <h1>Daftar</h1>
-  {error ? <p class="notice" role="alert">{error}</p> : null}
-  {
-    ok ? (
-      <p class="notice ok" role="status">
-        Cek email kamu. Jika pendaftaran bisa dilanjutkan, tautan konfirmasi sudah dikirim.
-      </p>
-    ) : (
-      <form class="form" method="post" action="/auth/daftar">
-        <label class="field">
-          <span>Nama</span>
-          <input type="text" name="nama" autocomplete="name" maxlength="80" />
-        </label>
-        <label class="field">
-          <span>Email</span>
-          <input type="email" name="email" required autocomplete="email" inputmode="email" autocapitalize="none" autocorrect="off" maxlength="254" />
-        </label>
-        <label class="field">
-          <span>Kata sandi</span>
-          <input type="password" name="password" required autocomplete="new-password" minlength="8" maxlength="72" />
-          <span class="hint">Minimal 8 karakter.</span>
-        </label>
-        <button type="submit">Buat akun</button>
-      </form>
-    )
-  }
-  <div class="linkrow">
-    <a href="/masuk">Sudah punya akun? Masuk</a>
-  </div>
+  <AuthSplit title="Daftar" lead="Buat akun untuk membeli template dan mengunduhnya kapan saja dari akunmu.">
+    {error ? <p class="notice" role="alert">{error}</p> : null}
+    {
+      ok ? (
+        <p class="notice ok" role="status">
+          Cek email kamu. Jika pendaftaran bisa dilanjutkan, tautan konfirmasi sudah dikirim.
+        </p>
+      ) : (
+        <>
+          {
+            googleEnabled() ? (
+              <>
+                <p class="google">
+                  <a class="btn ghost google-btn" href="/auth/google">Daftar dengan Google</a>
+                </p>
+                <p class="divider" role="separator"><span>atau daftar dengan email</span></p>
+              </>
+            ) : null
+          }
+          <form class="form" method="post" action="/auth/daftar">
+            <label class="field">
+              <span>Nama</span>
+              <input type="text" name="nama" autocomplete="name" maxlength="80" />
+            </label>
+            <label class="field">
+              <span>Email</span>
+              <input type="email" name="email" required autocomplete="email" inputmode="email" autocapitalize="none" autocorrect="off" maxlength="254" />
+            </label>
+            <label class="field">
+              <span>Kata sandi</span>
+              <input type="password" name="password" required autocomplete="new-password" minlength="8" maxlength="72" />
+              <span class="hint">Minimal 8 karakter.</span>
+            </label>
+            <button type="submit">Buat akun</button>
+          </form>
+        </>
+      )
+    }
+    <div class="linkrow">
+      <a href="/masuk">Sudah punya akun? Masuk</a>
+    </div>
+  </AuthSplit>
 </Base>
+
+<style>
+  .form {
+    max-width: none;
+  }
+  .google {
+    margin: 0 0 0.25rem;
+  }
+  .google-btn {
+    width: 100%;
+  }
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: var(--muted);
+    font-size: 0.85rem;
+    margin: 0.75rem 0 1rem;
+  }
+  .divider::before,
+  .divider::after {
+    content: "";
+    flex: 1;
+    border-top: 1px solid var(--line);
+  }
+  .divider span {
+    white-space: nowrap;
+  }
+</style>

@@ -1,0 +1,451 @@
+---
+// Shell admin BARU (pola "Dashboard with Collapsible Sidebar"
+// 21st.dev/@uniquesonu — komposisi ditiru, dibangun ulang Astro + CSS biasa).
+// Dipakai HANYA halaman /admin/* — Base.astro tidak disentuh.
+// Sidebar bisa dilipat (ikon saja) di desktop; di HP jadi bottom tab bar
+// mengikuti pola nav yang sudah ada di Base. Terang saja, tanpa dark mode.
+interface Props {
+  title: string;
+}
+const { title } = Astro.props;
+const path = Astro.url.pathname;
+const nav = [
+  { href: '/admin', label: 'Dashboard', icon: 'grid' },
+  { href: '/admin/produk', label: 'Produk', icon: 'box' },
+  { href: '/admin/order', label: 'Order', icon: 'receipt' },
+  { href: '/admin/konten', label: 'Konten', icon: 'file' },
+];
+const isActive = (href: string) =>
+  href === '/admin' ? path === '/admin' : path.startsWith(href);
+const icons: Record<string, string> = {
+  grid: 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z',
+  box: 'M21 8l-9-5-9 5v8l9 5 9-5zM3.3 8.3L12 13l8.7-4.7M12 13v8.5',
+  receipt: 'M6 3h12v18l-2-1.5L14 21l-2-1.5L10 21l-2-1.5L6 21zM9 7h6M9 11h6',
+  file: 'M7 3h7l5 5v13H7zM14 3v5h5M10 13h6M10 17h6',
+  home: 'M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10',
+  logout: 'M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9',
+  collapse: 'M15 6l-6 6 6 6',
+};
+---
+
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content"
+    />
+    <meta name="theme-color" content="#fbfaf7" />
+    <meta name="color-scheme" content="light" />
+    <title>{title} — Admin · ArticleTemplate.id</title>
+  </head>
+  <body>
+    <div class="adm-shell">
+      <aside class="adm-sidebar" aria-label="Navigasi admin">
+        <div class="adm-brand">
+          <a href="/admin">ArticleTemplate<em>.id</em></a>
+          <span class="adm-brand-sub">Area admin</span>
+        </div>
+        <nav class="adm-nav" aria-label="Menu admin">
+          {
+            nav.map((item) => (
+              <a
+                href={item.href}
+                class={isActive(item.href) ? 'active' : undefined}
+                aria-current={isActive(item.href) ? 'page' : undefined}
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d={icons[item.icon]} /></svg>
+                <span>{item.label}</span>
+              </a>
+            ))
+          }
+        </nav>
+        <div class="adm-side-foot">
+          <a href="/">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d={icons.home} /></svg>
+            <span>Lihat situs</span>
+          </a>
+          <a href="/auth/keluar">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d={icons.logout} /></svg>
+            <span>Keluar</span>
+          </a>
+        </div>
+      </aside>
+
+      <div class="adm-main-col">
+        <header class="adm-header">
+          <button
+            type="button"
+            class="adm-collapse"
+            id="adm-collapse"
+            aria-expanded="true"
+            aria-controls="adm-sidebar"
+            aria-label="Lipat sidebar"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d={icons.collapse} /></svg>
+          </button>
+          <p class="adm-crumb">Admin</p>
+        </header>
+        <main class="adm-main" id="isi">
+          <slot />
+        </main>
+        <footer class="adm-foot">
+          <p>ArticleTemplate.id — area admin. Hanya akun dengan role admin yang bisa membuka halaman ini.</p>
+        </footer>
+      </div>
+    </div>
+
+    <nav class="adm-tabs" aria-label="Navigasi admin (mobile)">
+      {
+        nav.map((item) => (
+          <a
+            href={item.href}
+            class={isActive(item.href) ? 'active' : undefined}
+            aria-current={isActive(item.href) ? 'page' : undefined}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d={icons[item.icon]} /></svg>
+            <span>{item.label}</span>
+          </a>
+        ))
+      }
+    </nav>
+
+    <script is:inline>
+      (function () {
+        var btn = document.getElementById('adm-collapse');
+        var shell = document.querySelector('.adm-shell');
+        if (!btn || !shell) return;
+        btn.addEventListener('click', function () {
+          var collapsed = shell.classList.toggle('adm-collapsed');
+          btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+          btn.setAttribute('aria-label', collapsed ? 'Buka sidebar' : 'Lipat sidebar');
+        });
+      })();
+    </script>
+  </body>
+</html>
+
+<style is:global>
+  /* Dasar shell admin (file layout baru — bukan edit CSS global). */
+  :root {
+    --paper: #fbfaf7;
+    --surface: #ffffff;
+    --ink: #1f2937;
+    --muted: #5b6470;
+    --line: #e7e2d6;
+    --accent: #1b4d3e;
+    --accent-dark: #153d31;
+    --accent-soft: #e9efea;
+    --warn-bg: #f6f1e4;
+    --warn-line: #dcd0ad;
+    --warn-ink: #5e4a14;
+    --tab-h: 60px;
+  }
+  * {
+    box-sizing: border-box;
+  }
+  html {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    margin: 0;
+    min-height: 100dvh;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    line-height: 1.65;
+    overflow-wrap: anywhere;
+  }
+  a {
+    color: var(--accent);
+    text-underline-offset: 3px;
+  }
+  a,
+  button {
+    touch-action: manipulation;
+  }
+  input,
+  textarea,
+  select {
+    font: inherit;
+    font-size: 16px;
+    min-height: 44px;
+  }
+  :focus-visible {
+    outline: 3px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+</style>
+
+<style>
+  .adm-shell {
+    display: flex;
+    min-height: 100dvh;
+  }
+  /* ---------- sidebar (desktop) ---------- */
+  .adm-sidebar {
+    display: none;
+  }
+  .adm-main-col {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    padding-bottom: calc(var(--tab-h) + env(safe-area-inset-bottom, 0px) + 1rem);
+  }
+  .adm-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.9rem 16px;
+    border-bottom: 1px solid var(--line);
+    background: var(--surface);
+    position: sticky;
+    top: 0;
+    z-index: 20;
+  }
+  .adm-collapse {
+    display: none;
+  }
+  .adm-crumb {
+    margin: 0;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 1.05rem;
+    color: var(--muted);
+  }
+  .adm-main {
+    padding: 1.5rem 16px 0;
+    max-width: 960px;
+    width: 100%;
+    margin: 0 auto;
+  }
+  .adm-main h1 {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: clamp(1.7rem, 6vw, 2.4rem);
+    font-weight: 500;
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+    margin: 0 0 1rem;
+  }
+  .adm-main h2 {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 1.3rem;
+    font-weight: 500;
+    line-height: 1.3;
+    margin: 2rem 0 0.75rem;
+  }
+  .adm-main p {
+    margin: 0 0 1rem;
+  }
+  .adm-foot {
+    margin-top: 2.5rem;
+    padding: 1.25rem 16px 0;
+    border-top: 1px solid var(--line);
+    font-size: 0.9rem;
+    color: var(--muted);
+  }
+  .adm-foot p {
+    margin: 0;
+    max-width: 960px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  /* ---------- bottom tab bar (HP) ---------- */
+  .adm-tabs {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 50;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    background: rgba(255, 255, 255, 0.96);
+    border-top: 1px solid var(--line);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .adm-tabs a {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    min-height: var(--tab-h);
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 0.72rem;
+    font-weight: 500;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .adm-tabs a svg {
+    width: 24px;
+    height: 24px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .adm-tabs a.active {
+    color: var(--accent);
+  }
+  .adm-tabs a.active svg {
+    stroke-width: 2.3;
+  }
+  /* ---------- layar lebar: sidebar + lipat ---------- */
+  @media (min-width: 720px) {
+    .adm-tabs {
+      display: none;
+    }
+    .adm-main-col {
+      padding-bottom: 0;
+    }
+    .adm-sidebar {
+      display: flex;
+      flex-direction: column;
+      width: 240px;
+      flex-shrink: 0;
+      background: #1b4d3e;
+      color: #fbfaf7;
+      min-height: 100dvh;
+      position: sticky;
+      top: 0;
+      height: 100dvh;
+      transition: width 150ms ease-out;
+    }
+    .adm-brand {
+      padding: 1.25rem 1.25rem 1rem;
+      border-bottom: 1px solid rgba(220, 208, 173, 0.3);
+    }
+    .adm-brand a {
+      color: #fbfaf7;
+      text-decoration: none;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 1.25rem;
+      font-weight: 500;
+      display: block;
+      min-height: 44px;
+    }
+    .adm-brand a em {
+      font-style: normal;
+      color: #dcd0ad;
+    }
+    .adm-brand-sub {
+      display: block;
+      font-size: 0.85rem;
+      color: #d8e2dc;
+    }
+    .adm-nav {
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+      padding: 1rem 0.75rem;
+      flex: 1;
+    }
+    .adm-nav a,
+    .adm-side-foot a {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      min-height: 44px;
+      padding: 0.5rem 0.75rem;
+      border-radius: 8px;
+      color: #d8e2dc;
+      text-decoration: none;
+      font-weight: 500;
+      font-size: 0.95rem;
+      white-space: nowrap;
+    }
+    .adm-nav a svg,
+    .adm-side-foot a svg {
+      width: 22px;
+      height: 22px;
+      flex-shrink: 0;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .adm-nav a.active {
+      background: rgba(220, 208, 173, 0.22);
+      color: #fbfaf7;
+    }
+    .adm-nav a.active svg {
+      stroke-width: 2.3;
+    }
+    .adm-side-foot {
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+      padding: 1rem 0.75rem;
+      border-top: 1px solid rgba(220, 208, 173, 0.3);
+    }
+    .adm-collapse {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--accent);
+      cursor: pointer;
+    }
+    .adm-collapse svg {
+      width: 22px;
+      height: 22px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      transition: transform 150ms ease-out;
+    }
+    /* Sidebar terlipat: ikon saja. */
+    .adm-shell.adm-collapsed .adm-sidebar {
+      width: 68px;
+    }
+    .adm-shell.adm-collapsed .adm-brand a,
+    .adm-shell.adm-collapsed .adm-brand-sub,
+    .adm-shell.adm-collapsed .adm-nav a span,
+    .adm-shell.adm-collapsed .adm-side-foot a span {
+      display: none;
+    }
+    .adm-shell.adm-collapsed .adm-brand {
+      padding: 1.25rem 0.5rem 1rem;
+      text-align: center;
+    }
+    .adm-shell.adm-collapsed .adm-brand a {
+      font-size: 1.1rem;
+    }
+    .adm-shell.adm-collapsed .adm-nav a,
+    .adm-shell.adm-collapsed .adm-side-foot a {
+      justify-content: center;
+      padding: 0.5rem 0;
+    }
+    .adm-shell.adm-collapsed .adm-collapse svg {
+      transform: rotate(180deg);
+    }
+    .adm-main {
+      padding: 2rem 24px 0;
+    }
+    .adm-header {
+      padding: 0.9rem 24px;
+    }
+    .adm-foot {
+      padding: 1.25rem 24px 1.5rem;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      transition: none !important;
+    }
+  }
+</style>

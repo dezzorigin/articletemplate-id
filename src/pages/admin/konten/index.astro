@@ -1,5 +1,5 @@
 ---
-import Base from '../../../layouts/Base.astro';
+import Admin from '../../../layouts/Admin.astro';
 import { requireAdmin } from '../../../lib/admin';
 import { CONTENT_KEYS, DEFAULT_CONTENT, listContent, type ContentKey } from '../../../lib/content';
 
@@ -18,8 +18,8 @@ const tgl = (s: string) => {
 };
 ---
 
-<Base title="Admin · Konten">
-  <p><a href="/admin">← Admin</a></p>
+<Admin title="Admin · Konten">
+  <p><a href="/admin">← Dashboard</a></p>
   <h1>Kelola konten</h1>
   <p class="hint">Teks halaman yang bisa diubah tanpa edit kode. Isi hanya teks polos — tanpa HTML. Bila belum pernah diubah, halaman memakai teks bawaan.</p>
   {saved ? <p class="notice ok" role="status">Konten tersimpan.</p> : null}
@@ -36,12 +36,79 @@ const tgl = (s: string) => {
       );
     })}
   </ul>
-</Base>
+</Admin>
 
 <style>
-  .list { list-style: none; padding: 0; margin: 1rem 0; display: grid; gap: 0.6rem; }
-  .title { text-decoration: none; display: inline-flex; min-height: 44px; align-items: center; }
-  .meta { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; margin: 0.25rem 0; color: var(--muted); font-size: 0.9rem; }
-  .body { color: var(--muted); font-size: 0.92rem; margin: 0.25rem 0 0; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-  .hint { color: var(--muted); font-size: 0.92rem; }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+  }
+  .card p:last-child {
+    margin-bottom: 0;
+  }
+  .notice {
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    margin: 0 0 1rem;
+    background: var(--warn-bg);
+    border: 1px solid var(--warn-line);
+    color: var(--warn-ink);
+  }
+  .notice.ok {
+    background: var(--accent-soft);
+    border-color: #b9ccc1;
+    color: var(--accent);
+  }
+  .badge {
+    display: inline-block;
+    border: 1px solid var(--line);
+    color: var(--muted);
+    padding: 0.05rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.78rem;
+    white-space: nowrap;
+  }
+  .hint {
+    color: var(--muted);
+    font-size: 0.92rem;
+  }
+  .list {
+    list-style: none;
+    padding: 0;
+    margin: 1rem 0;
+    display: grid;
+    gap: 0.6rem;
+  }
+  .title {
+    text-decoration: none;
+    display: inline-flex;
+    min-height: 44px;
+    align-items: center;
+    color: inherit;
+  }
+  .title strong {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 1.08rem;
+    font-weight: 500;
+  }
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    align-items: center;
+    margin: 0.25rem 0;
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+  .body {
+    color: var(--muted);
+    font-size: 0.92rem;
+    margin: 0.25rem 0 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
 </style>

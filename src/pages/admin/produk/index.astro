@@ -1,5 +1,5 @@
 ---
-import Base from '../../../layouts/Base.astro';
+import Admin from '../../../layouts/Admin.astro';
 import { formatRupiah } from '../../../lib/money';
 import { requireAdmin, adminListProducts } from '../../../lib/admin';
 
@@ -16,8 +16,8 @@ const msg: Record<string, [string, boolean]> = {
 const note = m ? msg[m] : undefined;
 ---
 
-<Base title="Admin · Produk">
-  <p><a href="/admin">← Admin</a></p>
+<Admin title="Admin · Produk">
+  <p><a href="/admin">← Dashboard</a></p>
   <h1>Produk</h1>
   {note ? <p class={note[1] ? 'notice ok' : 'notice'} role="status">{note[0]}</p> : null}
   <p><a class="btn" href="/admin/produk/baru">Tambah produk</a></p>
@@ -30,20 +30,102 @@ const note = m ? msg[m] : undefined;
           <p class="meta">
             <span class="badge">{p.jenjang}</span>
             <span class={p.is_visible ? 'badge on' : 'badge'}>{p.is_visible ? 'Tampil' : 'Tersembunyi'}</span>
-            {p.harga === null ? <span class="badge">Harga belum ditetapkan</span> : <span>{formatRupiah(p.harga)}</span>}
-            {p.file_path ? null : <span class="badge">Belum ada file</span>}
+            {p.harga === null ? <span class="badge warn">Harga belum ditetapkan</span> : <span>{formatRupiah(p.harga)}</span>}
+            {p.file_path ? null : <span class="badge warn">Belum ada file</span>}
           </p>
           <p class="hint">/{p.slug}</p>
         </li>
       ))}
     </ul>
   )}
-</Base>
+</Admin>
 
 <style>
-  .list { list-style: none; padding: 0; margin: 1rem 0; display: grid; gap: 0.6rem; }
-  .title { text-decoration: none; display: inline-flex; min-height: 44px; align-items: center; }
-  .meta { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; margin: 0.25rem 0; }
-  .badge.on { background: var(--accent-soft); color: var(--accent); }
-  .hint { font-size: 0.85rem; overflow-wrap: anywhere; }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+  }
+  .card p:last-child {
+    margin-bottom: 0;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    background: var(--accent);
+    color: #fff;
+    border: 0;
+    border-radius: 8px;
+    padding: 0.6rem 1.25rem;
+    font: inherit;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .notice {
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    margin: 0 0 1rem;
+    background: var(--warn-bg);
+    border: 1px solid var(--warn-line);
+    color: var(--warn-ink);
+  }
+  .notice.ok {
+    background: var(--accent-soft);
+    border-color: #b9ccc1;
+    color: var(--accent);
+  }
+  .badge {
+    display: inline-block;
+    border: 1px solid var(--line);
+    color: var(--muted);
+    padding: 0.05rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.78rem;
+    white-space: nowrap;
+  }
+  .badge.on {
+    background: var(--accent-soft);
+    border-color: #b9ccc1;
+    color: var(--accent);
+  }
+  .badge.warn {
+    background: #f6f1e4;
+    border-color: #dcd0ad;
+    color: #5e4a14;
+  }
+  .hint {
+    color: var(--muted);
+    font-size: 0.85rem;
+    overflow-wrap: anywhere;
+  }
+  .list {
+    list-style: none;
+    padding: 0;
+    margin: 1rem 0;
+    display: grid;
+    gap: 0.6rem;
+  }
+  .title {
+    text-decoration: none;
+    display: inline-flex;
+    min-height: 44px;
+    align-items: center;
+    color: inherit;
+  }
+  .title strong {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 1.08rem;
+    font-weight: 500;
+  }
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    align-items: center;
+    margin: 0.25rem 0;
+  }
 </style>
