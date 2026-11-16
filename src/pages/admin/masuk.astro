@@ -1,5 +1,6 @@
 ---
 import Base from '../../layouts/Base.astro';
+import AuthSplit from '../../components/AuthSplit.astro';
 import { cleanEmail, validPassword, safeNext } from '../../lib/auth';
 import { getSupabaseAdmin } from '../../lib/supabase';
 
@@ -59,25 +60,31 @@ if (Astro.request.method === 'POST') {
 ---
 
 <Base title="Masuk admin">
-  <h1>Masuk admin</h1>
-  <p class="hint">Halaman khusus pengelola toko. Pembeli masuk lewat halaman biasa.</p>
-  {error ? <p class="notice" role="alert">{error}</p> : null}
+  <AuthSplit title="Masuk admin" lead="Halaman khusus pengelola toko. Pembeli masuk lewat halaman biasa.">
+    {error ? <p class="notice" role="alert">{error}</p> : null}
 
-  <form class="form" method="post">
-    <input type="hidden" name="next" value={next} />
-    <label class="field">
-      <span>Email admin</span>
-      <input type="email" name="email" required autocomplete="email" inputmode="email" autocapitalize="none" autocorrect="off" maxlength="254" />
-    </label>
-    <label class="field">
-      <span>Kata sandi</span>
-      <input type="password" name="password" required autocomplete="current-password" minlength="8" maxlength="72" />
-    </label>
-    <button type="submit">Masuk sebagai admin</button>
-  </form>
+    <form class="form" method="post">
+      <input type="hidden" name="next" value={next} />
+      <label class="field">
+        <span>Email admin</span>
+        <input type="email" name="email" required autocomplete="email" inputmode="email" autocapitalize="none" autocorrect="off" maxlength="254" />
+      </label>
+      <label class="field">
+        <span>Kata sandi</span>
+        <input type="password" name="password" required autocomplete="current-password" minlength="8" maxlength="72" />
+      </label>
+      <button type="submit">Masuk sebagai admin</button>
+    </form>
 
-  <div class="linkrow">
-    <a href="/masuk">Masuk sebagai pembeli</a>
-    <a href="/lupa-password">Lupa kata sandi</a>
-  </div>
+    <div class="linkrow">
+      <a href="/masuk">Masuk sebagai pembeli</a>
+      <a href="/lupa-password">Lupa kata sandi</a>
+    </div>
+  </AuthSplit>
 </Base>
+
+<style>
+  .form {
+    max-width: none;
+  }
+</style>

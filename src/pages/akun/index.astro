@@ -29,7 +29,7 @@ const tgl = (s: string) => new Date(s).toLocaleDateString('id-ID', { day: 'numer
   {ok === 'sandi' ? <p class="notice ok" role="status">Kata sandi berhasil disimpan.</p> : null}
   {ok === 'email' ? <p class="notice ok" role="status">Email unduhan sudah dikirim ke {user.email}.</p> : null}
 
-  <div class="card">
+  <div class="card profil">
     <p><strong>{nama ?? 'Pembeli'}</strong></p>
     <p>{user.email}</p>
     <form method="post" action="/auth/keluar">
@@ -45,33 +45,58 @@ const tgl = (s: string) => new Date(s).toLocaleDateString('id-ID', { day: 'numer
         <p>Belum ada order. <a href="/templates">Lihat katalog template</a>.</p>
       </div>
     ) : (
-      orders.map((o) => (
-        <div class="card">
-          <p>
-            <span class="badge">{label[o.status]}</span> {tgl(o.created_at)} · <strong>{formatRupiah(o.total)}</strong>
-          </p>
-          {o.items.map((i) => (
-            <p>
-              {i.judul}
-              {o.status === 'lunas' ? (
-                i.bisa_unduh ? (
-                  <> · <a href={`/unduh/${o.id}/${i.product_id}`}>Unduh</a></>
-                ) : (
-                  <> · <em>file belum tersedia</em></>
-                )
-              ) : o.status === 'menunggu_bayar' ? (
-                <> · <a href={`/checkout/status?order=${o.id}`}>Lanjut bayar</a></>
-              ) : null}
-            </p>
-          ))}
-          {o.status === 'lunas' ? (
-            <form method="post" action="/akun/kirim-ulang">
-              <input type="hidden" name="order" value={o.id} />
-              <button type="submit" class="btn ghost">Kirim ulang email unduhan</button>
-            </form>
-          ) : null}
-        </div>
-      ))
+      <div class="tabel-wrap">
+        <table class="riwayat">
+          <thead>
+            <tr>
+              <th scope="col">Tanggal</th>
+              <th scope="col">Produk</th>
+              <th scope="col">Total</th>
+              <th scope="col">Status</th>
+              <th scope="col">Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            {orders.map((o) => (
+              <tr>
+                <td data-label="Tanggal">{tgl(o.created_at)}</td>
+                <td data-label="Produk">
+                  <ul class="items">
+                    {o.items.map((i) => <li>{i.judul}</li>)}
+                  </ul>
+                </td>
+                <td data-label="Total"><strong>{formatRupiah(o.total)}</strong></td>
+                <td data-label="Status"><span class={`badge st-${o.status}`}>{label[o.status]}</span></td>
+                <td data-label="Aksi">
+                  {o.status === 'menunggu_bayar' ? (
+                    <a class="btn kecil" href={`/checkout/status?order=${o.id}`}>Lanjut bayar</a>
+                  ) : o.status === 'lunas' ? (
+                    <ul class="aksi">
+                      {o.items.map((i) => (
+                        <li>
+                          {i.bisa_unduh ? (
+                            <a class="btn kecil" href={`/unduh/${o.id}/${i.product_id}`}>Unduh</a>
+                          ) : (
+                            <em>file belum tersedia</em>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <span class="tak-ada">—</span>
+                  )}
+                  {o.status === 'lunas' ? (
+                    <form method="post" action="/akun/kirim-ulang">
+                      <input type="hidden" name="order" value={o.id} />
+                      <button type="submit" class="btn ghost kecil">Kirim ulang email unduhan</button>
+                    </form>
+                  ) : null}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     )
   }
 
@@ -80,3 +105,137 @@ const tgl = (s: string) => new Date(s).toLocaleDateString('id-ID', { day: 'numer
     <a href="/atur-password">Ubah kata sandi</a>
   </div>
 </Base>
+
+<style>
+  .profil p {
+    margin-bottom: 0.5rem;
+  }
+  .profil form {
+    margin-top: 0.75rem;
+  }
+  /* ---------- tabel riwayat order (desktop) ---------- */
+  .tabel-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--surface);
+  }
+  .riwayat {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+  }
+  .riwayat th,
+  .riwayat td {
+    text-align: left;
+    vertical-align: top;
+    padding: 0.75rem 0.9rem;
+    border-bottom: 1px solid var(--line);
+  }
+  .riwayat tbody tr:last-child th,
+  .riwayat tbody tr:last-child td {
+    border-bottom: 0;
+  }
+  .riwayat thead th {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--muted);
+    background: var(--paper);
+    white-space: nowrap;
+  }
+  .riwayat td:nth-child(3) {
+    white-space: nowrap;
+  }
+  .items,
+  .aksi {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0.35rem;
+  }
+  .aksi em {
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+  .tak-ada {
+    color: var(--muted);
+  }
+  .aksi form {
+    margin-top: 0.35rem;
+  }
+  .btn.kecil {
+    min-height: 36px;
+    padding: 0.35rem 0.85rem;
+    font-size: 0.9rem;
+  }
+  /* ---------- badge status (4 status order, warna beda) ---------- */
+  .badge.st-lunas {
+    background: #e9efea;
+    border-color: #b9ccc1;
+    color: #1b4d3e;
+  }
+  .badge.st-menunggu_bayar {
+    background: #f6f1e4;
+    border-color: #dcd0ad;
+    color: #5e4a14;
+  }
+  .badge.st-gagal {
+    background: #fdf0ed;
+    border-color: #e8c4bc;
+    color: #8a2f23;
+  }
+  .badge.st-kedaluwarsa {
+    background: #f1efe9;
+    border-color: #e7e2d6;
+    color: #5b6470;
+  }
+  /* ---------- HP: tabel jadi kartu per order ---------- */
+  @media (max-width: 719px) {
+    .tabel-wrap {
+      border: 0;
+      background: transparent;
+      overflow: visible;
+    }
+    .riwayat,
+    .riwayat tbody,
+    .riwayat tr,
+    .riwayat td {
+      display: block;
+      width: 100%;
+    }
+    .riwayat thead {
+      display: none;
+    }
+    .riwayat tbody {
+      display: grid;
+      gap: 0.75rem;
+    }
+    .riwayat tr {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 0.75rem 1rem;
+    }
+    .riwayat td {
+      border-bottom: 0;
+      padding: 0.3rem 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.25rem 0.75rem;
+      align-items: baseline;
+    }
+    .riwayat td::before {
+      content: attr(data-label);
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--muted);
+      min-width: 4.5rem;
+    }
+    .riwayat td .items,
+    .riwayat td .aksi {
+      flex: 1;
+    }
+  }
+</style>

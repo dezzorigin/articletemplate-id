@@ -1,5 +1,5 @@
 ---
-import Base from '../../../layouts/Base.astro';
+import Admin from '../../../layouts/Admin.astro';
 import { JENJANG } from '../../../lib/catalog';
 import { formatRupiah } from '../../../lib/money';
 import { previewUrl } from '../../../lib/catalog';
@@ -104,7 +104,7 @@ const prevUrl = product ? previewUrl(product.preview_path) : null;
 const fileName = (p: string | null) => (p ? p.split('/').pop() : null);
 ---
 
-<Base title={isNew ? 'Produk baru' : `Ubah: ${product!.judul}`}>
+<Admin title={isNew ? 'Produk baru' : `Ubah: ${product!.judul}`}>
   <p><a href="/admin/produk">← Semua produk</a></p>
   <h1>{isNew ? 'Produk baru' : 'Ubah produk'}</h1>
 
@@ -189,25 +189,104 @@ const fileName = (p: string | null) => (p ? p.split('/').pop() : null);
       <button type="submit" class="ghost">Hapus produk</button>
     </form>
   ) : null}
-</Base>
+</Admin>
 
 <style>
-  .wide { max-width: 640px; }
+  .wide {
+    max-width: 640px;
+  }
+  .form {
+    display: grid;
+    gap: 0.9rem;
+  }
+  .form .field {
+    display: grid;
+    gap: 0.3rem;
+    font-weight: 500;
+    font-size: 0.9rem;
+  }
+  .form .field input,
   .form .field textarea,
   .form .field select {
     width: 100%;
     border: 1px solid var(--line);
-    border-radius: 12px;
+    border-radius: 8px;
     padding: 0.5rem 0.8rem;
     background: var(--surface);
     color: var(--ink);
     font: inherit;
     font-weight: 400;
   }
-  .files { border: 1px solid var(--line); border-radius: 12px; padding: 0.75rem; margin: 0; }
-  .files legend { padding: 0 0.3rem; }
-  .check { display: flex; gap: 0.5rem; align-items: center; min-height: 44px; font-weight: 600; }
-  .check input { width: 1.2rem; height: 1.2rem; }
-  .errs { margin: 0; padding-left: 1.1rem; }
-  .danger { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--line); max-width: 640px; }
+  .form .hint {
+    color: var(--muted);
+    font-size: 0.85rem;
+    font-weight: 400;
+  }
+  .notice {
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    margin: 0 0 1rem;
+    background: var(--warn-bg);
+    border: 1px solid var(--warn-line);
+    color: var(--warn-ink);
+  }
+  .notice.ok {
+    background: var(--accent-soft);
+    border-color: #b9ccc1;
+    color: var(--accent);
+  }
+  button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    background: var(--accent);
+    color: #fff;
+    border: 0;
+    border-radius: 8px;
+    padding: 0.6rem 1.25rem;
+    font: inherit;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  button.ghost {
+    background: transparent;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+  }
+  .files {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 0.75rem;
+    margin: 0;
+  }
+  .files legend {
+    padding: 0 0.3rem;
+  }
+  .check {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    min-height: 44px;
+    font-weight: 600;
+  }
+  .check input {
+    width: 1.2rem;
+    height: 1.2rem;
+    min-height: 0;
+  }
+  .errs {
+    margin: 0;
+    padding-left: 1.1rem;
+  }
+  .danger {
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--line);
+    max-width: 640px;
+  }
+  .danger .hint {
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
 </style>

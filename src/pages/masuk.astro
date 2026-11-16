@@ -1,5 +1,6 @@
 ---
 import Base from '../layouts/Base.astro';
+import AuthSplit from '../components/AuthSplit.astro';
 import { safeNext, googleEnabled } from '../lib/auth';
 
 if (Astro.locals.user) return Astro.redirect('/akun');
@@ -16,31 +17,67 @@ const error = code ? messages[code] : undefined;
 ---
 
 <Base title="Masuk">
-  <h1>Masuk</h1>
-  {error ? <p class="notice" role="alert">{error}</p> : null}
+  <AuthSplit title="Masuk" lead="Masuk untuk melihat order dan mengunduh template yang sudah kamu beli.">
+    {error ? <p class="notice" role="alert">{error}</p> : null}
 
-  <form class="form" method="post" action="/auth/masuk">
-    <input type="hidden" name="next" value={next} />
-    <label class="field">
-      <span>Email</span>
-      <input type="email" name="email" required autocomplete="email" inputmode="email" autocapitalize="none" autocorrect="off" maxlength="254" />
-    </label>
-    <label class="field">
-      <span>Kata sandi</span>
-      <input type="password" name="password" required autocomplete="current-password" minlength="8" maxlength="72" />
-    </label>
-    <button type="submit">Masuk</button>
-  </form>
+    {
+      googleEnabled() ? (
+        <>
+          <p class="google">
+            <a class="btn ghost google-btn" href={`/auth/google?next=${encodeURIComponent(next)}`}>Masuk dengan Google</a>
+          </p>
+          <p class="divider" role="separator"><span>atau masuk dengan email</span></p>
+        </>
+      ) : null
+    }
 
-  {
-    googleEnabled() ? (
-      <p><a class="btn ghost" href={`/auth/google?next=${encodeURIComponent(next)}`}>Masuk dengan Google</a></p>
-    ) : null
-  }
+    <form class="form" method="post" action="/auth/masuk">
+      <input type="hidden" name="next" value={next} />
+      <label class="field">
+        <span>Email</span>
+        <input type="email" name="email" required autocomplete="email" inputmode="email" autocapitalize="none" autocorrect="off" maxlength="254" />
+      </label>
+      <label class="field">
+        <span>Kata sandi</span>
+        <input type="password" name="password" required autocomplete="current-password" minlength="8" maxlength="72" />
+      </label>
+      <button type="submit">Masuk</button>
+    </form>
 
-  <div class="linkrow">
-    <a href="/daftar">Belum punya akun? Daftar</a>
-    <a href="/lupa-password">Lupa kata sandi</a>
-    <a href="/admin/masuk">Masuk sebagai admin</a>
-  </div>
+    <div class="linkrow">
+      <a href="/daftar">Belum punya akun? Daftar</a>
+      <a href="/lupa-password">Lupa kata sandi</a>
+      <a href="/admin/masuk">Masuk sebagai admin</a>
+    </div>
+  </AuthSplit>
 </Base>
+
+<style>
+  /* Form memakai lebar penuh kolom split (bukan 420px global). */
+  .form {
+    max-width: none;
+  }
+  .google {
+    margin: 0 0 0.25rem;
+  }
+  .google-btn {
+    width: 100%;
+  }
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: var(--muted);
+    font-size: 0.85rem;
+    margin: 0.75rem 0 1rem;
+  }
+  .divider::before,
+  .divider::after {
+    content: "";
+    flex: 1;
+    border-top: 1px solid var(--line);
+  }
+  .divider span {
+    white-space: nowrap;
+  }
+</style>

@@ -49,15 +49,17 @@ if (Astro.request.method === 'POST') {
     </div>
   ) : null}
 
-  <form class="form" method="post">
-    <label class="field">
-      <span>Nama</span>
-      <input type="text" name="nama" required autocomplete="name" maxlength="80" value={nama} />
-      <span class="hint">Nama tampil di akun dan pesananmu.</span>
-    </label>
-    <p class="hint">Email tidak bisa diubah di sini ({user.email}).</p>
-    <button type="submit">Simpan profil</button>
-  </form>
+  <div class="card profil-card">
+    <form class="form" method="post">
+      <label class="field">
+        <span>Nama</span>
+        <input type="text" name="nama" required autocomplete="name" maxlength="80" value={nama} />
+        <span class="hint">Nama tampil di akun dan pesananmu.</span>
+      </label>
+      <p class="hint">Email tidak bisa diubah di sini ({user.email}).</p>
+      <button type="submit">Simpan profil</button>
+    </form>
+  </div>
 
   <div class="linkrow">
     <a href="/atur-password">Ubah kata sandi</a>
@@ -66,4 +68,10 @@ if (Astro.request.method === 'POST') {
 
 <style>
   .errs { margin: 0; padding-left: 1.2rem; }
+  .profil-card {
+    max-width: 560px;
+  }
+  .profil-card .form {
+    max-width: none;
+  }
 </style>

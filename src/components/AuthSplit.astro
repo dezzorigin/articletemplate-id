@@ -1,0 +1,145 @@
+---
+// Kartu auth split (pola "Sign In" 21st.dev/@jahed — komposisi ditiru,
+// dibangun ulang sebagai Astro + CSS biasa).
+// Satu kolom penuh di HP; di layar lebar form di satu kolom dan panel hijau
+// di kolom sebelah. Panel HANYA berisi klaim terverifikasi (sama seperti
+// /tentang — PRD §7.8), bukan testimoni karangan; tanpa foto stok.
+interface Props {
+  title: string;
+  lead?: string;
+}
+const { title, lead } = Astro.props;
+// Klaim terverifikasi Nizam Albar (CV + ORCID + SINTA + Scopus, 27 Okt 2026).
+// Jangan tambah klaim baru di sini tanpa lewat PRD §7.8.
+const klaim = [
+  '4 artikel terindeks Scopus pada 2026.',
+  'SINTA Score 95.',
+  'Reviewer untuk PLOS ONE dan PLOS Global Public Health.',
+  'Dosen di Universitas Serambi Mekkah.',
+];
+const identitas = [
+  { label: 'ORCID', href: 'https://orcid.org/0009-0009-0254-1920', teks: '0009-0009-0254-1920' },
+  { label: 'Scopus', href: 'https://www.scopus.com/authid/detail.uri?authorId=58763735100', teks: '58763735100' },
+  { label: 'SINTA', href: 'https://sinta.kemdiktisaintek.go.id/authors/profile/6983413', teks: '6983413' },
+];
+---
+
+<div class="auth-split">
+  <div class="auth-form">
+    <h1>{title}</h1>
+    {lead ? <p class="lead">{lead}</p> : null}
+    <slot />
+  </div>
+
+  <aside class="auth-panel" aria-label="Tentang ArticleTemplate.id">
+    <p class="panel-eyebrow">Template artikel untuk peneliti</p>
+    <p class="panel-quote">
+      “Template artikel yang rapi dan sesuai format jurnal — beli, bayar, unduh, lalu kelola dari akunmu.”
+    </p>
+    <ul class="panel-klaim">
+      {klaim.map((k) => <li>{k}</li>)}
+      <li>Disusun oleh <strong>Nizam Albar</strong>, pemasaran dan representatif akademik ArticleTemplate.id.</li>
+    </ul>
+    <p class="panel-note">
+      Semua butir di atas bisa dicek lewat identitas publik berikut. Kami tidak menampilkan angka yang tidak
+      bisa kamu klik buktinya.
+    </p>
+    <ul class="panel-identitas">
+      {identitas.map((i) => (
+        <li>
+          {i.label}: <a href={i.href} target="_blank" rel="noopener noreferrer">{i.teks}</a>
+        </li>
+      ))}
+    </ul>
+    <p class="panel-janji">
+      Kami menyediakan template berkualitas dan pendampingan. Hasil penilaian naskah sepenuhnya keputusan
+      jurnal dan reviewer, jadi kami tidak membuat janji soal itu.
+    </p>
+  </aside>
+</div>
+
+<style>
+  .auth-split {
+    display: grid;
+    grid-template-columns: 1fr;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    overflow: hidden;
+    background: var(--surface);
+  }
+  .auth-form {
+    padding: 1.5rem 1.25rem 1.75rem;
+  }
+  .auth-form h1 {
+    margin-bottom: 0.5rem;
+  }
+  .lead {
+    color: var(--muted);
+    margin: 0 0 1.25rem;
+  }
+  .auth-panel {
+    background: #1b4d3e;
+    color: #fbfaf7;
+    padding: 1.5rem 1.25rem 1.75rem;
+  }
+  .panel-eyebrow {
+    color: #dcd0ad;
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin: 0 0 0.75rem;
+  }
+  .panel-quote {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 1.25rem;
+    line-height: 1.45;
+    margin: 0 0 1rem;
+  }
+  .panel-klaim {
+    margin: 0 0 1rem;
+    padding-left: 1.15rem;
+    display: grid;
+    gap: 0.35rem;
+    font-size: 0.95rem;
+  }
+  .panel-klaim strong {
+    color: #dcd0ad;
+    font-weight: 600;
+  }
+  .panel-note,
+  .panel-janji {
+    font-size: 0.9rem;
+    color: #d8e2dc;
+    margin: 0 0 0.75rem;
+  }
+  .panel-identitas {
+    list-style: none;
+    margin: 0 0 1rem;
+    padding: 0;
+    display: grid;
+    gap: 0.3rem;
+    font-size: 0.9rem;
+  }
+  .panel-identitas a {
+    color: #dcd0ad;
+    overflow-wrap: anywhere;
+  }
+  .panel-janji {
+    margin-bottom: 0;
+    border-top: 1px solid rgba(220, 208, 173, 0.35);
+    padding-top: 0.75rem;
+  }
+  @media (min-width: 880px) {
+    .auth-split {
+      grid-template-columns: minmax(340px, 5fr) 6fr;
+    }
+    .auth-form,
+    .auth-panel {
+      padding: 2rem 2rem 2.25rem;
+    }
+    .panel-quote {
+      font-size: 1.45rem;
+    }
+  }
+</style>

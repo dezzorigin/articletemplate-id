@@ -1,5 +1,5 @@
 ---
-import Base from '../../../layouts/Base.astro';
+import Admin from '../../../layouts/Admin.astro';
 import { formatRupiah } from '../../../lib/money';
 import { requireAdmin, adminListOrders, parseOrderQuery, ORDER_STATUS } from '../../../lib/admin';
 
@@ -12,8 +12,8 @@ const label: Record<string, string> = { menunggu_bayar: 'Menunggu bayar', lunas:
 const waktu = (s: string) => new Date(s).toLocaleString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' });
 ---
 
-<Base title="Admin · Order">
-  <p><a href="/admin">← Admin</a></p>
+<Admin title="Admin · Order">
+  <p><a href="/admin">← Dashboard</a></p>
   <h1>Order</h1>
 
   <form class="filter" method="get">
@@ -28,29 +28,103 @@ const waktu = (s: string) => new Date(s).toLocaleString('id-ID', { day: 'numeric
   <p class="hint">{orders.length} order{orders.length === 100 ? ' (100 terbaru)' : ''}.</p>
 
   {orders.length === 0 ? <div class="card"><p>Tidak ada order yang cocok.</p></div> : (
-    <ul class="list">
-      {orders.map((o) => (
-        <li class="card">
-          <p class="meta">
-            <span class="badge">{label[o.status]}</span>
-            <strong>{formatRupiah(o.total)}</strong>
-            {o.metode ? <span>{o.metode}</span> : null}
-            <span class="hint">{waktu(o.created_at)}</span>
-          </p>
-          <p class="who">{o.nama ? `${o.nama} · ` : ''}{o.email}</p>
-          <ul class="items">
-            {o.items.map((i) => <li>{i.judul} · {formatRupiah(i.harga_saat_beli)}</li>)}
-          </ul>
-          <p class="hint">Unduhan: {o.unduhan} · <code>{o.id}</code></p>
-        </li>
-      ))}
-    </ul>
+    <div class="tabel-wrap">
+      <table class="riwayat">
+        <thead>
+          <tr>
+            <th scope="col">Status</th>
+            <th scope="col">Pembeli</th>
+            <th scope="col">Produk</th>
+            <th scope="col">Total</th>
+            <th scope="col">Waktu</th>
+          </tr>
+        </thead>
+        <tbody>
+          {orders.map((o) => (
+            <tr>
+              <td data-label="Status"><span class={`badge st-${o.status}`}>{label[o.status]}</span></td>
+              <td data-label="Pembeli">
+                <span class="who">{o.nama ? `${o.nama} · ` : ''}{o.email}</span>
+                {o.metode ? <span class="hint"> · {o.metode}</span> : null}
+              </td>
+              <td data-label="Produk">
+                <ul class="items">
+                  {o.items.map((i) => <li>{i.judul} · {formatRupiah(i.harga_saat_beli)}</li>)}
+                </ul>
+              </td>
+              <td data-label="Total"><strong>{formatRupiah(o.total)}</strong></td>
+              <td data-label="Waktu">
+                <span class="hint">{waktu(o.created_at)}</span>
+                <br />
+                <span class="hint">Unduhan: {o.unduhan} · <code>{o.id}</code></span>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   )}
-</Base>
+</Admin>
 
 <style>
-  .filter { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0 0 0.75rem; }
-  .filter input, .filter select {
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+  }
+  .card p:last-child {
+    margin-bottom: 0;
+  }
+  .hint {
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+  code {
+    overflow-wrap: anywhere;
+    font-size: 0.78rem;
+    background: #f1efe9;
+    padding: 0.15rem 0.45rem;
+    border-radius: 6px;
+  }
+  .badge {
+    display: inline-block;
+    border: 1px solid var(--line);
+    color: var(--muted);
+    padding: 0.05rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.78rem;
+    white-space: nowrap;
+  }
+  .badge.st-lunas {
+    background: #e9efea;
+    border-color: #b9ccc1;
+    color: #1b4d3e;
+  }
+  .badge.st-menunggu_bayar {
+    background: #f6f1e4;
+    border-color: #dcd0ad;
+    color: #5e4a14;
+  }
+  .badge.st-gagal {
+    background: #fdf0ed;
+    border-color: #e8c4bc;
+    color: #8a2f23;
+  }
+  .badge.st-kedaluwarsa {
+    background: #f1efe9;
+    border-color: #e7e2d6;
+    color: #5b6470;
+  }
+  /* ---------- filter ---------- */
+  .filter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 0 0 0.75rem;
+  }
+  .filter input,
+  .filter select {
     flex: 1 1 12rem;
     min-height: 44px;
     border: 1px solid var(--line);
@@ -60,10 +134,106 @@ const waktu = (s: string) => new Date(s).toLocaleString('id-ID', { day: 'numeric
     color: var(--ink);
     font: inherit;
   }
-  .list { list-style: none; padding: 0; margin: 0.5rem 0; display: grid; gap: 0.6rem; }
-  .meta { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin: 0 0 0.25rem; }
-  .who { color: var(--ink); overflow-wrap: anywhere; margin: 0 0 0.25rem; }
-  .items { margin: 0 0 0.25rem; padding-left: 1.1rem; color: var(--muted); }
-  .hint { font-size: 0.85rem; color: var(--muted); }
-  code { overflow-wrap: anywhere; font-size: 0.78rem; }
+  .filter button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    background: var(--accent);
+    color: #fff;
+    border: 0;
+    border-radius: 8px;
+    padding: 0.6rem 1.25rem;
+    font: inherit;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  /* ---------- tabel order (desktop) ---------- */
+  .tabel-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--surface);
+  }
+  .riwayat {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+  }
+  .riwayat th,
+  .riwayat td {
+    text-align: left;
+    vertical-align: top;
+    padding: 0.75rem 0.9rem;
+    border-bottom: 1px solid var(--line);
+  }
+  .riwayat tbody tr:last-child th,
+  .riwayat tbody tr:last-child td {
+    border-bottom: 0;
+  }
+  .riwayat thead th {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--muted);
+    background: var(--paper);
+    white-space: nowrap;
+  }
+  .riwayat td:nth-child(4) {
+    white-space: nowrap;
+  }
+  .who {
+    overflow-wrap: anywhere;
+  }
+  .items {
+    margin: 0;
+    padding-left: 1.1rem;
+    color: var(--muted);
+  }
+  /* ---------- HP: tabel jadi kartu per order ---------- */
+  @media (max-width: 719px) {
+    .tabel-wrap {
+      border: 0;
+      background: transparent;
+      overflow: visible;
+    }
+    .riwayat,
+    .riwayat tbody,
+    .riwayat tr,
+    .riwayat td {
+      display: block;
+      width: 100%;
+    }
+    .riwayat thead {
+      display: none;
+    }
+    .riwayat tbody {
+      display: grid;
+      gap: 0.75rem;
+    }
+    .riwayat tr {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 0.75rem 1rem;
+    }
+    .riwayat td {
+      border-bottom: 0;
+      padding: 0.3rem 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.25rem 0.75rem;
+      align-items: baseline;
+    }
+    .riwayat td::before {
+      content: attr(data-label);
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--muted);
+      min-width: 4.5rem;
+    }
+    .riwayat td .items {
+      flex: 1;
+    }
+  }
 </style>
