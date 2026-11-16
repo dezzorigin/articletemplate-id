@@ -13,6 +13,9 @@ for (const l of fs.readFileSync(path.join(proj, '.env'), 'utf8').split(/\r?\n/))
   if (m) env[m[1]] = m[2].trim();
 }
 const URL_ = env.PUBLIC_SUPABASE_URL, ANON = env.PUBLIC_SUPABASE_ANON_KEY, SRV = env.SUPABASE_SERVICE_ROLE_KEY;
+// Origin Supabase yang dikonfigurasi — dipakai untuk memvalidasi host signed URL.
+// Jangan hardcode supabase.co: backend kanonis adalah Kong self-hosted (host sslip.io).
+const SUPABASE_ORIGIN = new URL(URL_).origin;
 const BASE = 'http://127.0.0.1:4400';
 const admin = createClient(URL_, SRV, { auth: { persistSession: false, autoRefreshToken: false } });
 const tag = Date.now().toString(36);
@@ -74,10 +77,11 @@ const get = (p, cookie) => fetch(BASE + p, { redirect: 'manual', headers: cookie
     let r = await get(`/unduh/${oPaid}/${ids.product}`);
     check('tanpa login -> 303 /masuk', r.status === 303 && /\/masuk/.test(r.headers.get('location') || ''), r.status);
 
-    // G4 unduh benar
+    // G4 unduh benar: signed URL harus dari origin Supabase yang dikonfigurasi
+    // (Cloud maupun Kong self-hosted), path sign Storage, dan membawa token.
     r = await get(`/unduh/${oPaid}/${ids.product}`, ca);
     const loc = r.headers.get('location') || '';
-    check('G4 pemilik lunas -> 302 signed URL', r.status === 302 && /supabase\.co\/storage/.test(loc) && /token=/.test(loc), r.status);
+    check('G4 pemilik lunas -> 302 signed URL', r.status === 302 && loc.startsWith(SUPABASE_ORIGIN + '/storage/v1/object/sign/') && /[?&]token=/.test(loc), r.status + ' ' + loc);
     if (loc) {
       const f = await fetch(loc);
       const t = await f.text();

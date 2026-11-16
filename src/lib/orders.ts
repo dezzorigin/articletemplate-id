@@ -36,8 +36,34 @@ export async function ensureBuyer(email: string, nama: string | null): Promise<s
   return data.user.id;
 }
 
-/** Buat order + order_items dari daftar slug. Item tanpa harga final diabaikan. */
+/**
+ * Buat order + order_items dari daftar slug. Item tanpa harga final diabaikan.
+ * Dijalankan BERURUTAN per user (kunci dalam proses): dua POST /checkout/buat
+ * bersamaan untuk user yang sama tidak bisa sama-sama lolos cek findReusableOrder
+ * lalu sama-sama insert — yang kedua menemukan order hasil yang pertama dan
+ * memakainya ulang. Berlaku satu instance Coolify (asumsi sama seperti rate
+ * limit in-memory di src/lib/security.ts); tanpa migrasi DB.
+ */
+const orderTails = new Map<string, Promise<void>>();
+
 export async function createOrder(userId: string, slugs: string[]): Promise<OrderResult> {
+  const prev = orderTails.get(userId) ?? Promise.resolve();
+  let done!: () => void;
+  const mine = new Promise<void>((resolve) => {
+    done = resolve;
+  });
+  const tail = prev.then(() => mine);
+  orderTails.set(userId, tail);
+  try {
+    await prev;
+    return await createOrderInner(userId, slugs);
+  } finally {
+    done();
+    if (orderTails.get(userId) === tail) orderTails.delete(userId);
+  }
+}
+
+async function createOrderInner(userId: string, slugs: string[]): Promise<OrderResult> {
   if (slugs.length === 0) return { ok: false, reason: 'kosong' };
   const admin = getSupabaseAdmin();
 
@@ -111,7 +137,7 @@ export interface OrderView {
   status: 'menunggu_bayar' | 'lunas' | 'gagal' | 'kedaluwarsa';
   created_at: string;
   metode: Metode | null;
-  items: { judul: string; harga_saat_beli: number }[];
+  items: { product_id: string; judul: string; harga_saat_beli: number }[];
 }
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -121,11 +147,12 @@ export async function getOrderView(id: string): Promise<OrderView | null> {
   if (!UUID_RE.test(id)) return null;
   const { data } = await getSupabaseAdmin()
     .from('orders')
-    .select('id, total, status, created_at, order_items(harga_saat_beli, products(judul))')
+    .select('id, total, status, created_at, order_items(product_id, harga_saat_beli, products(judul))')
     .eq('id', id)
     .maybeSingle();
   if (!data) return null;
   const items = ((data as any).order_items ?? []).map((i: any) => ({
+    product_id: i.product_id as string,
     judul: i.products?.judul ?? 'Template',
     harga_saat_beli: Number(i.harga_saat_beli),
   }));

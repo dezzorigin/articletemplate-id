@@ -61,7 +61,19 @@ const label: Record<string, string> = {
         <p class="notice">Menunggu pembayaran. Halaman ini akan menunjukkan status terbaru saat dimuat ulang.</p>
       )
     ) : order.status === 'lunas' ? (
-      <p class="notice">Pembayaran diterima. Unduhan tersedia di dashboard (tahap berikutnya).</p>
+      <div class="notice">
+        <p>Pembayaran diterima.</p>
+        <p>
+          Unduhan tersedia:{' '}
+          {order.items.map((i, idx) => (
+            <>
+              {idx > 0 ? ', ' : ''}
+              <a href={`/unduh/${order.id}/${i.product_id}`}>Unduh {i.judul}</a>
+            </>
+          ))}
+          {' '}— atau dari <a href="/akun">dashboard akun</a>.
+        </p>
+      </div>
     ) : (
       <p class="notice">
         Pesanan ini tidak dilanjutkan. <a href="/keranjang">Kembali ke keranjang</a> untuk memesan ulang.

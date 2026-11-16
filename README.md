@@ -1,10 +1,11 @@
 # ArticleTemplate.id — aplikasi web
 
-Toko template artikel + modul konsultasi (dibangun sekaligus, PRD `../prd.md`).
+Toko template artikel + modul konsultasi (dibangun sekaligus; PRD v3.0 ada di
+paket delegasi tim, bukan di repo — ringkasan eksekusi di `docs/FRAMEWORK.md`).
 
 ## Stack
 
-- **Astro + React** (halaman + pulau interaktif) — adapter Node (standalone)
+- **Astro** (halaman server-rendered) — adapter Node (standalone)
 - **Coolify** — hosting lewat Docker (domain/Cloudflare DNS diurus belakangan)
 - **Supabase self-hosted di Coolify** — Postgres + Auth + Storage (service `supabase-kfuuqefxogdl5q4bam7t93vu`, project Coolify "ArticleTemplate.id"; tidak pernah pause, tanpa keepalive)
 - **BorderPay** — checkout QRIS/VA (mode test dulu, merchant menyusul)
@@ -19,8 +20,10 @@ Toko template artikel + modul konsultasi (dibangun sekaligus, PRD `../prd.md`).
 - `src/lib/supabase.ts` — `getSupabase()` (anon + RLS), `getSupabaseAdmin()` (service role, server saja)
 - `src/lib/money.ts` — satu-satunya format harga + hitung total
 - `docs/FRAMEWORK.md`, `docs/CHECKLIST.md` — rencana kerja + checklist uji
-- `supabase/schema.sql` — skema + RLS + seed placeholder (jalankan sekali)
-- `.github/workflows/keepalive.yml` — cron harian menjaga project Supabase Cloud CADANGAN (`azazbeufwmkaiajosunh`) agar tidak pause; backend kanonis self-hosted tidak butuh keepalive
+- `supabase/schema.sql` — skema + RLS + seed placeholder (jalankan sekali),
+  lalu `supabase/migrations/` (wajib: `20261113_harden_rls.sql` +
+  `20261113_products_compliance_columns.sql` — jangan lewati, skema saja
+  masih berisi policy lama)
 
 ## Placeholder yang masih menunggu (bukan bug)
 
@@ -47,14 +50,18 @@ URL + kunci diambil dari Environment Variables aplikasi Coolify — jangan isi
 dari dashboard Supabase Cloud.
 
 1. Coolify → project "ArticleTemplate.id" → service Supabase → pastikan jalan.
-2. SQL Editor di dashboard Supabase self-hosted → tempel `supabase/schema.sql` → Run.
+2. SQL Editor di dashboard Supabase self-hosted → tempel `supabase/schema.sql` → Run,
+   lalu tempel `supabase/migrations/20261113_harden_rls.sql` dan
+   `supabase/migrations/20261113_products_compliance_columns.sql` → Run.
+   Jangan lewati migrasi: skema saja masih berisi policy lama.
 3. Storage → buat bucket `templates` (private) dan `previews` (public).
 4. Authentication → aktifkan Email + Google login.
 5. Isi `.env` dari Environment Variables aplikasi Coolify (URL Kong + anon key +
    service role key). Service role key HANYA di server — tidak pernah ke repo/chat.
 6. Project Supabase Cloud `azazbeufwmkaiajosunh` (Nabil, dipulihkan 16 Nov 2026,
    ACTIVE_HEALTHY) adalah CADANGAN, bukan backend kanonis. Workflow keepalive
-   (`.github/workflows/keepalive.yml`) menjaga project cadangan itu — bukan self-hosted.
+   yang dulu menjaganya sudah DIHAPUS dari repo 16 Nov 2026 (keputusan Nabil);
+   bila project cadangan pause, pulihkan manual lewat dashboard Supabase.
 
 ## Deploy ke Coolify
 
@@ -63,7 +70,8 @@ dari dashboard Supabase Cloud.
 3. Environment Variables (Runtime) - isi semua dari `.env.example`:
    `PUBLIC_SUPABASE_URL`, `PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
    (BorderPay menyusul). Nilai rahasia hanya di dashboard Coolify.
-4. Domain + DNS Cloudflare diatur belakangan oleh tim.
+4. Domain + DNS: `articletemplate.id` + `www` sudah mengarah ke Coolify sejak
+   16 Nov 2026 (A @ + A www → IP VPS, DNS only) dan terpasang di aplikasi Coolify.
 
 Uji image lokal (butuh Docker): `docker build -t articletemplate .` lalu
 `docker run -p 4321:4321 --env-file .env articletemplate`.
@@ -75,4 +83,5 @@ Tanpa Docker: `npm run build && node dist/server/entry.mjs`.
 
 - Akses ke project Coolify "ArticleTemplate.id" (service Supabase + aplikasi) — akses utama untuk URL + kunci backend.
 - Akun merchant BorderPay — sebelum transaksi uang asli (mode test dulu).
-- Domainesia — verifikasi invoice `articletemplate.id` (Pending) + DNS nanti.
+- Domainesia — invoice `articletemplate.id` #2367425 LUNAS 26 Okt 2026; domain
+  aktif sampai 26 Okt 2027.

@@ -6,11 +6,11 @@ Legenda: `[ ]` belum, `[x]` lulus, `[!]` gagal.
 
 ## A. Infra
 - [x] A1 `npm run build` lulus di path tanpa karakter `#` (bukti: build Complete 13 Nov 2026; gagal bila path berisi `#`)
-- [ ] A2 Container Docker build dan jalan lokal (Dockerfile ditulis; BELUM diuji, Docker tidak terpasang di laptop ini. Uji lewat build Coolify)
+- [x] A2 Container Docker build dan jalan (bukti: 2 build Coolify sukses 16 Nov 2026 dari Dockerfile ini — redeploy pindah domain + redeploy pindah branch ke main, keduanya "Successfully", container healthy. Docker lokal tetap belum diuji)
 - [x] A3 `GET /api/health` 200 `{ok:true}` (bukti: `node dist/server/entry.mjs`, HTTP 200, 13 Nov 2026; `/` dan `/templates` juga 200)
 - [x] A4 Tidak ada nilai rahasia di repo (bukti: `git grep` hanya menemukan nama variabel + placeholder)
 - [x] A5 `.env.example` lengkap, aplikasi gagal jelas bila env wajib kosong (bukti: tes `requireEnv` melempar pesan jelas)
-- [ ] A6 Keepalive GitHub Actions hijau 1 run — workflow ini menjaga project Supabase Cloud CADANGAN (`azazbeufwmkaiajosunh`), bukan backend kanonis self-hosted (secret repo SUPABASE_URL/SUPABASE_ANON_KEY menunjuk project cadangan; jalankan manual)
+- [ ] A6 (tidak berlaku) Workflow keepalive DIHAPUS dari repo 16 Nov 2026 atas keputusan Nabil (state GitHub terverifikasi `disabled_manually` sebelum dihapus). Project Cloud cadangan tidak dijaga otomatis; bila pause, pulihkan manual lewat dashboard Supabase
 - [x] A7 Supabase proyek aktif (bukti: proyek baru `articletemplate-id` ref kckivepafrmyihoigcnb, status ACTIVE_HEALTHY, 13 Nov 2026; menggantikan proyek lama yang pause) — Catatan 16 Nov 2026: proyek Cloud ini sekarang dev/test milik Westindo, bukan backend kanonis. Backend kanonis = Supabase self-hosted di Coolify, lihat A8.
 - [ ] A8 Backend kanonis self-hosted terverifikasi: migrasi pengamanan RLS (`supabase/migrations/20261113_harden_rls.sql`) sudah diterapkan di database self-hosted Coolify (BELUM TERVERIFIKASI — menunggu konfirmasi Westindo); skema + bucket + Auth di self-hosted sudah sesuai `supabase/schema.sql`
 
@@ -60,7 +60,7 @@ Legenda: `[ ]` belum, `[x]` lulus, `[!]` gagal.
 - [ ] G1 Tanpa login ditolak
 - [ ] G2 Login tapi order belum lunas ditolak
 - [ ] G3 Akun lain tidak bisa mengunduh order orang lain
-- [ ] G4 Order lunas: unduh berhasil, file benar
+- [ ] G4 Order lunas: unduh berhasil, file benar (cek host signed URL di `scripts/e2e-download.cjs` sudah diperbaiki 16 Nov 2026 menjadi host-agnostic dari `PUBLIC_SUPABASE_URL`; e2e tetap belum dijalankan melawan backend self-hosted)
 - [ ] G5 Unduh ulang dari dashboard berhasil
 - [ ] G6 Tiap unduhan tercatat di `downloads`
 - [ ] G7 URL file tidak bisa ditebak, signed URL kedaluwarsa
@@ -69,7 +69,7 @@ Legenda: `[ ]` belum, `[x]` lulus, `[!]` gagal.
 - [x] H1 Hanya role admin bisa masuk, pembeli ditolak (bukti: anon 303, pembeli 404, admin 200 untuk /admin. Login admin terpisah dari pembeli belum dibangun, memakai akun sama dengan role)
 - [x] H2 Tambah/ubah/hapus produk (bukti: scripts/e2e-admin.cjs; produk yang pernah dibeli disembunyikan, bukan dihapus)
 - [x] H3 Ubah harga langsung tercermin di katalog dan checkout (bukti: 1000 -> 2500 tampil di katalog, checkout, total order)
-- [x] H4 Upload file template (bucket private) dan pratinjau (bucket public) (bukti: file tidak bisa dibuka lewat URL publik, file lama terhapus saat diganti, .exe ditolak)
+- [x] H4 Upload file template (bucket private) dan pratinjau (bucket public) (bukti: file tidak bisa dibuka lewat URL publik, file lama terhapus saat diganti, .exe ditolak. Validasi isi/magic-bytes ditambah 16 Nov 2026 — belum diuji e2e)
 - [x] H5 Daftar order + cari email/produk (bukti: cari email/slug/judul + filter status)
 - [x] H6 Kirim ulang email lunas/download (14 Nov: Resend terpasang, tombol di /akun, `e2e-kirim-ulang` 6 cek lulus, email nyata masuk Gmail. Pengirim masih onboarding@resend.dev: hanya bisa ke pemilik akun Resend, butuh verifikasi domain sebelum tayang)
 
@@ -90,11 +90,11 @@ Legenda: `[ ]` belum, `[x]` lulus, `[!]` gagal.
 - [x] K2 Service role key tidak ada di bundle frontend (dist/client dan HTML halaman diperiksa)
 - [x] K3 Validasi input server-side: POST lintas-origin 403 (auth, checkout, admin), open redirect ?next ditolak, input filter aneh dan path traversal aman, keranjang tak valid tidak 500
 - [x] K4 Header keamanan terpasang (CSP tanpa unsafe-eval dan tanpa skrip inline, X-Frame-Options DENY, nosniff, Referrer-Policy, Permissions-Policy; HSTS hanya mode produksi). Berkas statis di public/ (robots.txt) dilayani tanpa middleware sehingga tanpa header; tidak sensitif
-- [x] K5 Rate limit endpoint publik (dalam memori, satu instance: masuk 10/menit, daftar dan lupa 5/10 menit, checkout 15/10 menit; kunci = entri X-Forwarded-For paling kanan. Jika Coolify dijalankan multi-instance, pindah ke penyimpanan bersama)
+- [x] K5 Rate limit endpoint publik (dalam memori, satu instance: masuk 10/menit, daftar dan lupa 5/10 menit, checkout 15/10 menit; kunci = entri X-Forwarded-For PALING KIRI sejak 16 Nov 2026, asumsi satu proxy tepercaya Traefik/Coolify — lihat `src/lib/security.ts`. Jika Coolify dijalankan multi-instance, pindah ke penyimpanan bersama)
 - [x] K6 get_advisors 13 Nov: tidak ada temuan kritis. WARN: is_admin() executable (sengaja), leaked password protection mati (pengaturan dashboard Auth, mungkin butuh paket Pro), 8 auth_rls_initplan dan multiple_permissive_policies (performa, belum berdampak di skala ini)
 
 ## L. Non-fungsional
-- [ ] L1 Halaman 404 dan 500 ramah (404 lulus: `/nope` status 404 + halaman ramah. 500 file dibuat, belum dipicu/diuji)
+- [ ] L1 Halaman 404 dan 500 ramah (404 lulus: `/nope` status 404 + halaman ramah. 500: `src/pages/500.astro` sudah mengatur status HTTP 500 sejak 16 Nov 2026, tapi belum dipicu/diuji dengan error nyata)
 - [ ] L2 Aksesibilitas dasar: kontras, label form, fokus keyboard, alt gambar (Lighthouse a11y 100 di Beranda, 13 Nov; fokus keyboard belum dicek manual)
 - [ ] L3 Lighthouse desktop >= 90 performa, >= 90 a11y
 - [x] L4 Meta title/description/OG per halaman, robots.txt, sitemap.xml (produk visible saja)
@@ -121,6 +121,7 @@ Legenda: `[ ]` belum, `[x]` lulus, `[!]` gagal.
 ## Rekap hasil
 | Tanggal | Tahap | Lulus | Gagal | Belum | Catatan |
 |---|---|---|---|---|---|
+| 2026-11-16 | fix audit batch 1 | A2 (+catatan G4, H4, K5, L1, A6) | 0 | A8, F1–F9, G1–G7, M1–M6 + sisanya | tsc 0 error, React dihapus, keepalive dihapus, e2e-download host-agnostic, 500 status, race createOrder dikunci per user, clientKey XFF kiri, magic-bytes upload, tautan unduh di status lunas, expiry ditegakkan di daftar order |
 | 2026-11-13 | 0 | 0 | 0 | semua | checklist dibuat, belum ada uji |
 | 2026-11-13 | 3 (WES-13) | 26 (+E2,E6,H1) | 0 | E1, E3, E4 sebagian + sisanya | auth teruji kecuali email nyata dan Google |
 | 2026-11-13 | 3 (WES-14) | 23 (+D1,D2,D4,D5,B5,N4) | 0 | D3, C2, dst | keranjang selesai; auth (WES-13) masih jalan |
