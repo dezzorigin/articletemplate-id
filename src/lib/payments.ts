@@ -13,11 +13,16 @@ export type Metode = 'QRIS' | 'VA';
 /** Masa berlaku order menunggu bayar. */
 export const ORDER_TTL_MS = 24 * 60 * 60 * 1000;
 
-/** Mock hanya menyala bila diminta lewat env (atau saat dev). Produksi nyata = jangan set. */
+/** Mock hanya menyala di dev (atau bila diminta lewat env di dev).
+ *  Di build produksi mock SELALU mati, apa pun nilai PAYMENT_PROVIDER —
+ *  kalau tidak, siapa pun bisa menandai order lunas tanpa bayar lewat
+ *  POST /checkout/simulasi (tanpa login, cukup UUID order).
+ *  Produksi nyata = BorderPay (WES-17). */
 export function isMockEnabled(): boolean {
+  if (import.meta.env.PROD) return false;
   const mode = optionalEnv('PAYMENT_PROVIDER');
   if (mode) return mode === 'mock';
-  return !import.meta.env.PROD;
+  return true;
 }
 
 export function isMetode(v: unknown): v is Metode {
