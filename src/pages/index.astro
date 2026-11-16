@@ -1,43 +1,147 @@
 ---
 import Base from '../layouts/Base.astro';
+import { listProducts, JENJANG } from '../lib/catalog';
+import { formatRupiah, isPurchasable } from '../lib/money';
+
+// Semua harga di halaman ini dibaca dari data produk (satu sumber harga). Tidak ada angka ketikan.
+const { products } = await listProducts({ urut: 'terbaru' });
+const featured = products.slice(0, 4);
+const prices = products.map((p) => p.harga).filter(isPurchasable);
+const mulai = prices.length ? Math.min(...prices) : null;
+const jenjangAda = JENJANG.filter((j) => products.some((p) => p.jenjang === j));
 ---
 
 <Base title="Beranda">
-  <h1>Template artikel untuk peneliti</h1>
-  <p>
-    Pilih template sesuai jenjang targetmu, bayar lewat BorderPay, unduh
-    filenya, dan kelola dari akunmu sendiri. Tanpa login untuk lihat-lihat —
-    login hanya untuk dashboard dan booking konsultasi.
+  <section class="hero">
+    <div class="hero-text">
+      <h1>Template artikel untuk peneliti</h1>
+      <p>
+        Template yang sudah disesuaikan dengan jenjang target jurnalmu, lengkap dengan
+        panduan pengisian dan checklist kepatuhan format. Pilih, bayar, unduh, lalu unduh
+        ulang kapan saja dari akunmu.
+      </p>
+      <p class="from">
+        {
+          mulai !== null ? (
+            <>Mulai dari <strong>{formatRupiah(mulai)}</strong>. </>
+          ) : (
+            <>Harga template diumumkan segera. </>
+          )
+        }
+        Lihat-lihat tanpa login.
+      </p>
+      <p><a class="btn" href="/templates">Lihat semua template</a></p>
+    </div>
+
+    <figure class="sheet-wrap" aria-hidden="true">
+      <div class="sheet">
+        <p class="s-meta">Jurnal Contoh, Vol. 12 No. 2</p>
+        <p class="s-title">Judul artikel ditulis ringkas dan spesifik</p>
+        <p class="s-auth">Nama Penulis, Afiliasi, email@kampus.ac.id</p>
+        <p class="s-h">Abstrak</p>
+        <p class="s-body">Latar belakang, tujuan, metode, hasil, dan simpulan ditulis dalam satu paragraf tanpa rujukan, mengikuti batas kata yang diminta jurnal.</p>
+        <p class="s-body">Kata kunci: format naskah; template; jurnal</p>
+        <p class="s-h s-h2">1. Pendahuluan</p>
+        <p class="s-body">Paragraf pembuka menjelaskan masalah penelitian, celah pada kajian terdahulu, dan tujuan artikel ini dalam bahasa yang lugas.</p>
+        <p class="s-body">Sitasi mengikuti gaya selingkung jurnal, misalnya (Penulis, 2024), dan daftar pustaka disusun alfabetis.</p>
+        <span class="note n1"><i></i>Margin 3 cm</span>
+        <span class="note n2"><i></i>Abstrak maks. 250 kata</span>
+        <span class="note n3"><i></i>Font 12 pt</span>
+      </div>
+      <figcaption>Contoh tata letak, bukan template asli</figcaption>
+    </figure>
+  </section>
+
+  <h2>Template terbaru</h2>
+  {
+    featured.length === 0 ? (
+      <div class="card"><p>Template pertama sedang disiapkan. Kembali lagi sebentar.</p></div>
+    ) : (
+      <div class="grid">
+        {featured.map((p) => (
+          <div class="card">
+            <strong><a href={`/templates/${p.slug}`}>{p.judul}</a></strong>
+            <span class="badge">{p.jenjang}</span>
+            <p>{formatRupiah(p.harga)}</p>
+          </div>
+        ))}
+      </div>
+    )
+  }
+
+  {
+    jenjangAda.length > 0 ? (
+      <>
+        <h2>Jenjang tersedia</h2>
+        <p class="chips">
+          {jenjangAda.map((j) => <a class="badge" href={`/templates?jenjang=${j}`}>{j}</a>)}
+        </p>
+      </>
+    ) : null
+  }
+
+  <h2>Apa yang kamu dapat</h2>
+  <ul class="points">
+    <li>File template siap isi, sesuai jenjang yang dituju.</li>
+    <li>Panduan pengisian dan checklist kepatuhan terhadap author guidelines.</li>
+    <li>Unduh ulang kapan saja dari dashboard akun.</li>
+  </ul>
+  <p class="note-text">
+    Template membantu kerapian format supaya naskah tidak tertahan urusan administratif.
+    Keputusan diterima atau tidaknya naskah tetap di tangan jurnal dan reviewer.
   </p>
 
-  <h2>Template unggulan</h2>
-  <div class="grid">
-    <div class="card">
-      <strong>Template Scopus Q1</strong>
-      <span class="badge">Harga segera hadir</span>
-      <p>Struktur lengkap untuk naskah target Q1. Isi final menyusul.</p>
-      <a href="/templates">Lihat katalog</a>
-    </div>
-    <div class="card">
-      <strong>Template Scopus Q2</strong>
-      <span class="badge">Harga segera hadir</span>
-      <p>Struktur lengkap untuk naskah target Q2. Isi final menyusul.</p>
-      <a href="/templates">Lihat katalog</a>
-    </div>
+  <h2>Pertanyaan umum</h2>
+  <div class="card faq">
+    <details><summary>Perlu daftar dulu untuk membeli?</summary>
+      <p>Tidak. Isi nama dan email saat checkout, akun dibuat otomatis. Masuk lewat "Lupa kata sandi" untuk mengatur kata sandi dan mengunduh.</p></details>
+    <details><summary>Bayar lewat apa?</summary>
+      <p>QRIS atau Virtual Account lewat BorderPay. Pembayaran online belum dibuka; pengumuman menyusul.</p></details>
+    <details><summary>Bisa unduh ulang?</summary>
+      <p>Bisa. Setelah pesanan lunas, file ada di halaman <a href="/akun">Akun</a> selama akunmu aktif.</p></details>
+    <details><summary>Bagaimana dengan refund?</summary>
+      <p>Ada aturan tertulis di <a href="/bantuan#refund">halaman Bantuan</a>.</p></details>
   </div>
 
-  <h2>Konsultasi</h2>
+  <h2>Pendampingan</h2>
   <p>
-    Pendampingan 1-1, jasa editor, bantu publish, dan pembimbing —
-    <span class="badge">segera hadir</span>. Layanan, harga, dan jadwal
-    diumumkan setelah data mentor terverifikasi.
+    Konsultasi 1-1, editor, bantu publish, dan pembimbing: <span class="badge">segera hadir</span>.
+    Layanan, harga, dan jadwal diumumkan setelah data mentor terverifikasi.
     <a href="/konsultasi">Lihat rencana layanan</a>
   </p>
 
-  <h2>Kenapa percaya</h2>
-  <p>
-    Tim yang berpengalaman di publikasi jurnal. Daftar publikasi dan bukti
-    verifikasi ditampilkan di sini setelah data mentor lengkap — tanpa angka
-    yang tidak bisa diklik buktinya.
-  </p>
+  <h2>Tim di balik toko</h2>
+  <p>Kenali tim di balik toko ini, lengkap dengan tautan bukti yang bisa kamu cek sendiri. <a href="/tentang">Tentang kami</a></p>
 </Base>
+
+<style>
+  .hero { display: grid; gap: 2rem; margin-bottom: 1rem; }
+  .hero .from { color: var(--muted); }
+  .sheet-wrap { margin: 0; }
+  .sheet-wrap figcaption { font-family: var(--mono); font-size: 0.75rem; color: var(--muted); margin-top: 0.75rem; }
+  .sheet { position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: 4px; padding: 1.75rem 1.75rem 2rem 2.25rem; box-shadow: 0 1px 2px rgba(31, 41, 55, 0.06), 0 12px 24px -12px rgba(31, 41, 55, 0.12); max-width: 380px; margin-left: auto; margin-right: auto; aspect-ratio: 1 / 1.3; overflow: hidden; }
+  .sheet::before { content: ""; position: absolute; top: 0; bottom: 0; left: 1.25rem; border-left: 1px solid var(--line); }
+  .sheet p { margin: 0; }
+  .s-meta { font-family: var(--mono); font-size: 0.65rem; color: var(--muted); }
+  .s-title { font-family: Georgia, "Times New Roman", serif; font-size: 1.15rem; line-height: 1.3; margin: 0.9rem 0 0.4rem !important; font-weight: 500; }
+  .s-auth { font-size: 0.7rem; color: var(--muted); margin-bottom: 1.25rem !important; }
+  .s-h { font-size: 0.8rem; font-weight: 500; margin-bottom: 0.25rem !important; }
+  .s-h2 { margin-top: 1rem !important; }
+  .s-body { font-size: 0.7rem; line-height: 1.6; color: var(--ink); margin-bottom: 0.5rem !important; }
+  .note { position: absolute; right: 0; display: inline-flex; align-items: center; gap: 0.4rem; background: var(--accent-soft); color: var(--accent); font-family: var(--mono); font-size: 0.68rem; padding: 0.3rem 0.6rem 0.3rem 0.5rem; border-radius: 4px 0 0 4px; }
+  .note i { width: 12px; height: 12px; flex: none; background: currentColor; -webkit-mask: var(--check) center / contain no-repeat; mask: var(--check) center / contain no-repeat; }
+  .n1 { top: 20%; } .n2 { top: 46%; } .n3 { top: 80%; }
+  .sheet, .points li { --check: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 8.5l3.2 3.2L13 4.8'/%3E%3C/svg%3E"); }
+  @media (min-width: 720px) {
+    .hero { grid-template-columns: 1.1fr 0.9fr; align-items: center; gap: 3rem; min-height: 60vh; }
+  }
+  .chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  .chips a { text-decoration: none; min-height: 44px; display: inline-flex; align-items: center; padding: 0 0.9rem; }
+  .points { padding-left: 0; list-style: none; display: grid; gap: 0.5rem; }
+  .points li { display: grid; grid-template-columns: 16px 1fr; gap: 0.6rem; align-items: start; }
+  .points li::before { content: ""; width: 16px; height: 16px; margin-top: 0.3rem; background: var(--accent); -webkit-mask: var(--check) center / contain no-repeat; mask: var(--check) center / contain no-repeat; }
+  .note-text { color: var(--muted); font-size: 0.92rem; }
+  .faq details { border-top: 1px solid var(--line); padding: 0.2rem 0; }
+  .faq details:first-child { border-top: 0; }
+  .faq summary { cursor: pointer; font-weight: 500; min-height: 44px; display: flex; align-items: center; }
+</style>

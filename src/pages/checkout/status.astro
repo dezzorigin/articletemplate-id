@@ -1,0 +1,100 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getOrderView } from '../../lib/orders';
+import { formatRupiah } from '../../lib/money';
+import { isMockEnabled } from '../../lib/payments';
+import { writeCart } from '../../lib/cart';
+
+const order = await getOrderView(Astro.url.searchParams.get('order') ?? '');
+if (!order) return Astro.rewrite('/404');
+
+if (order.status === 'lunas') writeCart(Astro.cookies, []); // keranjang kosong hanya setelah lunas
+const mock = isMockEnabled();
+
+const label: Record<string, string> = {
+  menunggu_bayar: 'Menunggu pembayaran',
+  lunas: 'Lunas',
+  gagal: 'Pembayaran gagal',
+  kedaluwarsa: 'Kedaluwarsa',
+};
+---
+
+<Base title="Status pesanan">
+  <h1>Status pesanan</h1>
+  <p><span class="badge">{label[order.status]}</span></p>
+
+  <ul class="lines">
+    {
+      order.items.map((i) => (
+        <li class="card line">
+          <span>{i.judul}</span>
+          <strong>{formatRupiah(i.harga_saat_beli)}</strong>
+        </li>
+      ))
+    }
+  </ul>
+  <p class="total"><span>Total</span> <strong>{formatRupiah(order.total)}</strong></p>
+
+  {
+    order.status === 'menunggu_bayar' ? (
+      mock ? (
+        <section class="card sim">
+          <h2>Pembayaran (simulasi)</h2>
+          <p class="hint">Mode uji: belum ada uang sungguhan. Pilih metode, lalu simulasikan hasilnya.</p>
+          <form method="post" action="/checkout/simulasi" class="row">
+            <input type="hidden" name="order" value={order.id} />
+            <button name="aksi" value="QRIS" class={order.metode === 'QRIS' ? '' : 'ghost'}>QRIS</button>
+            <button name="aksi" value="VA" class={order.metode === 'VA' ? '' : 'ghost'}>Virtual Account</button>
+          </form>
+          {order.metode ? (
+            <form method="post" action="/checkout/simulasi" class="row">
+              <input type="hidden" name="order" value={order.id} />
+              <button name="aksi" value="lunas">Simulasi sukses</button>
+              <button name="aksi" value="gagal" class="ghost">Simulasi gagal</button>
+              <button name="aksi" value="kedaluwarsa" class="ghost">Simulasi kedaluwarsa</button>
+            </form>
+          ) : (
+            <p class="hint">Pilih metode dulu.</p>
+          )}
+        </section>
+      ) : (
+        <p class="notice">Menunggu pembayaran. Halaman ini akan menunjukkan status terbaru saat dimuat ulang.</p>
+      )
+    ) : order.status === 'lunas' ? (
+      <p class="notice">Pembayaran diterima. Unduhan tersedia di dashboard (tahap berikutnya).</p>
+    ) : (
+      <p class="notice">
+        Pesanan ini tidak dilanjutkan. <a href="/keranjang">Kembali ke keranjang</a> untuk memesan ulang.
+      </p>
+    )
+  }
+</Base>
+
+<style>
+  .sim {
+    display: grid;
+    gap: 0.75rem;
+  }
+  .row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .lines {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 0.75rem;
+    display: grid;
+    gap: 0.5rem;
+  }
+  .line {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+  .total {
+    display: flex;
+    justify-content: space-between;
+    font-size: 1.15rem;
+  }
+</style>

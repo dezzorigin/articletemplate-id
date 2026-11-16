@@ -1,0 +1,81 @@
+---
+import Base from '../layouts/Base.astro';
+
+// DRAF KEBIJAKAN: isi mengikuti aturan PRD 7.7 dan 7.9. Refund, lisensi final, dan kanal kontak
+// adalah keputusan tim (PRD 13 no. 8). Jangan menambah janji di luar PRD; kontak sengaja belum
+// diisi karena kanal support belum ditetapkan (jangan diisi dengan data pribadi siapa pun).
+---
+
+<Base title="Bantuan" description="Cara memakai template, lisensi, refund, privasi, dan kontak.">
+  <h1>Bantuan</h1>
+  <nav class="toc" aria-label="Isi halaman">
+    <a href="#cara">Cara pakai</a>
+    <a href="#lisensi">Lisensi</a>
+    <a href="#refund">Refund</a>
+    <a href="#privasi">Privasi</a>
+    <a href="#kontak">Kontak</a>
+  </nav>
+
+  <section id="cara">
+    <h2>Cara memakai template</h2>
+    <ol>
+      <li>Pilih template di <a href="/templates">katalog</a> sesuai jenjang target jurnalmu, lalu tambahkan ke keranjang.</li>
+      <li>Di checkout, isi nama dan email (atau masuk jika sudah punya akun), lalu bayar.</li>
+      <li>Setelah pesanan lunas, buka <a href="/akun">Akun</a> dan tekan Unduh. Pembeli baru mengatur kata sandi lewat "Lupa kata sandi".</li>
+      <li>Isi template mengikuti panduan dan checklist kepatuhan yang menyertainya. Cek ulang ke author guidelines terbaru jurnalmu sebelum submit.</li>
+    </ol>
+    <p>Unduh ulang boleh kapan saja selama akunmu aktif.</p>
+  </section>
+
+  <section id="lisensi">
+    <h2>Lisensi</h2>
+    <ul>
+      <li>Template dipakai untuk keperluan pribadi pembeli.</li>
+      <li>Dilarang menjual ulang atau menyebarluaskan file, termasuk membagikannya ke pihak lain.</li>
+      <li>Pelanggaran dapat membuat akun ditangguhkan. Keputusan itu diambil manusia, bukan blokir otomatis diam-diam.</li>
+    </ul>
+  </section>
+
+  <section id="refund">
+    <h2>Refund</h2>
+    <p>
+      Template adalah produk digital. File yang sudah diunduh pada umumnya tidak bisa direfund.
+    </p>
+    <p>Pengecualian, karena kesalahan dari pihak toko:</p>
+    <ul>
+      <li>File rusak atau tidak bisa dibuka.</li>
+      <li>File yang diterima bukan produk yang kamu beli.</li>
+    </ul>
+    <p>
+      Untuk kasus di atas, hubungi kami lewat kanal di bawah dengan nomor pesanan. Kami akan mengganti file atau
+      mengembalikan pembayaran.
+    </p>
+    <p class="note">Template membantu kerapian format. Kami tidak menjamin naskah diterima atau terbit, jadi penolakan jurnal bukan alasan refund.</p>
+  </section>
+
+  <section id="privasi">
+    <h2>Privasi</h2>
+    <ul>
+      <li>Kami menyimpan nama, email, dan riwayat pesananmu untuk membuat akun dan mengatur unduhan.</li>
+      <li>Setiap unduhan dicatat untuk mendeteksi penyalahgunaan.</li>
+      <li>Data pembayaran ditangani penyedia pembayaran. Kami tidak menyimpan nomor kartu atau rekeningmu.</li>
+      <li>Kami tidak menjual datamu.</li>
+    </ul>
+  </section>
+
+  <section id="kontak">
+    <h2>Kontak</h2>
+    <p>
+      Kanal bantuan resmi akan diumumkan di halaman ini sebelum penjualan dibuka. Sampai saat itu, pembelian
+      belum bisa dilakukan.
+    </p>
+  </section>
+</Base>
+
+<style>
+  .toc { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0 0 1rem; }
+  .toc a { min-height: 44px; display: inline-flex; align-items: center; padding: 0 0.9rem; border: 1px solid var(--line); border-radius: 999px; text-decoration: none; }
+  section { scroll-margin-top: 1rem; }
+  ul, ol { padding-left: 1.2rem; display: grid; gap: 0.4rem; }
+  .note { color: var(--muted); font-size: 0.92rem; }
+</style>

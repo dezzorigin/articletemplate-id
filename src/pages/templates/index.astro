@@ -1,36 +1,211 @@
 ---
 import Base from '../../layouts/Base.astro';
+import {
+  JENJANG,
+  URUTAN,
+  parseCatalogQuery,
+  listProducts,
+  isPurchasable,
+} from '../../lib/catalog';
+import { formatRupiah } from '../../lib/money';
 
-// PLACEHOLDER — katalog final diisi dari Supabase (tabel products) setelah
-// harga dan file template ditetapkan tim. Produk dengan harga NULL tidak
-// boleh bisa dibeli (lihat PRD §7.2).
-const placeholders = [
-  { jenjang: 'Scopus Q1', harga: 'TBD' },
-  { jenjang: 'Scopus Q2', harga: 'TBD' },
-  { jenjang: 'Scopus Q3', harga: 'TBD' },
-  { jenjang: 'Scopus Q4', harga: 'TBD' },
-  { jenjang: 'Sinta', harga: 'TBD' },
-  { jenjang: 'Prosiding', harga: 'TBD' },
-];
+const query = parseCatalogQuery(Astro.url.searchParams);
+const { products, error } = await listProducts(query);
+const filtered = Boolean(query.jenjang || query.q);
+const activeCount = (query.jenjang ? 1 : 0) + (query.q ? 1 : 0);
 ---
 
-<Base title="Katalog template">
+<Base title="Katalog template" description="Katalog template artikel per jenjang: Scopus Q1 sampai Q4, Sinta, dan Prosiding.">
   <h1>Katalog template</h1>
-  <p>
-    <span class="badge">Katalog placeholder</span> — harga, format file, dan
-    pratinjau final menyusul dari tim. Produk di bawah ini belum bisa dibeli
-    sampai harganya diisi di admin.
-  </p>
-  <div class="grid">
-    {
-      placeholders.map((p) => (
-        <div class="card">
-          <strong>Template {p.jenjang}</strong>
-          <span class="badge">Harga: {p.harga}</span>
-          <p>Deskripsi, format file, dan pratinjau menyusul.</p>
-          <button disabled>Beli (menunggu harga final)</button>
+
+  <form method="get" class="filter" role="search">
+    <label class="field">
+      <span>Cari template</span>
+      <input
+        type="search"
+        name="q"
+        value={query.q ?? ''}
+        placeholder="Judul atau isi template"
+        maxlength="60"
+        enterkeyhint="search"
+        autocomplete="off"
+      />
+    </label>
+    <details class="more" open={Boolean(query.jenjang) || query.urut !== 'terbaru'}>
+      <summary>
+        Filter dan urutan{activeCount > 0 ? ` (${activeCount})` : ''}
+      </summary>
+      <div class="more-body">
+        <label class="field">
+          <span>Jenjang</span>
+          <select name="jenjang">
+            <option value="">Semua jenjang</option>
+            {
+              JENJANG.map((j) => (
+                <option value={j} selected={query.jenjang === j}>
+                  {j}
+                </option>
+              ))
+            }
+          </select>
+        </label>
+        <label class="field">
+          <span>Urutkan</span>
+          <select name="urut">
+            {
+              Object.entries(URUTAN).map(([value, label]) => (
+                <option value={value} selected={query.urut === value}>
+                  {label}
+                </option>
+              ))
+            }
+          </select>
+        </label>
+      </div>
+    </details>
+    <div class="actions">
+      <button type="submit">Terapkan</button>
+      {filtered || query.urut !== 'terbaru' ? <a class="reset" href="/templates">Atur ulang</a> : null}
+    </div>
+  </form>
+
+  {error ? <p class="notice" role="alert">{error}</p> : null}
+
+  {
+    !error && products.length === 0 ? (
+      <div class="card empty">
+        <strong>{filtered ? 'Tidak ada template yang cocok' : 'Katalog segera hadir'}</strong>
+        <p>
+          {filtered
+            ? 'Coba kata kunci lain atau atur ulang filter.'
+            : 'Template pertama sedang disiapkan. Kembali lagi sebentar lagi.'}
+        </p>
+        {filtered ? <a class="btn" href="/templates">Lihat semua template</a> : null}
+      </div>
+    ) : null
+  }
+
+  {
+    products.length > 0 ? (
+      <>
+        <p class="count" aria-live="polite">{products.length} template</p>
+        <div class="grid">
+          {products.map((p) => (
+            <article class="card product">
+              <span class="badge">{p.jenjang}</span>
+              <h2><a href={`/templates/${p.slug}`}>{p.judul}</a></h2>
+              {p.format ? <p class="meta">Format: {p.format}</p> : null}
+              {p.deskripsi ? <p class="desc">{p.deskripsi}</p> : null}
+              <p class="price">{formatRupiah(p.harga)}</p>
+              <div class="cta">
+                <a class="btn ghost" href={`/templates/${p.slug}`}>Lihat detail</a>
+                {isPurchasable(p.harga) ? null : (
+                  <button type="button" disabled>Belum bisa dibeli</button>
+                )}
+              </div>
+            </article>
+          ))}
         </div>
-      ))
-    }
-  </div>
+      </>
+    ) : null
+  }
 </Base>
+
+<style>
+  .filter {
+    display: grid;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+  }
+  .field {
+    display: grid;
+    gap: 0.3rem;
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
+  .field input,
+  .field select {
+    width: 100%;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 0.5rem 0.8rem;
+    background: var(--surface);
+    color: var(--ink);
+    font-weight: 400;
+  }
+  .more {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--surface);
+  }
+  .more summary {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    padding: 0 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .more-body {
+    display: grid;
+    gap: 0.75rem;
+    padding: 0 0.9rem 0.9rem;
+  }
+  .actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  .reset {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+  .count {
+    color: var(--muted);
+    font-size: 0.9rem;
+    margin: 0;
+  }
+  .notice {
+    background: var(--warn-bg);
+    border: 1px solid var(--warn-line);
+    color: var(--warn-ink);
+    border-radius: 12px;
+    padding: 0.75rem 1rem;
+  }
+  .product h2 {
+    font-size: 1.15rem;
+    margin: 0.5rem 0 0.35rem;
+  }
+  .product h2 a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .meta,
+  .desc {
+    color: var(--muted);
+    font-size: 0.92rem;
+    margin: 0 0 0.5rem;
+  }
+  .price {
+    font-weight: 700;
+    margin: 0.5rem 0 0.75rem;
+  }
+  .cta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .btn.ghost {
+    background: transparent;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+  }
+  @media (min-width: 720px) {
+    .more-body {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+</style>

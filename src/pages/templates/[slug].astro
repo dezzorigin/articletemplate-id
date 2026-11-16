@@ -1,0 +1,204 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getProductBySlug, relatedProducts, previewUrl, isPurchasable } from '../../lib/catalog';
+import { formatRupiah } from '../../lib/money';
+import { readCart } from '../../lib/cart';
+
+const slug = Astro.params.slug ?? '';
+const product = await getProductBySlug(slug);
+if (!product) {
+  Astro.response.status = 404;
+}
+const related = product ? await relatedProducts(product) : [];
+const preview = product ? previewUrl(product.preview_path) : null;
+const buyable = product ? isPurchasable(product.harga) : false;
+const guidelineOk = product?.sumber_guideline_url?.startsWith('https://') ?? false;
+const inCart = product ? readCart(Astro.cookies).includes(product.slug) : false;
+const refused = Astro.url.searchParams.get('e') === 'belum-dijual';
+---
+
+{
+  !product ? (
+    <Base title="Template tidak ditemukan">
+      <h1>Template tidak ditemukan</h1>
+      <p>Template ini tidak ada atau belum ditampilkan.</p>
+      <p><a class="btn" href="/templates">Lihat katalog template</a></p>
+    </Base>
+  ) : (
+    <Base title={product.judul} description={product.deskripsi ?? `Template ${product.jenjang} untuk artikel ilmiah.`}>
+      <p class="crumb"><a href="/templates">Katalog</a> / {product.jenjang}</p>
+      <span class="badge">{product.jenjang}</span>
+      {product.jurnal ? <span class="badge">{product.jurnal}</span> : null}
+      <h1>{product.judul}</h1>
+      {product.deskripsi ? <p class="lead">{product.deskripsi}</p> : null}
+
+      <dl class="facts">
+        <div><dt>Format file</dt><dd>{product.format ?? 'Segera diumumkan'}</dd></div>
+        {product.bidang ? <div><dt>Bidang</dt><dd>{product.bidang}</dd></div> : null}
+        <div><dt>Harga</dt><dd class="price">{formatRupiah(product.harga)}</dd></div>
+      </dl>
+
+      {
+        product.checklist_kepatuhan.length > 0 ? (
+          <section>
+            <h2>Checklist kepatuhan</h2>
+            <p class="muted">Daftar periksa yang diturunkan dari guideline resmi, supaya kamu bisa memeriksa naskah sendiri sebelum submit.</p>
+            <ul class="check">
+              {product.checklist_kepatuhan.map((item) => <li>{item}</li>)}
+            </ul>
+            {guidelineOk ? (
+              <p>
+                Sumber guideline:{' '}
+                <a href={product.sumber_guideline_url!} rel="noopener noreferrer" target="_blank">
+                  guideline resmi {product.jurnal ?? 'jurnal'}
+                </a>
+              </p>
+            ) : null}
+          </section>
+        ) : null
+      }
+
+      {
+        preview ? (
+          <section>
+            <h2>Pratinjau</h2>
+            <p class="muted">Pratinjau parsial. File lengkap hanya tersedia setelah pembayaran lunas.</p>
+            <p><a class="btn ghost" href={preview} rel="noopener noreferrer" target="_blank">Buka pratinjau</a></p>
+          </section>
+        ) : null
+      }
+
+      <section>
+        <h2>Lisensi pemakaian</h2>
+        <ul>
+          <li>Untuk pemakaian pribadi pembeli.</li>
+          <li>Dilarang menjual ulang atau menyebarluaskan file.</li>
+          <li>Template membantu kerapian format. Tidak ada jaminan naskah diterima atau terbit.</li>
+        </ul>
+      </section>
+
+      {
+        related.length > 0 ? (
+          <section>
+            <h2>Template lain</h2>
+            <div class="grid">
+              {related.map((r) => (
+                <a class="card rel" href={`/templates/${r.slug}`}>
+                  <span class="badge">{r.jenjang}</span>
+                  <strong>{r.judul}</strong>
+                  <span class="muted">{formatRupiah(r.harga)}</span>
+                </a>
+              ))}
+            </div>
+          </section>
+        ) : null
+      }
+
+      <div class="buybar">
+        <div>
+          <span class="muted small">Harga</span>
+          <strong class="price">{formatRupiah(product.harga)}</strong>
+        </div>
+        {!buyable ? (
+          <button type="button" disabled>Belum bisa dibeli</button>
+        ) : inCart ? (
+          <a class="btn" href="/keranjang">Lihat keranjang</a>
+        ) : (
+          <form method="post" action="/keranjang/tambah">
+            <input type="hidden" name="slug" value={product.slug} />
+            <button type="submit">Tambah ke keranjang</button>
+          </form>
+        )}
+      </div>
+      {refused ? <p class="refused" role="alert">Template ini belum bisa dibeli karena harga finalnya belum ditetapkan.</p> : null}
+    </Base>
+  )
+}
+
+<style>
+  .crumb {
+    margin: 0 0 0.5rem;
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+  .lead {
+    font-size: 1.05rem;
+    color: var(--muted);
+  }
+  .facts {
+    display: grid;
+    gap: 0.5rem;
+    margin: 1rem 0;
+  }
+  .facts div {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    border-bottom: 1px solid var(--line);
+    padding: 0.5rem 0;
+  }
+  .facts dt {
+    color: var(--muted);
+  }
+  .facts dd {
+    margin: 0;
+    font-weight: 600;
+    text-align: right;
+  }
+  .muted {
+    color: var(--muted);
+  }
+  .small {
+    font-size: 0.8rem;
+    display: block;
+    line-height: 1.2;
+  }
+  .check {
+    padding-left: 1.25rem;
+  }
+  .check li {
+    margin-bottom: 0.4rem;
+  }
+  .btn.ghost {
+    background: transparent;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+  }
+  .rel {
+    display: grid;
+    gap: 0.25rem;
+    text-decoration: none;
+    color: var(--ink);
+  }
+  .buybar {
+    position: sticky;
+    bottom: calc(var(--tab-h) + env(safe-area-inset-bottom, 0px));
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin: 2rem calc(var(--gutter) * -1) 0;
+    padding: 0.75rem var(--gutter);
+    background: rgba(255, 255, 255, 0.97);
+    border-top: 1px solid var(--line);
+    z-index: 40;
+  }
+  .refused {
+    background: var(--warn-bg);
+    border: 1px solid var(--warn-line);
+    color: var(--warn-ink);
+    border-radius: 12px;
+    padding: 0.75rem 1rem;
+    margin-top: 0.75rem;
+  }
+  .buybar .price {
+    font-size: 1.15rem;
+  }
+  @media (min-width: 720px) {
+    .buybar {
+      bottom: 0;
+      border-radius: 14px 14px 0 0;
+      margin: 2rem 0 0;
+    }
+  }
+</style>

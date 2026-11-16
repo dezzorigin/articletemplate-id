@@ -1,33 +1,81 @@
 ---
 import Base from '../../layouts/Base.astro';
+import { listMyOrders } from '../../lib/downloads';
+import { formatRupiah } from '../../lib/money';
 
-// PLACEHOLDER — dashboard pembeli final memakai Supabase Auth (email +
-// Google). Guest checkout membuat akun otomatis dari email; pembeli mengatur
-// password lewat tautan email (PRD §7.6). Halaman ini aktif setelah env
-// Supabase diisi dan Auth diaktifkan.
+// Middleware sudah memastikan user ada (redirect ke /masuk bila belum).
+const user = Astro.locals.user!;
+const { data: profile } = await Astro.locals.supabase
+  .from('profiles')
+  .select('nama, role')
+  .eq('id', user.id)
+  .maybeSingle();
+const nama = profile?.nama ?? null;
+const ok = Astro.url.searchParams.get('ok');
+const e = Astro.url.searchParams.get('e');
+const errMsg: Record<string, string> = {
+  'belum-lunas': 'Order ini belum lunas, unduhan belum aktif.',
+  'file-belum-ada': 'File template ini belum tersedia. Coba lagi nanti.',
+  gagal: 'Unduhan gagal diproses. Coba lagi.',
+  email: 'Email belum bisa dikirim. Coba lagi sebentar lagi.',
+};
+const orders = await listMyOrders(Astro.locals.supabase);
+const label: Record<string, string> = { menunggu_bayar: 'Menunggu bayar', lunas: 'Lunas', gagal: 'Gagal', kedaluwarsa: 'Kedaluwarsa' };
+const tgl = (s: string) => new Date(s).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
 ---
 
 <Base title="Akun saya">
   <h1>Akun saya</h1>
-  <p>
-    <span class="badge">Dashboard placeholder</span> — login belum aktif
-    sampai Supabase tersambung. Setelah aktif, di sini tampil:
-  </p>
-  <div class="grid">
-    <div class="card">
-      <strong>Order saya</strong>
-      <p>Riwayat order + status pembayaran (menunggu_bayar / lunas / gagal / kedaluwarsa).</p>
-    </div>
-    <div class="card">
-      <strong>Download saya</strong>
-      <p>
-        File hanya bisa diunduh dari sini untuk order yang sudah lunas, lewat
-        signed URL bertanda waktu — bukan URL publik yang bisa ditebak.
-      </p>
-    </div>
-    <div class="card">
-      <strong>Profil</strong>
-      <p>Nama, email, dan pengaturan akun.</p>
-    </div>
+  {ok === 'sandi' ? <p class="notice ok" role="status">Kata sandi berhasil disimpan.</p> : null}
+  {ok === 'email' ? <p class="notice ok" role="status">Email unduhan sudah dikirim ke {user.email}.</p> : null}
+
+  <div class="card">
+    <p><strong>{nama ?? 'Pembeli'}</strong></p>
+    <p>{user.email}</p>
+    <form method="post" action="/auth/keluar">
+      <button type="submit" class="btn ghost">Keluar</button>
+    </form>
+  </div>
+
+  <h2>Order saya</h2>
+  {e && errMsg[e] ? <p class="notice" role="alert">{errMsg[e]}</p> : null}
+  {
+    orders.length === 0 ? (
+      <div class="card">
+        <p>Belum ada order. <a href="/templates">Lihat katalog template</a>.</p>
+      </div>
+    ) : (
+      orders.map((o) => (
+        <div class="card">
+          <p>
+            <span class="badge">{label[o.status]}</span> {tgl(o.created_at)} · <strong>{formatRupiah(o.total)}</strong>
+          </p>
+          {o.items.map((i) => (
+            <p>
+              {i.judul}
+              {o.status === 'lunas' ? (
+                i.bisa_unduh ? (
+                  <> · <a href={`/unduh/${o.id}/${i.product_id}`}>Unduh</a></>
+                ) : (
+                  <> · <em>file belum tersedia</em></>
+                )
+              ) : o.status === 'menunggu_bayar' ? (
+                <> · <a href={`/checkout/status?order=${o.id}`}>Lanjut bayar</a></>
+              ) : null}
+            </p>
+          ))}
+          {o.status === 'lunas' ? (
+            <form method="post" action="/akun/kirim-ulang">
+              <input type="hidden" name="order" value={o.id} />
+              <button type="submit" class="btn ghost">Kirim ulang email unduhan</button>
+            </form>
+          ) : null}
+        </div>
+      ))
+    )
+  }
+
+  <div class="linkrow">
+    <a href="/atur-password">Ubah kata sandi</a>
   </div>
 </Base>

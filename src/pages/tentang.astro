@@ -1,0 +1,67 @@
+---
+import Base from '../layouts/Base.astro';
+
+// Hanya klaim terverifikasi PRD 7.8 (CV + ORCID + SINTA + Scopus, 27 Okt 2026).
+// DILARANG tayang: angka lama "5 Q1/Q2, 9 ongoing", label "JCSR Sinta 3", kuartil tanpa sumber/tahun,
+// klaim magang Chiba (belum ada bukti independen), data pribadi (HP, alamat, email pribadi).
+// Klaim tambahan hanya boleh masuk setelah 3 klarifikasi Nizam (PRD 7.8) selesai.
+const identitas = [
+  { label: 'ORCID', href: 'https://orcid.org/0009-0009-0254-1920', teks: '0009-0009-0254-1920' },
+  { label: 'Scopus Author ID', href: 'https://www.scopus.com/authid/detail.uri?authorId=58763735100', teks: '58763735100' },
+  { label: 'SINTA', href: 'https://sinta.kemdiktisaintek.go.id/authors/profile/6983413', teks: '6983413' },
+];
+const profil = [
+  { label: 'ResearchGate', href: 'https://www.researchgate.net/profile/Nizam-Albar' },
+  { label: 'GitHub', href: 'https://github.com/N1zam' },
+  { label: 'LinkedIn', href: 'https://www.linkedin.com/in/nizam-albar' },
+  { label: 'Instagram', href: 'https://www.instagram.com/nizamalbar_1/' },
+];
+---
+
+<Base title="Tentang" description="Tim di balik ArticleTemplate.id dan bukti kredibilitas yang bisa dicek sendiri.">
+  <h1>Tentang kami</h1>
+  <p>
+    ArticleTemplate.id menjual template artikel untuk peneliti. Yang kami jual adalah
+    kepastian format: tiap template berisi file template, panduan pengisian, dan checklist
+    kepatuhan terhadap author guidelines jurnal target.
+  </p>
+
+  <h2>Tim</h2>
+  <div class="grid">
+    <div class="card"><strong>Tim Dev</strong><p>Pengembang situs dan sistem pembayaran.</p></div>
+    <div class="card"><strong>Bang Imam</strong><p>Pemasaran, katalog, dan pesanan.</p></div>
+    <div class="card"><strong>Nizam Albar</strong><p>Pemasaran dan representatif akademik.</p></div>
+  </div>
+
+  <h2>Rekam jejak Nizam Albar</h2>
+  <ul class="points">
+    <li>Dosen di Universitas Serambi Mekkah.</li>
+    <li>4 artikel terindeks Scopus pada 2026.</li>
+    <li>SINTA Score 95.</li>
+    <li>Reviewer untuk PLOS ONE dan PLOS Global Public Health.</li>
+  </ul>
+  <p class="note">
+    Semua butir di atas bisa dicek lewat identitas publik berikut. Kami tidak menampilkan angka yang tidak
+    bisa kamu klik buktinya.
+  </p>
+
+  <h2>Identitas publik</h2>
+  <ul class="points">
+    {identitas.map((i) => <li>{i.label}: <a href={i.href} target="_blank" rel="noopener noreferrer">{i.teks}</a></li>)}
+  </ul>
+  <p class="links">
+    {profil.map((p) => <a class="btn ghost" href={p.href} target="_blank" rel="noopener noreferrer">{p.label}</a>)}
+  </p>
+
+  <h2>Yang kami janjikan dan tidak</h2>
+  <p>
+    Kami menyediakan template berkualitas dan pendampingan. Hasil penilaian naskah
+    sepenuhnya keputusan jurnal dan reviewer, jadi kami tidak membuat janji soal itu.
+  </p>
+</Base>
+
+<style>
+  .points { padding-left: 1.2rem; display: grid; gap: 0.4rem; }
+  .note { color: var(--muted); font-size: 0.92rem; }
+  .links { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+</style>

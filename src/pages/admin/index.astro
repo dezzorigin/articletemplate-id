@@ -1,33 +1,40 @@
 ---
 import Base from '../../layouts/Base.astro';
+import { getSupabaseAdmin } from '../../lib/supabase';
+import { requireAdmin } from '../../lib/admin';
 
-// PLACEHOLDER — admin final: login terpisah + peran (Nabil penuh/teknis,
-// Imam produk/order/konten). Dijaga RLS: hanya role admin yang bisa tulis
-// tabel products/orders/services (lihat supabase/schema.sql).
+export const prerender = false;
+// Middleware sudah menolak non-admin (404); dicek ulang di sini sebelum memakai service role.
+if (!(await requireAdmin(Astro.locals.supabase, Astro.locals.user))) return Astro.rewrite('/404');
+
+const admin = getSupabaseAdmin();
+const head = { count: 'exact' as const, head: true };
+const [tampil, total, lunas, menunggu] = await Promise.all([
+  admin.from('products').select('id', head).eq('is_visible', true),
+  admin.from('products').select('id', head),
+  admin.from('orders').select('id', head).eq('status', 'lunas'),
+  admin.from('orders').select('id', head).eq('status', 'menunggu_bayar'),
+]);
 ---
 
 <Base title="Admin">
   <h1>Admin</h1>
-  <p>
-    <span class="badge">Admin placeholder</span> — login admin + peran
-    aktif setelah Supabase tersambung. Yang akan dikelola dari sini:
-  </p>
   <div class="grid">
-    <div class="card">
+    <a class="card tile" href="/admin/produk">
       <strong>Produk</strong>
-      <p>
-        Tambah/ubah produk, jenjang, deskripsi, pratinjau, file, harga, dan
-        status tampil. Harga yang diubah di sini langsung tercermin di katalog
-        dan checkout (satu sumber harga).
-      </p>
-    </div>
-    <div class="card">
+      <p>{tampil.count ?? 0} tampil dari {total.count ?? 0}. Tambah/ubah produk, harga, file, pratinjau, status tampil.</p>
+    </a>
+    <a class="card tile" href="/admin/order">
       <strong>Order</strong>
-      <p>Daftar order + status pembayaran, cari per email/produk, kirim ulang email lunas/download bila perlu.</p>
-    </div>
+      <p>{lunas.count ?? 0} lunas, {menunggu.count ?? 0} menunggu bayar. Cari per email atau produk.</p>
+    </a>
     <div class="card">
-      <strong>Layanan konsultasi</strong>
-      <p>Layanan, harga, dan jadwal — tetap tersembunyi dari publik sampai data mentor masuk.</p>
+      <strong>Belum tersedia</strong>
+      <p>Kirim ulang email lunas/unduhan (menunggu provider email), kelola konten halaman, dan layanan konsultasi (tertutup sampai data mentor masuk).</p>
     </div>
   </div>
 </Base>
+
+<style>
+  .tile { text-decoration: none; color: inherit; display: block; }
+</style>

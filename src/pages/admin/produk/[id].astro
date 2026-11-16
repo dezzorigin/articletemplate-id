@@ -1,0 +1,200 @@
+---
+import Base from '../../../layouts/Base.astro';
+import { JENJANG } from '../../../lib/catalog';
+import { formatRupiah } from '../../../lib/money';
+import { previewUrl } from '../../../lib/catalog';
+import { getSupabaseAdmin } from '../../../lib/supabase';
+import {
+  requireAdmin, adminGetProduct, parseProductForm, uploadProductFile, checkProductFile, removeFiles, adminTemplateUrl,
+  TEMPLATE_EXT, PREVIEW_EXT, type AdminProduct,
+} from '../../../lib/admin';
+
+export const prerender = false;
+
+// /admin/produk/baru = produk baru, /admin/produk/<uuid> = ubah. GET tampil form, POST simpan.
+// Form ditangani di halaman ini (bukan endpoint terpisah) supaya isian tidak hilang saat ada error.
+const { id = '' } = Astro.params;
+const isNew = id === 'baru';
+if (!(await requireAdmin(Astro.locals.supabase, Astro.locals.user))) return Astro.rewrite('/404');
+
+let product: AdminProduct | null = null;
+if (!isNew) {
+  product = await adminGetProduct(id);
+  if (!product) return Astro.rewrite('/404');
+}
+
+let errors: string[] = [];
+// Nilai form yang ditampilkan: dari DB, atau dari isian terakhir bila ada error.
+let v: Record<string, any> = product
+  ? { ...product, harga: product.harga ?? '', checklist_kepatuhan: product.checklist_kepatuhan.join('\n') }
+  : { jenjang: 'Q1', is_visible: false, harga: '', checklist_kepatuhan: '' };
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  const parsed = parseProductForm(form);
+  const fileErrs = [checkProductFile('templates', form.get('file')), checkProductFile('previews', form.get('preview'))].filter((e): e is string => !!e);
+  if (!parsed.ok || fileErrs.length) {
+    errors = [...(parsed.ok ? [] : parsed.errors), ...fileErrs];
+  } else {
+    const admin = getSupabaseAdmin();
+    const data = parsed.data;
+    let productId = product?.id;
+
+    if (isNew) {
+      const { data: row, error } = await admin.from('products').insert(data).select('id').single();
+      if (error) errors.push(error.code === '23505' ? 'Slug sudah dipakai produk lain.' : 'Produk gagal disimpan.');
+      else productId = row.id as string;
+    } else {
+      const { error } = await admin.from('products').update(data).eq('id', product!.id);
+      if (error) errors.push(error.code === '23505' ? 'Slug sudah dipakai produk lain.' : 'Produk gagal disimpan.');
+    }
+
+    // File diunggah setelah baris produk ada (path memakai id produk).
+    if (!errors.length && productId) {
+      const patch: Record<string, string | null> = {};
+      const old = { file: product?.file_path ?? null, preview: product?.preview_path ?? null };
+      const tpl = await uploadProductFile('templates', productId, form.get('file'));
+      const prv = await uploadProductFile('previews', productId, form.get('preview'));
+      if (!tpl.ok) errors.push(tpl.error);
+      if (!prv.ok) errors.push(prv.error);
+      if (tpl.ok && tpl.path) patch.file_path = tpl.path;
+      if (prv.ok && prv.path) patch.preview_path = prv.path;
+      if (form.get('hapus_preview') === '1' && !patch.preview_path) patch.preview_path = null;
+
+      if (Object.keys(patch).length) {
+        const { error } = await admin.from('products').update(patch).eq('id', productId);
+        if (error) errors.push('File terunggah tapi gagal ditautkan ke produk. Coba simpan lagi.');
+        else {
+          // File lama dihapus hanya setelah tautan baru tersimpan.
+          if ('file_path' in patch) await removeFiles('templates', [old.file]);
+          if ('preview_path' in patch) await removeFiles('previews', [old.preview]);
+        }
+      }
+    }
+
+    if (!errors.length && productId) return Astro.redirect(`/admin/produk/${productId}?ok=1`, 303);
+    if (isNew && productId) {
+      // Baris sudah dibuat tapi file gagal: lanjutkan di halaman ubah.
+      return Astro.redirect(`/admin/produk/${productId}?e=file`, 303);
+    }
+  }
+  v = {
+    ...v,
+    ...Object.fromEntries(['slug', 'judul', 'jenjang', 'bidang', 'deskripsi', 'format', 'harga', 'jurnal', 'sumber_guideline_url', 'checklist_kepatuhan'].map((k) => [k, form.get(k) ?? ''])),
+    is_visible: form.get('is_visible') === '1',
+  };
+}
+
+const ok = Astro.url.searchParams.get('ok') === '1';
+if (Astro.url.searchParams.get('e') === 'file') errors.push('Produk tersimpan, tapi file belum terunggah. Pilih file lagi.');
+const fileUrl = product ? await adminTemplateUrl(product.file_path) : null;
+const prevUrl = product ? previewUrl(product.preview_path) : null;
+const fileName = (p: string | null) => (p ? p.split('/').pop() : null);
+---
+
+<Base title={isNew ? 'Produk baru' : `Ubah: ${product!.judul}`}>
+  <p><a href="/admin/produk">← Semua produk</a></p>
+  <h1>{isNew ? 'Produk baru' : 'Ubah produk'}</h1>
+
+  {ok ? <p class="notice ok" role="status">Tersimpan. Harga dan status langsung berlaku di katalog dan checkout.</p> : null}
+  {errors.length ? (
+    <div class="notice" role="alert">
+      <ul class="errs">{errors.map((e) => <li>{e}</li>)}</ul>
+    </div>
+  ) : null}
+
+  {product && product.is_visible ? (
+    <p><a href={`/templates/${product.slug}`} target="_blank" rel="noopener">Lihat di katalog</a> · harga tampil: {formatRupiah(product.harga)}</p>
+  ) : null}
+
+  <form class="form wide" method="post" enctype="multipart/form-data">
+    <label class="field"><span>Judul</span>
+      <input name="judul" required maxlength="160" value={v.judul ?? ''} />
+    </label>
+    <label class="field"><span>Slug (alamat URL)</span>
+      <input name="slug" required maxlength="81" pattern="[a-z0-9][a-z0-9\-]*" value={v.slug ?? ''} autocapitalize="none" autocorrect="off" />
+      <span class="hint">Contoh: template-q1. Mengubah slug mengubah alamat halaman produk.</span>
+    </label>
+    <label class="field"><span>Jenjang</span>
+      <select name="jenjang">
+        {JENJANG.map((j) => <option value={j} selected={v.jenjang === j}>{j}</option>)}
+      </select>
+    </label>
+    <label class="field"><span>Harga (Rp)</span>
+      <input name="harga" inputmode="numeric" maxlength="15" value={v.harga ?? ''} placeholder="kosong = belum ditetapkan" />
+      <span class="hint">Rupiah utuh, mis. 249000. Kosong = "Harga segera hadir" dan tidak bisa dibeli.</span>
+    </label>
+    <label class="field"><span>Bidang</span>
+      <input name="bidang" maxlength="120" value={v.bidang ?? ''} />
+    </label>
+    <label class="field"><span>Format</span>
+      <input name="format" maxlength="40" value={v.format ?? ''} placeholder="docx / latex / docx+latex" />
+    </label>
+    <label class="field"><span>Deskripsi</span>
+      <textarea name="deskripsi" rows="6" maxlength="5000">{v.deskripsi ?? ''}</textarea>
+    </label>
+    <label class="field"><span>Jurnal target (opsional)</span>
+      <input name="jurnal" maxlength="160" value={v.jurnal ?? ''} />
+      <span class="hint">Diisi untuk paket per jurnal. Wajib disertai tautan guideline resmi.</span>
+    </label>
+    <label class="field"><span>Tautan guideline resmi</span>
+      <input name="sumber_guideline_url" type="url" maxlength="500" value={v.sumber_guideline_url ?? ''} placeholder="https://" />
+    </label>
+    <label class="field"><span>Checklist kepatuhan (satu butir per baris)</span>
+      <textarea name="checklist_kepatuhan" rows="6">{v.checklist_kepatuhan ?? ''}</textarea>
+    </label>
+
+    <fieldset class="field files">
+      <legend>File template (bucket privat)</legend>
+      {product?.file_path ? (
+        <p class="hint">Terpasang: {fileUrl ? <a href={fileUrl}>{fileName(product.file_path)}</a> : fileName(product.file_path)}</p>
+      ) : <p class="hint">Belum ada file. Pembeli tidak bisa mengunduh sebelum file diunggah.</p>}
+      <input type="file" name="file" accept={TEMPLATE_EXT.map((e) => '.' + e).join(',')} />
+      <span class="hint">{TEMPLATE_EXT.join(', ')} · maks 50 MB. Memilih file baru mengganti yang lama.</span>
+    </fieldset>
+
+    <fieldset class="field files">
+      <legend>Pratinjau (publik, jangan isi file penuh)</legend>
+      {product?.preview_path ? (
+        <p class="hint">Terpasang: {prevUrl ? <a href={prevUrl} target="_blank" rel="noopener">{fileName(product.preview_path)}</a> : null}
+          <label class="check"><input type="checkbox" name="hapus_preview" value="1" /> hapus pratinjau</label>
+        </p>
+      ) : null}
+      <input type="file" name="preview" accept={PREVIEW_EXT.map((e) => '.' + e).join(',')} />
+      <span class="hint">{PREVIEW_EXT.join(', ')} · maks 10 MB.</span>
+    </fieldset>
+
+    <label class="check"><input type="checkbox" name="is_visible" value="1" checked={!!v.is_visible} /> Tampilkan di katalog</label>
+
+    <button type="submit">{isNew ? 'Buat produk' : 'Simpan perubahan'}</button>
+  </form>
+
+  {product ? (
+    <form class="danger" method="post" action="/admin/produk/hapus">
+      <input type="hidden" name="id" value={product.id} />
+      <p class="hint">Produk yang sudah pernah dibeli tidak bisa dihapus (riwayat pembeli harus utuh); produk itu akan disembunyikan.</p>
+      <button type="submit" class="ghost">Hapus produk</button>
+    </form>
+  ) : null}
+</Base>
+
+<style>
+  .wide { max-width: 640px; }
+  .form .field textarea,
+  .form .field select {
+    width: 100%;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 0.5rem 0.8rem;
+    background: var(--surface);
+    color: var(--ink);
+    font: inherit;
+    font-weight: 400;
+  }
+  .files { border: 1px solid var(--line); border-radius: 12px; padding: 0.75rem; margin: 0; }
+  .files legend { padding: 0 0.3rem; }
+  .check { display: flex; gap: 0.5rem; align-items: center; min-height: 44px; font-weight: 600; }
+  .check input { width: 1.2rem; height: 1.2rem; }
+  .errs { margin: 0; padding-left: 1.1rem; }
+  .danger { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--line); max-width: 640px; }
+</style>

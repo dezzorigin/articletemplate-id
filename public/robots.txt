@@ -1,0 +1,10 @@
+User-agent: *
+Disallow: /admin
+Disallow: /akun
+Disallow: /checkout
+Disallow: /unduh
+Disallow: /auth
+Disallow: /api
+Disallow: /keranjang
+
+Sitemap: https://articletemplate.id/sitemap.xml

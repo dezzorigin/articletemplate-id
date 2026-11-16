@@ -1,0 +1,69 @@
+---
+import Base from '../../../layouts/Base.astro';
+import { formatRupiah } from '../../../lib/money';
+import { requireAdmin, adminListOrders, parseOrderQuery, ORDER_STATUS } from '../../../lib/admin';
+
+export const prerender = false;
+if (!(await requireAdmin(Astro.locals.supabase, Astro.locals.user))) return Astro.rewrite('/404');
+
+const query = parseOrderQuery(Astro.url.searchParams);
+const orders = await adminListOrders(query);
+const label: Record<string, string> = { menunggu_bayar: 'Menunggu bayar', lunas: 'Lunas', gagal: 'Gagal', kedaluwarsa: 'Kedaluwarsa' };
+const waktu = (s: string) => new Date(s).toLocaleString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' });
+---
+
+<Base title="Admin · Order">
+  <p><a href="/admin">← Admin</a></p>
+  <h1>Order</h1>
+
+  <form class="filter" method="get">
+    <input type="search" name="q" value={query.q ?? ''} placeholder="Cari email pembeli atau produk" maxlength="100" aria-label="Cari" autocapitalize="none" />
+    <select name="status" aria-label="Status">
+      <option value="">Semua status</option>
+      {ORDER_STATUS.map((s) => <option value={s} selected={query.status === s}>{label[s]}</option>)}
+    </select>
+    <button type="submit">Cari</button>
+  </form>
+
+  <p class="hint">{orders.length} order{orders.length === 100 ? ' (100 terbaru)' : ''}.</p>
+
+  {orders.length === 0 ? <div class="card"><p>Tidak ada order yang cocok.</p></div> : (
+    <ul class="list">
+      {orders.map((o) => (
+        <li class="card">
+          <p class="meta">
+            <span class="badge">{label[o.status]}</span>
+            <strong>{formatRupiah(o.total)}</strong>
+            {o.metode ? <span>{o.metode}</span> : null}
+            <span class="hint">{waktu(o.created_at)}</span>
+          </p>
+          <p class="who">{o.nama ? `${o.nama} · ` : ''}{o.email}</p>
+          <ul class="items">
+            {o.items.map((i) => <li>{i.judul} · {formatRupiah(i.harga_saat_beli)}</li>)}
+          </ul>
+          <p class="hint">Unduhan: {o.unduhan} · <code>{o.id}</code></p>
+        </li>
+      ))}
+    </ul>
+  )}
+</Base>
+
+<style>
+  .filter { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0 0 0.75rem; }
+  .filter input, .filter select {
+    flex: 1 1 12rem;
+    min-height: 44px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 0.5rem 0.8rem;
+    background: var(--surface);
+    color: var(--ink);
+    font: inherit;
+  }
+  .list { list-style: none; padding: 0; margin: 0.5rem 0; display: grid; gap: 0.6rem; }
+  .meta { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin: 0 0 0.25rem; }
+  .who { color: var(--ink); overflow-wrap: anywhere; margin: 0 0 0.25rem; }
+  .items { margin: 0 0 0.25rem; padding-left: 1.1rem; color: var(--muted); }
+  .hint { font-size: 0.85rem; color: var(--muted); }
+  code { overflow-wrap: anywhere; font-size: 0.78rem; }
+</style>

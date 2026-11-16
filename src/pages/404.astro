@@ -1,0 +1,14 @@
+---
+import Base from '../layouts/Base.astro';
+
+// Status 404 eksplisit: halaman ini juga dipakai lewat Astro.rewrite('/404')
+// (middleware admin + halaman status order), dan rewrite tanpa ini
+// mengembalikan 200 dengan isi 404.
+Astro.response.status = 404;
+---
+
+<Base title="Halaman tidak ditemukan">
+  <h1>Halaman tidak ditemukan</h1>
+  <p>Alamat yang kamu buka tidak ada atau sudah dipindah.</p>
+  <p><a class="btn" href="/templates">Lihat katalog template</a></p>
+</Base>
