@@ -8,14 +8,15 @@ paket delegasi tim, bukan di repo — ringkasan eksekusi di `docs/FRAMEWORK.md`)
 - **Astro** (halaman server-rendered) — adapter Node (standalone)
 - **Coolify** — hosting lewat Docker (domain/Cloudflare DNS diurus belakangan)
 - **Supabase self-hosted di Coolify** — Postgres + Auth + Storage (service `supabase-kfuuqefxogdl5q4bam7t93vu`, project Coolify "ArticleTemplate.id"; tidak pernah pause, tanpa keepalive)
-- **BorderPay** — checkout QRIS/VA (mode test dulu, merchant menyusul)
+- **BorderPay** — checkout QRIS/VA (WES-17, 16 Nov 2026; mode test dulu, live setelah KYC)
 
 ## Struktur
 
 - `src/pages/` — Beranda, `/templates`, `/keranjang`, `/checkout`,
   `/konsultasi`, `/akun`, `/admin`, `/api/health`,
-  `/api/webhook-borderpay` (skeleton 501 — BorderPay DITUNDA; skema signature
-  dikonfirmasi dari dok merchant saat akun aktif, tidak ditebak)
+  `/api/webhook-borderpay` (handler nyata WES-17 — verifikasi token
+  `x-borderpay-token`, petakan payment.paid/expired/failed ke status order; lihat "BorderPay" di bawah)
+- `src/lib/borderpay.ts` — klien REST BorderPay + verifikasi signature webhook
 - `src/lib/env.ts` — baca env runtime, gagal jelas bila wajib kosong
 - `src/lib/supabase.ts` — `getSupabase()` (anon + RLS), `getSupabaseAdmin()` (service role, server saja)
 - `src/lib/money.ts` — satu-satunya format harga + hitung total
@@ -51,8 +52,9 @@ dari dashboard Supabase Cloud.
 
 1. Coolify → project "ArticleTemplate.id" → service Supabase → pastikan jalan.
 2. SQL Editor di dashboard Supabase self-hosted → tempel `supabase/schema.sql` → Run,
-   lalu tempel `supabase/migrations/20261113_harden_rls.sql` dan
-   `supabase/migrations/20261113_products_compliance_columns.sql` → Run.
+   lalu tempel `supabase/migrations/20261113_harden_rls.sql`,
+   `supabase/migrations/20261113_products_compliance_columns.sql`, dan
+   `supabase/migrations/20261116_borderpay_pay_url.sql` → Run.
    Jangan lewati migrasi: skema saja masih berisi policy lama.
 3. Storage → buat bucket `templates` (private) dan `previews` (public).
 4. Authentication → aktifkan Email + Google login.
@@ -68,8 +70,39 @@ dari dashboard Supabase Cloud.
 1. Coolify -> New Resource -> repo GitHub ini, build pack **Dockerfile** (sudah ada di root).
 2. Port **4321**. Health check path `/api/health`.
 3. Environment Variables (Runtime) - isi semua dari `.env.example`:
-   `PUBLIC_SUPABASE_URL`, `PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
-   (BorderPay menyusul). Nilai rahasia hanya di dashboard Coolify.
+   `PUBLIC_SUPABASE_URL`, `PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`,
+   `BORDERPAY_API_KEY`, `BORDERPAY_BASE_URL`, `BORDERPAY_WEBHOOK_TOKEN`.
+   Nilai rahasia hanya di dashboard Coolify.
+
+## BorderPay (WES-17)
+
+Alur: pembeli buat pesanan → pilih QRIS/VA di halaman status →
+`POST /checkout/borderpay` membuat pembayaran (`POST /api/v1/payments`,
+`reference_id` = ID order) → halaman status menampilkan tautan bayar
+(`pay_url`) → BorderPay mengirim webhook ke
+`https://articletemplate.id/api/webhook-borderpay` → order jadi
+`lunas`/`kedaluwarsa`/`gagal` + email lunas terkirim.
+
+Aktivasi (yang harus dilakukan pemilik akun BorderPay):
+1. Terapkan migrasi `supabase/migrations/20261116_borderpay_pay_url.sql` ke
+   database self-hosted (kolom `payments.pay_url`, `pay_expires_at`).
+2. Coolify → Environment Variables aplikasi: isi `BORDERPAY_API_KEY` (key test
+   `bp_test_...` dulu; key live `bp_live_...` setelah KYC),
+   `BORDERPAY_BASE_URL` (host API sesuai halaman Referensi API BorderPay),
+   `BORDERPAY_WEBHOOK_TOKEN` (token verifikasi webhook dari dashboard BorderPay).
+3. Dashboard BorderPay → atur endpoint webhook ke
+   `https://articletemplate.id/api/webhook-borderpay` (ganti placeholder).
+4. Uji di mode test: buat pembayaran → bayar (simulasi dashboard) → order
+   lunas + email masuk + download aktif; lalu kirim-ulang webhook dan
+   pastikan tidak ada pemrosesan ganda.
+
+Yang perlu dikonfirmasi dari Referensi API/dashboard BorderPay sebelum live
+(lihat asumsi A1–A8 di `src/lib/borderpay.ts`): host API yang benar, skema
+auth, nilai `method`, nama field respons (pay_url/QR/VA). Verifikasi webhook
+SUDAH terkonfirmasi (16 Nov 2026): header `x-borderpay-token` dicocokkan
+dengan token dari env `BORDERPAY_WEBHOOK_TOKEN`; verifikasi HMAC hanya legacy
+untuk integrasi lama dan tidak dipakai. Fee TIDAK ditambahkan ke tagihan
+(ditanggung penjual) sampai tim memutuskan.
 4. Domain + DNS: `articletemplate.id` + `www` sudah mengarah ke Coolify sejak
    16 Nov 2026 (A @ + A www → IP VPS, DNS only) dan terpasang di aplikasi Coolify.
 
@@ -82,6 +115,6 @@ Tanpa Docker: `npm run build && node dist/server/entry.mjs`.
 ## Yang belum bisa jalan tanpa akses berikut
 
 - Akses ke project Coolify "ArticleTemplate.id" (service Supabase + aplikasi) — akses utama untuk URL + kunci backend.
-- Akun merchant BorderPay — sebelum transaksi uang asli (mode test dulu).
+- Akun merchant BorderPay — key test sudah ada; key live + KYC sebelum transaksi uang asli (lihat "BorderPay (WES-17)" di atas).
 - Domainesia — invoice `articletemplate.id` #2367425 LUNAS 26 Okt 2026; domain
   aktif sampai 26 Okt 2027.

@@ -2,7 +2,8 @@
 import Base from '../../layouts/Base.astro';
 import { getOrderView } from '../../lib/orders';
 import { formatRupiah } from '../../lib/money';
-import { isMockEnabled } from '../../lib/payments';
+import { getBorderPayPayment, isMockEnabled, isRealBorderPayRef } from '../../lib/payments';
+import { isBorderPayEnabled } from '../../lib/borderpay';
 import { writeCart } from '../../lib/cart';
 
 const order = await getOrderView(Astro.url.searchParams.get('order') ?? '');
@@ -10,6 +11,17 @@ if (!order) return Astro.rewrite('/404');
 
 if (order.status === 'lunas') writeCart(Astro.cookies, []); // keranjang kosong hanya setelah lunas
 const mock = isMockEnabled();
+const borderpay = !mock && isBorderPayEnabled();
+// Jejak pembayaran BorderPay (bila ada): tautan bayar + kedaluwarsa.
+const bp = order.status === 'menunggu_bayar' && borderpay ? await getBorderPayPayment(order.id) : null;
+const bpLive = bp && isRealBorderPayRef(bp.borderpayRef) && bp.payUrl ? bp : null;
+const bpExpired = bpLive?.expiresAt ? Date.now() > new Date(bpLive.expiresAt).getTime() : false;
+const code = Astro.url.searchParams.get('e');
+const payError: Record<string, string> = {
+  bayar: 'Pembayaran belum bisa dibuat. Coba lagi sebentar lagi.',
+  metode: 'Metode itu sedang tidak tersedia di BorderPay. Pilih yang lain.',
+};
+const error = code ? payError[code] : undefined;
 
 const label: Record<string, string> = {
   menunggu_bayar: 'Menunggu pembayaran',
@@ -55,6 +67,42 @@ const label: Record<string, string> = {
             </form>
           ) : (
             <p class="hint">Pilih metode dulu.</p>
+          )}
+        </section>
+      ) : borderpay ? (
+        <section class="card sim">
+          <h2>Pembayaran</h2>
+          {error ? (
+            <p class="notice" role="alert">{error}</p>
+          ) : null}
+          {bpLive && !bpExpired ? (
+            <>
+              <p class="hint">
+                {bpLive.metode === 'QRIS'
+                  ? 'Scan QRIS di halaman bayar (berlaku 60 menit).'
+                  : 'Transfer ke nomor Virtual Account di halaman bayar (berlaku 24 jam).'}
+                {bpLive.expiresAt
+                  ? ` Bayar sebelum ${new Date(bpLive.expiresAt).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })} WIB.`
+                  : ''}
+              </p>
+              <p>
+                <a class="btn" href={bpLive.payUrl} target="_blank" rel="noopener">Buka halaman bayar</a>
+              </p>
+              <p class="hint">Sudah bayar? Status berubah otomatis begitu BorderPay mengonfirmasi. Muat ulang halaman ini untuk memeriksa.</p>
+            </>
+          ) : (
+            <>
+              <p class="hint">
+                {bpExpired
+                  ? 'Kode bayar sebelumnya sudah kedaluwarsa. Buat pembayaran baru di bawah ini.'
+                  : 'Pilih metode, lalu buka halaman bayar BorderPay.'}
+              </p>
+              <form method="post" action="/checkout/borderpay" class="row">
+                <input type="hidden" name="order" value={order.id} />
+                <button name="aksi" value="QRIS">QRIS</button>
+                <button name="aksi" value="VA" class="ghost">Virtual Account</button>
+              </form>
+            </>
           )}
         </section>
       ) : (

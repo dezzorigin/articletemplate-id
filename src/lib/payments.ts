@@ -108,3 +108,85 @@ export async function getPaymentMetode(orderId: string): Promise<Metode | null> 
   const { data } = await getSupabaseAdmin().from('payments').select('metode').eq('order_id', orderId).maybeSingle();
   return isMetode(data?.metode) ? data.metode : null;
 }
+
+// ---------- jejak pembayaran BorderPay (WES-17) ----------
+
+export interface StoredBorderPayPayment {
+  metode: Metode | null;
+  /** ID pembayaran di BorderPay (kolom payments.borderpay_ref). */
+  borderpayRef: string | null;
+  /** Halaman bayar (kolom payments.pay_url — migrasi 20261116; undefined bila migrasi belum diterapkan). */
+  payUrl: string | undefined;
+  /** Kedaluwarsa kode bayar (kolom payments.pay_expires_at). */
+  expiresAt: string | undefined;
+}
+
+/** Ref BorderPay asli (bukan `mock-...` dari simulasi dev). */
+export function isRealBorderPayRef(ref: string | null | undefined): boolean {
+  return !!ref && !ref.startsWith('mock-');
+}
+
+/**
+ * Baca jejak pembayaran BorderPay satu order. select('*') disengaja: kolom
+ * pay_url/pay_expires_at berasal dari migrasi 20261116 — bila migrasi belum
+ * diterapkan di DB, select kolom eksplisit akan error dan halaman status ikut
+ * rusak; dengan '*', kolom yang belum ada cukup terbaca undefined.
+ */
+export async function getBorderPayPayment(orderId: string): Promise<StoredBorderPayPayment | null> {
+  const { data } = await getSupabaseAdmin().from('payments').select('*').eq('order_id', orderId).maybeSingle();
+  if (!data) return null;
+  const row = data as Record<string, unknown>;
+  return {
+    metode: isMetode(row.metode) ? (row.metode as Metode) : null,
+    borderpayRef: typeof row.borderpay_ref === 'string' ? row.borderpay_ref : null,
+    payUrl: typeof row.pay_url === 'string' && row.pay_url !== '' ? row.pay_url : undefined,
+    expiresAt: typeof row.pay_expires_at === 'string' ? row.pay_expires_at : undefined,
+  };
+}
+
+/**
+ * Simpan jejak pembayaran BorderPay (satu baris payments per order).
+ * Best-effort untuk kolom migrasi: bila update/insert dengan pay_url gagal
+ * (migrasi belum diterapkan), ulangi tanpa kolom baru supaya borderpay_ref
+ * tetap tersimpan — lalu kembalikan false agar pemanggil tahu tautan bayar
+ * belum tersimpan dan menampilkan tombol buat-ulang.
+ */
+export async function startBorderPayPayment(
+  orderId: string,
+  metode: Metode,
+  payment: { id: string; payUrl: string; expiresAt: string },
+): Promise<boolean> {
+  const admin = getSupabaseAdmin();
+  const { data: order } = await admin.from('orders').select('status').eq('id', orderId).maybeSingle();
+  if (!order || order.status !== 'menunggu_bayar') return false;
+
+  const full = {
+    metode,
+    borderpay_ref: payment.id,
+    status: 'menunggu_bayar',
+    pay_url: payment.payUrl,
+    pay_expires_at: payment.expiresAt,
+  };
+  const minimal = {
+    metode,
+    borderpay_ref: payment.id,
+    status: 'menunggu_bayar',
+  };
+  const { data: existing } = await admin.from('payments').select('id').eq('order_id', orderId).maybeSingle();
+  if (existing) {
+    const { error } = await admin.from('payments').update(full).eq('id', existing.id);
+    if (error) {
+      console.warn('[payments] kolom pay_url belum ada (migrasi 20261116 belum diterapkan?), simpan minimal:', error.message);
+      const retry = await admin.from('payments').update(minimal).eq('id', existing.id);
+      return !retry.error;
+    }
+    return true;
+  }
+  const { error } = await admin.from('payments').insert({ order_id: orderId, ...full });
+  if (error) {
+    console.warn('[payments] kolom pay_url belum ada (migrasi 20261116 belum diterapkan?), simpan minimal:', error.message);
+    const retry = await admin.from('payments').insert({ order_id: orderId, ...minimal });
+    return !retry.error;
+  }
+  return true;
+}

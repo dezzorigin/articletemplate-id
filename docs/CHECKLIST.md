@@ -46,6 +46,11 @@ Legenda: `[ ]` belum, `[x]` lulus, `[!]` gagal.
 - [x] E6 `/akun` dan `/admin` menolak yang belum login (bukti: anon -> 303 ke /masuk?next=...; `next` jahat (`//evil.com`, `https://`, `/\`, `javascript:`) jatuh ke /akun)
 
 ## F. Checkout + pembayaran
+> Catatan 16 Nov 2026 (WES-17): kode BorderPay selesai — klien (`src/lib/borderpay.ts`),
+> webhook nyata (verifikasi signature, fail-closed), halaman status menampilkan tautan
+> bayar, migrasi `20261116_borderpay_pay_url.sql`. Semua item F tetap BELUM dicentang
+> karena butuh uji live (bayar nyata di sandbox): F2–F6 tidak bisa dibuktikan dari
+> kode saja.
 - [ ] F1 Form nama + email tervalidasi
 - [ ] F2 Bayar sukses: order `lunas`, download aktif
 - [ ] F3 Bayar gagal: order `gagal`, download tidak aktif
@@ -121,6 +126,7 @@ Legenda: `[ ]` belum, `[x]` lulus, `[!]` gagal.
 ## Rekap hasil
 | Tanggal | Tahap | Lulus | Gagal | Belum | Catatan |
 |---|---|---|---|---|---|
+| 2026-11-16 | WES-17 BorderPay | 0 (kode selesai, bukti live belum ada) | 0 | A8, F1–F9, G1–G7, M1–M6 + sisanya | klien BorderPay + webhook nyata (verifikasi token x-borderpay-token) + halaman bayar + migrasi pay_url; uji lokal scripts/test-borderpay.mjs lolos; F2–F6 butuh uji bayar live (sandbox) |
 | 2026-11-16 | fix audit batch 1 | A2 (+catatan G4, H4, K5, L1, A6) | 0 | A8, F1–F9, G1–G7, M1–M6 + sisanya | tsc 0 error, React dihapus, keepalive dihapus, e2e-download host-agnostic, 500 status, race createOrder dikunci per user, clientKey XFF kiri, magic-bytes upload, tautan unduh di status lunas, expiry ditegakkan di daftar order |
 | 2026-11-13 | 0 | 0 | 0 | semua | checklist dibuat, belum ada uji |
 | 2026-11-13 | 3 (WES-13) | 26 (+E2,E6,H1) | 0 | E1, E3, E4 sebagian + sisanya | auth teruji kecuali email nyata dan Google |

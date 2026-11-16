@@ -7,6 +7,15 @@ Sumber: PRD v3.0 (paket delegasi v2). Dokumen ini menerjemahkan PRD jadi urutan 
 - Semua halaman placeholder. Webhook BorderPay 501. Tidak ada auth, keranjang, checkout, download, admin berfungsi.
 - Supabase: proyek lama (`azazbeufwmkaiajosunh`, pause) tidak terjangkau. Dibuat proyek baru milik Westindo `articletemplate-id` (ref `kckivepafrmyihoigcnb`, Singapura) dengan skema + migrasi pengamanan RLS + bucket. Migrasi di `supabase/migrations/`.
 - Update 16 Nov 2026 (keputusan Nabil): backend kanonis = Supabase SELF-HOSTED di Coolify (service `supabase-kfuuqefxogdl5q4bam7t93vu`, project Coolify "ArticleTemplate.id"). Project Supabase Cloud `azazbeufwmkaiajosunh` (Nabil, dipulihkan 16 Nov 2026, ACTIVE_HEALTHY) = CADANGAN. Project Supabase Cloud Westindo (`kckivepafrmyihoigcnb`) = dev/test. Status migrasi pengamanan RLS (`supabase/migrations/20261113_harden_rls.sql`) di database self-hosted: BELUM TERVERIFIKASI — menunggu konfirmasi Westindo.
+- Update 16 Nov 2026 (WES-17): integrasi BorderPay selesai di kode — klien
+  `src/lib/borderpay.ts` (POST /api/v1/payments, QRIS/VA), webhook nyata
+  (verifikasi token `x-borderpay-token`, fail-closed), halaman status menampilkan tautan
+  bayar. Key test sudah ada; key live + KYC menyusul. Yang masih harus
+  dikonfirmasi dari Referensi API/dashboard BorderPay: host API, skema auth,
+  nilai method, nama field respons (asumsi A1–A8 di
+  `src/lib/borderpay.ts`). Migrasi `20261116_borderpay_pay_url.sql` wajib
+  diterapkan ke database self-hosted SEBELUM merge/deploy. Uji bayar live
+  (F2–F6) belum dilakukan — bagian F CHECKLIST tetap belum dicentang.
 - Situs live https://articletemplate.id 200, `/api/health` OK.
 
 ## 2. Prinsip
@@ -50,7 +59,7 @@ Perubahan dari scaffold: adapter `@astrojs/cloudflare` jadi `@astrojs/node` (sta
 | 1 | Coolify-ready: adapter Node, Dockerfile, env | container jalan lokal, `/api/health` 200 |
 | 2 | Katalog + detail produk dari Supabase | A, B, C lulus |
 | 3 | Auth + keranjang | D, E lulus |
-| 4 | Checkout + pembayaran (mock dulu, BorderPay setelah akun ada) | F lulus |
+| 4 | Checkout + pembayaran (mock dulu, BorderPay setelah akun ada) | F lulus (kode BorderPay selesai 16 Nov 2026 — WES-17; F2–F6 butuh uji live) |
 | 5 | Dashboard + download aman | G lulus |
 | 6 | Admin | H lulus |
 | 7 | Tentang, Bantuan, Konsultasi tertutup | I, J lulus |
@@ -70,4 +79,4 @@ Perubahan dari scaffold: adapter `@astrojs/cloudflare` jadi `@astrojs/node` (sta
 8. Tes otomatis untuk logika kritis (total, status order, otorisasi download).
 
 ## 8. Blocker di luar kode (butuh keputusan tim)
-Harga final + fee BorderPay, akun merchant BorderPay, skema signature webhook, provider email, kebijakan refund/lisensi, format file template, review draf Q1 oleh Nizam, akses ke project Coolify "ArticleTemplate.id" (service Supabase + aplikasi) untuk URL + kunci backend.
+Harga final + fee BorderPay, akun merchant BorderPay (key test sudah ada; key live + KYC sebelum uang asli), provider email, kebijakan refund/lisensi, format file template, review draf Q1 oleh Nizam, akses ke project Coolify "ArticleTemplate.id" (service Supabase + aplikasi) untuk URL + kunci backend.
