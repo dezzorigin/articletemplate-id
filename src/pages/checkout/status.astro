@@ -9,12 +9,24 @@ import {
   isBorderPayEnabled,
   listBorderPayMethods,
 } from '../../lib/borderpay';
+import { getSupabaseAdmin } from '../../lib/supabase';
 import { writeCart } from '../../lib/cart';
 
 const order = await getOrderView(Astro.url.searchParams.get('order') ?? '');
 if (!order) return Astro.rewrite('/404');
 
-if (order.status === 'lunas') writeCart(Astro.cookies, []); // keranjang kosong hanya setelah lunas
+// F-P2-16: keranjang hanya dikosongkan bila sesi login adalah pemilik order.
+// Sebelumnya siapa pun yang membuka URL status order lunas mengosongkan
+// keranjang browsernya sendiri. getOrderView tidak membawa user_id, jadi
+// kepemilikan dicek di sini (server, halaman status saja).
+if (order.status === 'lunas' && Astro.locals.user) {
+  const { data: ownerRow } = await getSupabaseAdmin()
+    .from('orders')
+    .select('user_id')
+    .eq('id', order.id)
+    .maybeSingle();
+  if ((ownerRow as any)?.user_id === Astro.locals.user.id) writeCart(Astro.cookies, []);
+}
 const mock = isMockEnabled();
 const borderpay = !mock && isBorderPayEnabled();
 // Jejak pembayaran BorderPay (bila ada): tautan bayar + kedaluwarsa.
@@ -32,6 +44,7 @@ const payError: Record<string, string> = {
   bayar: 'Pembayaran belum bisa dibuat. Coba lagi sebentar lagi.',
   metode: 'Metode itu sedang tidak tersedia di BorderPay. Pilih yang lain.',
   bank: 'Pilih bank / penyedia e-wallet yang tersedia.',
+  tautan: 'Tautan bayar belum tersimpan. Buat pembayaran baru dari halaman ini.',
 };
 const error = code ? payError[code] : undefined;
 
@@ -41,11 +54,38 @@ const label: Record<string, string> = {
   gagal: 'Pembayaran gagal',
   kedaluwarsa: 'Kedaluwarsa',
 };
+const penjelasan: Record<string, string> = {
+  menunggu_bayar: 'Pesananmu sudah dibuat. Selesaikan pembayaran sebelum waktunya habis.',
+  lunas: 'Pembayaran diterima. File template sudah bisa diunduh.',
+  gagal: 'Pembayaran tidak berhasil. Pesanan ini tidak dilanjutkan.',
+  kedaluwarsa: 'Waktu bayar pesanan ini sudah habis. Pesanan ini tidak dilanjutkan.',
+};
+const statusClass: Record<string, string> = {
+  menunggu_bayar: 'wait',
+  lunas: 'ok',
+  gagal: 'bad',
+  kedaluwarsa: 'bad',
+};
+const icons: Record<string, string> = {
+  menunggu_bayar: 'M12 8v5l3 2M12 21a9 9 0 100-18 9 9 0 000 18z',
+  lunas: 'M4 12.5l5 5L20 6.5',
+  gagal: 'M6 6l12 12M18 6L6 18',
+  kedaluwarsa: 'M12 8v5l3 2M12 21a9 9 0 100-18 9 9 0 000 18z',
+};
 ---
 
 <Base title="Status pesanan">
   <h1>Status pesanan</h1>
-  <p><span class="badge">{label[order.status]}</span></p>
+
+  <section class={`status-card ${statusClass[order.status]}`} aria-label={`Status: ${label[order.status]}`}>
+    <span class="status-ico" aria-hidden="true">
+      <svg viewBox="0 0 24 24"><path d={icons[order.status]} /></svg>
+    </span>
+    <div>
+      <h2>{label[order.status]}</h2>
+      <p>{penjelasan[order.status]}</p>
+    </div>
+  </section>
 
   <ul class="lines">
     {
@@ -96,10 +136,14 @@ const label: Record<string, string> = {
                   : bpLive.metode === 'VA'
                     ? 'Transfer ke nomor Virtual Account di halaman bayar.'
                     : 'Bayar lewat e-wallet di halaman bayar.'}
-                {bpLive.expiresAt
-                  ? ` Bayar sebelum ${new Date(bpLive.expiresAt).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })} WIB.`
-                  : ' Masa berlaku tercantum di halaman bayar BorderPay.'}
               </p>
+              {bpLive.expiresAt ? (
+                <p class="countdown" data-expires={bpLive.expiresAt}>
+                  Bayar sebelum {new Date(bpLive.expiresAt).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })} WIB.
+                </p>
+              ) : (
+                <p class="hint">Masa berlaku tercantum di halaman bayar BorderPay.</p>
+              )}
               <p>
                 <a class="btn" href={bpLive.payUrl} target="_blank" rel="noopener">Buka halaman bayar</a>
               </p>
@@ -112,10 +156,25 @@ const label: Record<string, string> = {
                   ? 'Kode bayar sebelumnya sudah kedaluwarsa. Buat pembayaran baru di bawah ini.'
                   : 'Pilih metode, lalu buka halaman bayar BorderPay.'}
               </p>
-              <form method="post" action="/checkout/borderpay" class="row">
+              <form method="post" action="/checkout/borderpay" class="payform">
                 <input type="hidden" name="order" value={order.id} />
-                <label>
-                  Bank / e-wallet (wajib untuk Virtual Account & E-Wallet)
+                <fieldset class="radios">
+                  <legend>Pilih metode bayar</legend>
+                  <label class="radio-card">
+                    <input type="radio" name="aksi" value="QRIS" checked={order.metode !== 'VA' && order.metode !== 'EWALLET'} />
+                    <span>QRIS<small>Scan kode QR dari aplikasi apa pun. Berlaku 60 menit.</small></span>
+                  </label>
+                  <label class="radio-card">
+                    <input type="radio" name="aksi" value="VA" checked={order.metode === 'VA'} />
+                    <span>Virtual Account<small>Transfer ke nomor VA bank pilihanmu. Berlaku 24 jam.</small></span>
+                  </label>
+                  <label class="radio-card">
+                    <input type="radio" name="aksi" value="EWALLET" checked={order.metode === 'EWALLET'} />
+                    <span>E-Wallet<small>Bayar lewat DANA, OVO, GoPay, atau ShopeePay.</small></span>
+                  </label>
+                </fieldset>
+                <label class="field">
+                  <span>Bank / penyedia e-wallet</span>
                   <select name="bank">
                     <optgroup label="Virtual Account">
                       {
@@ -132,10 +191,9 @@ const label: Record<string, string> = {
                       }
                     </optgroup>
                   </select>
+                  <span class="hint">Wajib untuk Virtual Account &amp; E-Wallet; diabaikan untuk QRIS.</span>
                 </label>
-                <button name="aksi" value="QRIS">QRIS</button>
-                <button name="aksi" value="VA" class="ghost">Virtual Account</button>
-                <button name="aksi" value="EWALLET" class="ghost">E-Wallet</button>
+                <button type="submit">Buat pembayaran</button>
               </form>
             </>
           )}
@@ -144,8 +202,7 @@ const label: Record<string, string> = {
         <p class="notice">Menunggu pembayaran. Halaman ini akan menunjukkan status terbaru saat dimuat ulang.</p>
       )
     ) : order.status === 'lunas' ? (
-      <div class="notice">
-        <p>Pembayaran diterima.</p>
+      <div class="notice ok">
         <p>
           Unduhan tersedia:{' '}
           {order.items.map((i, idx) => (
@@ -154,15 +211,19 @@ const label: Record<string, string> = {
               <a href={`/unduh/${order.id}/${i.product_id}`}>Unduh {i.judul}</a>
             </>
           ))}
-          {' '}— atau dari <a href="/akun">dashboard akun</a>.
+          .
         </p>
+        <p><a class="btn" href="/akun">Buka dashboard akun</a></p>
       </div>
     ) : (
       <p class="notice">
-        Pesanan ini tidak dilanjutkan. <a href="/keranjang">Kembali ke keranjang</a> untuk memesan ulang.
+        Pesanan ini tidak dilanjutkan. Keranjangmu masih tersimpan —{' '}
+        <a class="btn" href="/keranjang">Pesan ulang dari keranjang</a>
       </p>
     )
   }
+
+  <script is:inline src="/js/countdown.js"></script>
 </Base>
 
 <style>
@@ -170,6 +231,7 @@ const label: Record<string, string> = {
     display: grid;
     gap: 0.75rem;
   }
+  .sim h2 { margin: 0; }
   .row {
     display: flex;
     flex-wrap: wrap;
@@ -192,4 +254,17 @@ const label: Record<string, string> = {
     justify-content: space-between;
     font-size: 1.15rem;
   }
+  .payform { display: grid; gap: 0.9rem; }
+  .payform .field { display: grid; gap: 0.3rem; font-weight: 500; font-size: 0.9rem; }
+  .payform .field select {
+    width: 100%;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 0.5rem 0.8rem;
+    background: var(--surface);
+    color: var(--ink);
+    font-weight: 400;
+  }
+  .payform .hint { color: var(--muted); font-size: 0.85rem; font-weight: 400; }
+  .notice .btn { margin-top: 0.5rem; }
 </style>

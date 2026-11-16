@@ -161,9 +161,21 @@ const hemat =
           ))}
         </tr>
         <tr>
+          <th scope="row">Isi</th>
+          {tiers.map((t) => (
+            <td class={t.paket ? 'hl' : undefined}>{t.paket ? '6 template' : '1 template'}</td>
+          ))}
+        </tr>
+        <tr>
           <th scope="row">Format file</th>
           {tiers.map((t) => (
             <td class={t.paket ? 'hl' : undefined}>{t.row?.format ?? '—'}</td>
+          ))}
+        </tr>
+        <tr>
+          <th scope="row">Panduan pengisian</th>
+          {tiers.map((t) => (
+            <td class={t.paket ? 'hl' : undefined}><span class="ya" aria-label="Ya">✓</span></td>
           ))}
         </tr>
         <tr>
@@ -177,22 +189,45 @@ const hemat =
         <tr>
           <th scope="row">Pratinjau</th>
           {tiers.map((t) => (
-            <td class={t.paket ? 'hl' : undefined}>{t.row?.preview_path ? 'Tersedia' : '—'}</td>
+            <td class={t.paket ? 'hl' : undefined}>{t.row?.preview_path ? <span class="ya" aria-label="Tersedia">✓</span> : '—'}</td>
           ))}
         </tr>
         <tr>
           <th scope="row">File template</th>
           {tiers.map((t) => (
-            <td class={t.paket ? 'hl' : undefined}>{t.row?.file_path ? 'Tersedia' : 'Segera hadir'}</td>
+            <td class={t.paket ? 'hl' : undefined}>{t.row?.file_path ? <span class="ya" aria-label="Tersedia">✓</span> : 'Segera hadir'}</td>
+          ))}
+        </tr>
+        <tr>
+          <th scope="row">Unduh ulang dari akun</th>
+          {tiers.map((t) => (
+            <td class={t.paket ? 'hl' : undefined}><span class="ya" aria-label="Ya">✓</span></td>
           ))}
         </tr>
         <tr>
           <th scope="row">Bisa dibeli sekarang</th>
           {tiers.map((t) => (
-            <td class={t.paket ? 'hl' : undefined}>{canBuy(t) ? 'Ya' : 'Belum'}</td>
+            <td class={t.paket ? 'hl' : undefined}>{canBuy(t) ? <span class="ya" aria-label="Ya">✓</span> : 'Belum'}</td>
           ))}
         </tr>
       </tbody>
+      <tfoot>
+        <tr>
+          <th scope="row">Pilih</th>
+          {tiers.map((t) => (
+            <td class={t.paket ? 'hl' : undefined}>
+              {canBuy(t) ? (
+                <form method="post" action="/keranjang/tambah">
+                  <input type="hidden" name="slug" value={t.slug} />
+                  <button type="submit">Tambah ke keranjang</button>
+                </form>
+              ) : (
+                <button type="button" disabled>Segera hadir</button>
+              )}
+            </td>
+          ))}
+        </tr>
+      </tfoot>
     </table>
   </div>
   <p class="meta">Tanpa garansi terbit atau lolos. Template membantu format naskahmu sesuai panduan jurnal; keputusan akhir tetap di tangan editor dan reviewer jurnal.</p>
@@ -215,6 +250,9 @@ const hemat =
   thead th { font-family: Georgia, "Times New Roman", serif; font-size: 1rem; }
   tbody th { font-weight: 600; }
   tbody tr:last-child th, tbody tr:last-child td { border-bottom: 0; }
+  tfoot th, tfoot td { border-bottom: 0; background: var(--paper); }
+  tfoot form { margin: 0; }
+  tfoot button { width: 100%; }
   th.hl, td.hl { background: var(--accent-soft); }
   @media (min-width: 720px) {
     .grid { grid-template-columns: 1fr 1fr; }
