@@ -59,7 +59,9 @@ const post = (p, fields, cookie) => fetch(BASE + p, {
       return data;
     };
     const p1 = await mkP('satu', 1000, filePath);
-    const p2 = await mkP('dua', 2500, null);
+    // Produk tanpa file ditolak saat checkout (guard orders.ts), jadi p2 dibuat
+    // dengan file lalu dikosongkan SESUDAH lunas untuk menguji 'file-belum-ada'.
+    const p2 = await mkP('dua', 2500, filePath);
     const cart = encodeURIComponent(JSON.stringify([p1.slug, p2.slug]));
     const ses = await sessionCookie(email, pw);
     const ck = `${ses}; cart=${cart}`;
@@ -100,6 +102,7 @@ const post = (p, fields, cookie) => fetch(BASE + p, {
 
     r = await get(`/unduh/${oid}/${p1.id}`, ses);
     check('unduh p1 -> 302 signed URL', r.status === 302 && /token=/.test(r.headers.get('location') || ''), r.status);
+    await admin.from('products').update({ file_path: null }).eq('id', p2.id);
     r = await get(`/unduh/${oid}/${p2.id}`, ses);
     check('p2 tanpa file -> file-belum-ada', r.status === 303 && /file-belum-ada/.test(r.headers.get('location') || ''), r.status);
 

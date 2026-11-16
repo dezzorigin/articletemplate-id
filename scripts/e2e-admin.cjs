@@ -37,7 +37,7 @@ const post = (p, fields, cookie) => fetch(BASE + p, {
 function multipart(p, fields, files, cookie) {
   const fd = new FormData();
   for (const [k, v] of Object.entries(fields)) fd.append(k, v);
-  for (const [k, f] of Object.entries(files || {})) fd.append(k, new Blob([f.body], { type: f.type || 'application/octet-stream' }), f.name);
+  for (const [k, f] of Object.entries(files || {})) fd.append(k, new Blob([Buffer.from(f.body, 'latin1')], { type: f.type || 'application/octet-stream' }), f.name);
   return fetch(BASE + p, { method: 'POST', redirect: 'manual', headers: { Origin: BASE, ...(cookie ? { Cookie: cookie } : {}) }, body: fd });
 }
 async function exists(bucket, p) {
@@ -96,8 +96,8 @@ const prod = async (slug) => (await admin.from('products').select('*').eq('slug'
 
     // ---------- H2 + H4 buat produk dengan file + pratinjau ----------
     r = await multipart('/admin/produk/baru', base, {
-      file: { name: 'Template Uji.docx', body: 'DOCX-' + tag, type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' },
-      preview: { name: 'pratinjau.png', body: 'PNG-' + tag, type: 'image/png' },
+      file: { name: 'Template Uji.docx', body: 'PK\x03\x04DOCX-' + tag, type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' },
+      preview: { name: 'pratinjau.png', body: '\x89PNG\r\n\x1a\nPNG-' + tag, type: 'image/png' },
     }, A.cookie);
     const loc = r.headers.get('location') || '';
     check('H2 buat produk -> 303 ke halaman ubah ?ok=1', r.status === 303 && /\/admin\/produk\/[0-9a-f-]{36}\?ok=1/.test(loc), r.status + ' ' + loc);
@@ -111,7 +111,7 @@ const prod = async (slug) => (await admin.from('products').select('*').eq('slug'
     const pub = await fetch(`${URL_}/storage/v1/object/public/templates/${p.file_path}`);
     check('H4 file template tidak bisa diakses lewat URL publik', pub.status >= 400, pub.status);
 
-    r = await multipart('/admin/produk/baru', base, {}, A.cookie);
+    r = await multipart('/admin/produk/baru', { ...base, is_visible: '0' }, {}, A.cookie);
     check('slug ganda ditolak', (await r.text()).includes('Slug sudah dipakai'));
 
     // ---------- tampil di katalog ----------
@@ -140,7 +140,7 @@ const prod = async (slug) => (await admin.from('products').select('*').eq('slug'
 
     // ---------- H4 ganti file, file lama terhapus; ekstensi salah ditolak ----------
     const oldFile = p.file_path;
-    r = await multipart(`/admin/produk/${pid}`, { ...base, harga: '2500' }, { file: { name: 'v2.docx', body: 'DOCX2-' + tag } }, A.cookie);
+    r = await multipart(`/admin/produk/${pid}`, { ...base, harga: '2500' }, { file: { name: 'v2.docx', body: 'PK\x03\x04DOCX2-' + tag } }, A.cookie);
     p = await prod(slug);
     check('H4 ganti file: path baru tersimpan', r.status === 303 && p.file_path !== oldFile && (await exists('templates', p.file_path)));
     check('H4 file lama dihapus dari bucket', !(await exists('templates', oldFile)));
@@ -183,7 +183,7 @@ const prod = async (slug) => (await admin.from('products').select('*').eq('slug'
     check('produk yang pernah dibeli: disembunyikan, tidak dihapus', /disembunyikan/.test(r.headers.get('location') || '') && !!(await prod(slug)));
 
     const slug2 = `uji-adm2-${tag}`;
-    r = await multipart('/admin/produk/baru', { ...base, slug: slug2 }, { file: { name: 'x.docx', body: 'X' } }, A.cookie);
+    r = await multipart('/admin/produk/baru', { ...base, slug: slug2 }, { file: { name: 'x.docx', body: 'PK\x03\x04X' } }, A.cookie);
     const q2 = await prod(slug2);
     if (q2) ids.productIds.add(q2.id);
     r = await post('/admin/produk/hapus', { id: q2.id }, A.cookie);

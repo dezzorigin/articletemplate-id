@@ -60,7 +60,9 @@ const check = (name, ok, info = '') => { results.push([name, ok]); console.log((
     // UI: tidak ada form/endpoint booking
     const html = await (await fetch(BASE + '/konsultasi')).text();
     check('/konsultasi tanpa <form>', !/<form/i.test(html));
-    check('/konsultasi tanpa tombol booking aktif', !/<button/i.test(html.replace(/<nav[\s\S]*?<\/nav>/g, '')));
+    // Tombol menu mobile (header) dan penutupnya bukan tombol booking.
+    const tombol = [...html.replace(/<nav[\s\S]*?<\/nav>/g, '').matchAll(/<button[^>]*>/gi)].map((m) => m[0]).filter((t) => !/id="(menu-btn|sheet-close)"/.test(t));
+    check('/konsultasi tanpa tombol booking aktif', tombol.length === 0, tombol.join(' ').slice(0, 120));
     for (const p of ['/konsultasi/booking', '/konsultasi/buat', '/api/booking', '/booking']) {
       const r = await fetch(BASE + p, { method: 'POST', redirect: 'manual', headers: { Origin: BASE } });
       check(`POST ${p} tidak ada (404/405)`, r.status === 404 || r.status === 405, r.status);
