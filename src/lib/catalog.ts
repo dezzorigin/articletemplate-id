@@ -28,19 +28,33 @@ export interface Product {
 
 export interface CatalogQuery {
   jenjang?: Jenjang;
+  /** Bidang produk (teks bebas, dicocokkan persis dengan nilai di DB). */
+  bidang?: string;
+  /** Jurnal target produk (teks bebas, dicocokkan persis dengan nilai di DB). */
+  jurnal?: string;
   q?: string;
   urut: Urutan;
 }
+
+/** Bersihkan nilai filter teks bebas (bidang/jurnal/q): buang karakter yang
+ *  punya arti di sintaks filter PostgREST dan LIKE. Nilai yang mengandung
+ *  karakter itu tidak akan cocok persis — bisa diterima karena nilai facet
+ *  berasal dari admin (bidang/jurnal umumnya huruf, angka, spasi, tanda hubung). */
+const cleanFilterText = (v: string | null): string | undefined => {
+  const s = (v ?? '').replace(/[,()%*\\_"']/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 60);
+  return s || undefined;
+};
 
 /** Baca query string dengan daftar putih. Nilai di luar daftar diabaikan. */
 export function parseCatalogQuery(params: URLSearchParams): CatalogQuery {
   const j = params.get('jenjang') ?? '';
   const u = params.get('urut') ?? '';
-  // Buang karakter yang punya arti di sintaks filter PostgREST dan LIKE.
-  const q = (params.get('q') ?? '').replace(/[,()%*\\_"']/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 60);
+  const q = cleanFilterText(params.get('q'));
   return {
     jenjang: (JENJANG as readonly string[]).includes(j) ? (j as Jenjang) : undefined,
-    q: q || undefined,
+    bidang: cleanFilterText(params.get('bidang')),
+    jurnal: cleanFilterText(params.get('jurnal')),
+    q,
     urut: u in URUTAN ? (u as Urutan) : 'terbaru',
   };
 }
@@ -54,6 +68,8 @@ export async function listProducts(
 ): Promise<{ products: Product[]; error: string | null }> {
   let req = getSupabase().from('products').select(COLUMNS).eq('is_visible', true);
   if (query.jenjang) req = req.eq('jenjang', query.jenjang);
+  if (query.bidang) req = req.eq('bidang', query.bidang);
+  if (query.jurnal) req = req.eq('jurnal', query.jurnal);
   if (query.q) req = req.or(`judul.ilike.%${query.q}%,deskripsi.ilike.%${query.q}%`);
   if (query.urut === 'harga-naik') req = req.order('harga', { ascending: true, nullsFirst: false });
   else if (query.urut === 'harga-turun') req = req.order('harga', { ascending: false, nullsFirst: false });
@@ -89,6 +105,29 @@ export async function relatedProducts(p: Product): Promise<Product[]> {
   return ((data ?? []) as Product[]).sort(
     (a, b) => Number(b.bidang === p.bidang && !!p.bidang) - Number(a.bidang === p.bidang && !!p.bidang),
   );
+}
+
+/** Nilai unik terurut (buang kosong/duplikat). Dipakai untuk daftar facet filter. */
+export function uniqueSorted(values: (string | null | undefined)[]): string[] {
+  return [...new Set(values.map((v) => (v ?? '').trim()).filter(Boolean))].sort((a, b) =>
+    a.localeCompare(b, 'id'),
+  );
+}
+
+/** Daftar bidang + jurnal yang dipakai produk tampil — opsi filter katalog.
+ *  Kosong bila katalog kosong. Gagal baca DB -> daftar kosong (filter disembunyikan). */
+export async function listCatalogFacets(): Promise<{ bidang: string[]; jurnal: string[] }> {
+  const { data, error } = await getSupabase()
+    .from('products')
+    .select('bidang, jurnal')
+    .eq('is_visible', true)
+    .limit(500);
+  if (error || !data) return { bidang: [], jurnal: [] };
+  const rows = data as { bidang: string | null; jurnal: string | null }[];
+  return {
+    bidang: uniqueSorted(rows.map((r) => r.bidang)),
+    jurnal: uniqueSorted(rows.map((r) => r.jurnal)),
+  };
 }
 
 /** URL pratinjau PUBLIK dari bucket previews. File penuh ada di bucket private. */

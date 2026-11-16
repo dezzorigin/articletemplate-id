@@ -17,6 +17,11 @@ Sumber: PRD v3.0 (paket delegasi v2). Dokumen ini menerjemahkan PRD jadi urutan 
   diterapkan ke database self-hosted SEBELUM merge/deploy. Uji bayar live
   (F2–F6) belum dilakukan — bagian F CHECKLIST tetap belum dicentang.
 - Situs live https://articletemplate.id 200, `/api/health` OK.
+- Update 16 Nov 2026 (lanjutan audit): Beli sekarang (detail → checkout langsung), filter katalog
+  bidang/jurnal, edit profil (`/akun/profil`), login admin terpisah (`/admin/masuk` + gerbang role),
+  kelola konten (`/admin/konten`, tabel `site_content`, migrasi `20261116_site_content.sql`),
+  test runner `node:test` (`npm test`). Migrasi `site_content` WAJIB di-apply ke database
+  self-hosted sebelum deploy — sebelum itu halaman memakai teks bawaan dan simpan konten gagal.
 
 ## 2. Prinsip
 1. Mobile-first: rancang di 360px, baru naik ke tablet/desktop.
@@ -76,7 +81,9 @@ Perubahan dari scaffold: adapter `@astrojs/cloudflare` jadi `@astrojs/node` (sta
    dihapus dari repo). Project Supabase Cloud CADANGAN (`azazbeufwmkaiajosunh`) tidak lagi
    dijaga otomatis; bila pause, pulihkan manual lewat dashboard Supabase. Backend kanonis
    self-hosted tidak pernah pause, jadi tidak butuh keepalive. Plus health check Supabase terpisah.
-8. Tes otomatis untuk logika kritis (total, status order, otorisasi download).
+8. Tes otomatis untuk logika kritis (total, status order, otorisasi download) — SELESAI 16 Nov 2026:
+   runner `node:test`, `npm test` menjalankan `tests/` (katalog, keranjang, auth, uang, konten)
+   + `scripts/test-borderpay.mjs`.
 
 ## 8. Blocker di luar kode (butuh keputusan tim)
 Harga final + fee BorderPay, akun merchant BorderPay (key test sudah ada; key live + KYC sebelum uang asli), provider email, kebijakan refund/lisensi, format file template, review draf Q1 oleh Nizam, akses ke project Coolify "ArticleTemplate.id" (service Supabase + aplikasi) untuk URL + kunci backend.

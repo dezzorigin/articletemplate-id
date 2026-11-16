@@ -28,9 +28,13 @@ const [tampil, total, lunas, menunggu] = await Promise.all([
       <strong>Order</strong>
       <p>{lunas.count ?? 0} lunas, {menunggu.count ?? 0} menunggu bayar. Cari per email atau produk.</p>
     </a>
+    <a class="card tile" href="/admin/konten">
+      <strong>Konten</strong>
+      <p>Ubah teks halaman Beranda, Tentang, dan Bantuan tanpa edit kode.</p>
+    </a>
     <div class="card">
       <strong>Belum tersedia</strong>
-      <p>Kirim ulang email lunas/unduhan (menunggu provider email), kelola konten halaman, dan layanan konsultasi (tertutup sampai data mentor masuk).</p>
+      <p>Kirim ulang email lunas/unduhan (menunggu provider email) dan layanan konsultasi (tertutup sampai data mentor masuk).</p>
     </div>
   </div>
 </Base>

@@ -1,10 +1,14 @@
 ---
 import Base from '../layouts/Base.astro';
+import { getContent } from '../lib/content';
 
 // Hanya klaim terverifikasi PRD 7.8 (CV + ORCID + SINTA + Scopus, 27 Okt 2026).
 // DILARANG tayang: angka lama "5 Q1/Q2, 9 ongoing", label "JCSR Sinta 3", kuartil tanpa sumber/tahun,
 // klaim magang Chiba (belum ada bukti independen), data pribadi (HP, alamat, email pribadi).
 // Klaim tambahan hanya boleh masuk setelah 3 klarifikasi Nizam (PRD 7.8) selesai.
+// Paragraf pembuka bisa diubah admin di /admin/konten (kunci tentang.intro) —
+// TETAP hanya teks yang sudah terverifikasi; klaim baru wajib lewat PRD 7.8 dulu.
+const intro = await getContent('tentang.intro');
 const identitas = [
   { label: 'ORCID', href: 'https://orcid.org/0009-0009-0254-1920', teks: '0009-0009-0254-1920' },
   { label: 'Scopus Author ID', href: 'https://www.scopus.com/authid/detail.uri?authorId=58763735100', teks: '58763735100' },
@@ -20,11 +24,7 @@ const profil = [
 
 <Base title="Tentang" description="Tim di balik ArticleTemplate.id dan bukti kredibilitas yang bisa dicek sendiri.">
   <h1>Tentang kami</h1>
-  <p>
-    ArticleTemplate.id menjual template artikel untuk peneliti. Yang kami jual adalah
-    kepastian format: tiap template berisi file template, panduan pengisian, dan checklist
-    kepatuhan terhadap author guidelines jurnal target.
-  </p>
+  <p>{intro}</p>
 
   <h2>Tim</h2>
   <div class="grid">

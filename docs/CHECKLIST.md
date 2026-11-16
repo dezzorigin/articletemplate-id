@@ -22,6 +22,7 @@ Legenda: `[ ]` belum, `[x]` lulus, `[!]` gagal.
 - [x] B5 Produk harga NULL: tombol beli nonaktif, tidak bisa dibeli lewat URL/API (bukti: tombol disabled; POST manual `/keranjang/tambah` untuk produk tanpa harga -> 303 ke `?e=belum-dijual`, keranjang tidak berubah. Jalur checkout masih perlu dicek di WES-15)
 - [ ] B6 Harga di katalog = harga di detail = harga di checkout
 - [x] B7 Keadaan kosong (tanpa produk) tampil rapi ('Katalog segera hadir'; filter tanpa hasil: 'Tidak ada template yang cocok')
+- [x] B8 Filter bidang + jurnal bekerja (bukti: `parseCatalogQuery` + `listCatalogFacets` teruji di `tests/catalog.test.mjs`, `npm test` lolos 16 Nov 2026; belum e2e live melawan DB berisi produk — katalog live masih kosong)
 
 ## C. Detail produk
 - [x] C1 `/templates/[slug]` tampil: judul, jenjang, format, deskripsi, harga, lisensi (bukti 13 Nov dengan produk uji: semua tampil, lisensi + kalimat tanpa jaminan terbit ada)
@@ -29,6 +30,7 @@ Legenda: `[ ]` belum, `[x]` lulus, `[!]` gagal.
 - [x] C3 Checklist kepatuhan + tautan sumber guideline tampil (produk per jurnal) (bukti: 3 item tampil, tautan https tampil; URL `javascript:` tidak dijadikan tautan)
 - [x] C4 Slug tidak ada: 404 (bukti: slug tidak ada, slug tidak valid, dan produk tersembunyi semuanya 404)
 - [x] C5 Produk terkait tampil (bagian 'Template lain' tampil; urutan memprioritaskan bidang sama)
+- [x] C6 Tombol "Beli sekarang" di detail produk: ganti isi keranjang dengan produk itu lalu langsung ke checkout (bukti: rute `/keranjang/beli-sekarang` + tombol di buybar, 16 Nov 2026; penolakan server untuk produk tanpa harga sama seperti tambah keranjang; belum e2e live)
 
 ## D. Keranjang
 - [x] D1 Tambah produk, qty selalu 1, tambah dua kali tidak menggandakan (bukti 13 Nov: tambah A, B, A lagi -> 2 baris, Rp150.000)
@@ -44,6 +46,7 @@ Legenda: `[ ]` belum, `[x]` lulus, `[!]` gagal.
 - [ ] E4 Lupa/atur password lewat email (endpoint teruji: balasan seragam untuk email tak dikenal, sandi beda ditolak, tanpa sesi ditolak. Alur tautan email end-to-end BELUM: butuh email nyata + provider email WES-18)
 - [ ] E5 Guest checkout membuat akun dari email, password diatur lewat tautan
 - [x] E6 `/akun` dan `/admin` menolak yang belum login (bukti: anon -> 303 ke /masuk?next=...; `next` jahat (`//evil.com`, `https://`, `/\`, `javascript:`) jatuh ke /akun)
+- [x] E7 Edit profil: nama bisa diubah di `/akun/profil` (bukti: validasi `cleanName` teruji di `tests/auth.test.mjs`, simpan lewat RLS `profiles_update_own` kolom `nama`, 16 Nov 2026; belum e2e live. Kata sandi tetap lewat alur tautan email `/atur-password`)
 
 ## F. Checkout + pembayaran
 > Catatan 16 Nov 2026 (WES-17): kode BorderPay selesai — klien (`src/lib/borderpay.ts`),
@@ -72,11 +75,14 @@ Legenda: `[ ]` belum, `[x]` lulus, `[!]` gagal.
 
 ## H. Admin
 - [x] H1 Hanya role admin bisa masuk, pembeli ditolak (bukti: anon 303, pembeli 404, admin 200 untuk /admin. Login admin terpisah dari pembeli belum dibangun, memakai akun sama dengan role)
+  - Update 16 Nov 2026: login admin terpisah DIBANGUN — `/admin/masuk` + gerbang role (lihat H7). H1 tetap berlaku sebagai gerbangnya.
 - [x] H2 Tambah/ubah/hapus produk (bukti: scripts/e2e-admin.cjs; produk yang pernah dibeli disembunyikan, bukan dihapus)
 - [x] H3 Ubah harga langsung tercermin di katalog dan checkout (bukti: 1000 -> 2500 tampil di katalog, checkout, total order)
 - [x] H4 Upload file template (bucket private) dan pratinjau (bucket public) (bukti: file tidak bisa dibuka lewat URL publik, file lama terhapus saat diganti, .exe ditolak. Validasi isi/magic-bytes ditambah 16 Nov 2026 — belum diuji e2e)
 - [x] H5 Daftar order + cari email/produk (bukti: cari email/slug/judul + filter status)
 - [x] H6 Kirim ulang email lunas/download (14 Nov: Resend terpasang, tombol di /akun, `e2e-kirim-ulang` 6 cek lulus, email nyata masuk Gmail. Pengirim masih onboarding@resend.dev: hanya bisa ke pemilik akun Resend, butuh verifikasi domain sebelum tayang)
+- [x] H7 Login admin terpisah di `/admin/masuk` (bukti: halaman login khusus admin + gerbang role — pembeli yang mencoba masuk langsung dikeluarkan lagi; middleware mengecualikan `/admin/masuk` dari redirect login dan rewrite 404 admin; tautan dari `/masuk`, 16 Nov 2026; belum e2e live. Catatan jujur: "terpisah" = alur + gerbang role yang terpisah; sesi tetap memakai cookie Supabase Auth yang sama, bukan penyimpanan kredensial kedua)
+- [x] H8 Kelola konten di `/admin/konten` (bukti: tabel `site_content` + migrasi `20261116_site_content.sql`, daftar 3 kunci + form ubah teks polos, halaman Beranda/Tentang/Bantuan membaca dari DB dengan fallback teks bawaan, 16 Nov 2026; WAJIB apply migrasi ke database self-hosted sebelum deploy — sebelum itu simpan konten gagal dan halaman memakai teks bawaan; belum e2e live)
 
 ## I. Konten
 - [x] I1 Beranda: harga tampil dari data, bukan teks karangan
@@ -104,6 +110,7 @@ Legenda: `[ ]` belum, `[x]` lulus, `[!]` gagal.
 - [ ] L3 Lighthouse desktop >= 90 performa, >= 90 a11y
 - [x] L4 Meta title/description/OG per halaman, robots.txt, sitemap.xml (produk visible saja)
 - [ ] L5 Backup database terjadwal + monitoring uptime aktif
+- [x] L6 Test runner: `npm test` menjalankan tes unit (`tests/`, `node:test`) + `scripts/test-borderpay.mjs` (bukti: `npm test` lolos 16 Nov 2026 — 5 file tes unit + 31 cek BorderPay)
 
 ## M. Workflow end-to-end (jalankan di mobile)
 - [ ] M1 W1 guest: katalog sampai download
@@ -126,6 +133,7 @@ Legenda: `[ ]` belum, `[x]` lulus, `[!]` gagal.
 ## Rekap hasil
 | Tanggal | Tahap | Lulus | Gagal | Belum | Catatan |
 |---|---|---|---|---|---|
+| 2026-11-16 | Lanjutan audit | B8, C6, E7, H7, H8, L6 (+catatan H1) | 0 | A8, F1–F9, G1–G7, M1–M6 + sisanya | beli sekarang, filter bidang/jurnal, edit profil, login admin terpisah, kelola konten (migrasi site_content — WAJIB apply sebelum deploy), test runner `npm test` lolos; e2e live belum dijalankan |
 | 2026-11-16 | WES-17 BorderPay | 0 (kode selesai, bukti live belum ada) | 0 | A8, F1–F9, G1–G7, M1–M6 + sisanya | klien BorderPay + webhook nyata (verifikasi token x-borderpay-token) + halaman bayar + migrasi pay_url; uji lokal scripts/test-borderpay.mjs lolos; F2–F6 butuh uji bayar live (sandbox) |
 | 2026-11-16 | fix audit batch 1 | A2 (+catatan G4, H4, K5, L1, A6) | 0 | A8, F1–F9, G1–G7, M1–M6 + sisanya | tsc 0 error, React dihapus, keepalive dihapus, e2e-download host-agnostic, 500 status, race createOrder dikunci per user, clientKey XFF kiri, magic-bytes upload, tautan unduh di status lunas, expiry ditegakkan di daftar order |
 | 2026-11-13 | 0 | 0 | 0 | semua | checklist dibuat, belum ada uji |

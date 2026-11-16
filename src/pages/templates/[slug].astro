@@ -104,10 +104,16 @@ const refused = Astro.url.searchParams.get('e') === 'belum-dijual';
         ) : inCart ? (
           <a class="btn" href="/keranjang">Lihat keranjang</a>
         ) : (
-          <form method="post" action="/keranjang/tambah">
-            <input type="hidden" name="slug" value={product.slug} />
-            <button type="submit">Tambah ke keranjang</button>
-          </form>
+          <div class="buy-actions">
+            <form method="post" action="/keranjang/tambah">
+              <input type="hidden" name="slug" value={product.slug} />
+              <button type="submit">Tambah ke keranjang</button>
+            </form>
+            <form method="post" action="/keranjang/beli-sekarang">
+              <input type="hidden" name="slug" value={product.slug} />
+              <button type="submit" class="ghost-btn">Beli sekarang</button>
+            </form>
+          </div>
         )}
       </div>
       {refused ? <p class="refused" role="alert">Template ini belum bisa dibeli karena harga finalnya belum ditetapkan.</p> : null}
@@ -193,6 +199,16 @@ const refused = Astro.url.searchParams.get('e') === 'belum-dijual';
   }
   .buybar .price {
     font-size: 1.15rem;
+  }
+  .buy-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .ghost-btn {
+    background: transparent;
+    color: var(--accent);
+    border: 1px solid var(--accent);
   }
   @media (min-width: 720px) {
     .buybar {
