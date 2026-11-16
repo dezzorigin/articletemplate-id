@@ -23,57 +23,92 @@ const error = code ? messages[code] : undefined;
   <h1>Checkout</h1>
   {error ? <p class="notice" role="alert">{error}</p> : null}
 
-  <ul class="lines">
-    {
-      payable.map((l) => (
-        <li class="card line">
-          <span>{l.product.judul}</span>
-          <strong>{formatRupiah(l.product.harga)}</strong>
-        </li>
-      ))
-    }
-  </ul>
-  <p class="total"><span>Total</span> <strong>{formatRupiah(view.total)}</strong></p>
+  <form class="co" method="post" action="/checkout/buat">
+    <div class="co-main">
+      <h2>Data pembeli</h2>
+      {
+        user ? (
+          <p class="hint">Membeli sebagai <strong>{user.email}</strong>.</p>
+        ) : (
+          <>
+            <label class="field">
+              <span>Nama</span>
+              <input type="text" name="nama" required autocomplete="name" maxlength="80" />
+            </label>
+            <label class="field">
+              <span>Email</span>
+              <input type="email" name="email" required autocomplete="email" inputmode="email" autocapitalize="none" autocorrect="off" maxlength="254" />
+              <span class="hint">Akun dibuat otomatis dari email ini. Kamu masuk lewat "Lupa kata sandi".</span>
+            </label>
+          </>
+        )
+      }
+      <section class="card pay-next" aria-label="Langkah pembayaran">
+        <h3>Pembayaran</h3>
+        <p>
+          Bayar lewat <strong>QRIS</strong> atau <strong>Virtual Account</strong> (BorderPay).
+          Metode dipilih di langkah berikutnya, di halaman status pesanan — setelah pesanan ini dibuat.
+        </p>
+      </section>
+    </div>
 
-  <form class="form" method="post" action="/checkout/buat">
-    {
-      user ? (
-        <p class="hint">Membeli sebagai <strong>{user.email}</strong>.</p>
-      ) : (
-        <>
-          <label class="field">
-            <span>Nama</span>
-            <input type="text" name="nama" required autocomplete="name" maxlength="80" />
-          </label>
-          <label class="field">
-            <span>Email</span>
-            <input type="email" name="email" required autocomplete="email" inputmode="email" autocapitalize="none" autocorrect="off" maxlength="254" />
-            <span class="hint">Akun dibuat otomatis dari email ini. Kamu masuk lewat "Lupa kata sandi".</span>
-          </label>
-        </>
-      )
-    }
-    <button type="submit">Buat pesanan</button>
+    <aside class="co-side" aria-label="Ringkasan pesanan">
+      <div class="card summary">
+        <details open>
+          <summary>Ringkasan pesanan ({payable.length} item)</summary>
+          <ul class="lines">
+            {
+              payable.map((l) => (
+                <li class="line">
+                  <span>{l.product.judul}</span>
+                  <strong>{formatRupiah(l.product.harga)}</strong>
+                </li>
+              ))
+            }
+          </ul>
+        </details>
+        <p class="total"><span>Total</span> <strong>{formatRupiah(view.total)}</strong></p>
+        <button type="submit" data-submit>Buat pesanan</button>
+        <p class="hint">Sekali bayar. Tanpa biaya tambahan dari kami.</p>
+      </div>
+    </aside>
   </form>
+
+  <script is:inline src="/js/checkout-submit.js"></script>
 </Base>
 
 <style>
-  .lines {
-    list-style: none;
-    padding: 0;
-    margin: 0 0 0.75rem;
-    display: grid;
-    gap: 0.5rem;
+  /* Dua kolom di desktop (form kiri, ringkasan lengket kanan — pola
+     shadcn Pro checkout-01, PETA.md §7.2 baris 6); satu kolom di HP
+     dengan ringkasan di atas dan bisa dilipat. */
+  .co { display: grid; gap: 1rem; }
+  .co-main { display: grid; gap: 0.9rem; align-content: start; }
+  .co-main h2 { margin: 0; }
+  .co-main .field { display: grid; gap: 0.3rem; font-weight: 500; font-size: 0.9rem; }
+  .co-main .field input {
+    width: 100%;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 0.5rem 0.8rem;
+    background: var(--surface);
+    color: var(--ink);
+    font-weight: 400;
   }
-  .line {
-    display: flex;
-    justify-content: space-between;
-    gap: 0.75rem;
-  }
-  .total {
-    display: flex;
-    justify-content: space-between;
-    font-size: 1.15rem;
-    margin: 0 0 1.25rem;
+  .co-main .hint { color: var(--muted); font-size: 0.85rem; font-weight: 400; }
+  .pay-next h3 { font-family: Georgia, "Times New Roman", serif; font-size: 1.1rem; font-weight: 500; margin: 0 0 0.35rem; }
+  .pay-next p { margin: 0; }
+  .pay-next p:last-child { margin-bottom: 0; }
+  .co-side { order: -1; }
+  .summary { padding: 1rem 1.25rem; }
+  .summary details summary { cursor: pointer; font-weight: 600; min-height: 44px; display: flex; align-items: center; }
+  .lines { list-style: none; padding: 0; margin: 0.5rem 0 0.75rem; display: grid; gap: 0.5rem; }
+  .line { display: flex; justify-content: space-between; gap: 0.75rem; font-size: 0.95rem; }
+  .line strong { white-space: nowrap; }
+  .total { display: flex; justify-content: space-between; font-size: 1.15rem; margin: 0 0 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--line); }
+  .summary button { width: 100%; }
+  .summary .hint { color: var(--muted); font-size: 0.85rem; margin: 0.6rem 0 0; text-align: center; }
+  @media (min-width: 720px) {
+    .co { grid-template-columns: 1.1fr 0.9fr; gap: 2rem; align-items: start; }
+    .co-side { order: 0; position: sticky; top: 1rem; }
   }
 </style>

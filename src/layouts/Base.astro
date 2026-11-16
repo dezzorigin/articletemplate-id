@@ -357,6 +357,121 @@ const icons: Record<string, string> = {
         color: var(--accent);
         border: 1px solid var(--accent);
       }
+      /* ---------- komponen bersama (dipakai landing / harga / checkout) ---------- */
+      /* RadioGroup berupa kartu: satu fieldset, label kartu per pilihan. */
+      .radios {
+        border: 0;
+        padding: 0;
+        margin: 0;
+        display: grid;
+        gap: 0.5rem;
+      }
+      .radios legend {
+        font-weight: 600;
+        font-size: 0.9rem;
+        padding: 0;
+        margin-bottom: 0.25rem;
+      }
+      .radio-card {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.6rem;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 0.6rem 0.8rem;
+        cursor: pointer;
+        font-weight: 500;
+        min-height: 44px;
+      }
+      .radio-card input {
+        accent-color: var(--accent);
+        width: 18px;
+        height: 18px;
+        flex: none;
+        margin-top: 0.15rem;
+        min-height: 0;
+      }
+      .radio-card small {
+        display: block;
+        color: var(--muted);
+        font-weight: 400;
+        font-size: 0.85rem;
+      }
+      .radio-card:has(input:checked) {
+        border-color: var(--accent);
+        background: var(--accent-soft);
+      }
+      .radio-card:has(input:focus-visible) {
+        outline: 3px solid var(--accent);
+        outline-offset: 2px;
+      }
+      /* Kartu status besar (halaman status pesanan): ikon + kata status + penjelasan. */
+      .status-card {
+        display: grid;
+        grid-template-columns: 48px 1fr;
+        gap: 0.75rem;
+        align-items: start;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 1rem 1.25rem;
+        margin: 0 0 1rem;
+      }
+      .status-card h2 {
+        margin: 0 0 0.25rem;
+        font-size: 1.3rem;
+      }
+      .status-card p {
+        margin: 0;
+        color: var(--muted);
+      }
+      .status-card p:last-child {
+        margin-bottom: 0;
+      }
+      .status-ico {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--accent-soft);
+        color: var(--accent);
+      }
+      .status-ico svg {
+        width: 26px;
+        height: 26px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .status-card.ok .status-ico {
+        background: var(--accent-soft);
+        color: var(--accent);
+      }
+      .status-card.bad .status-ico {
+        background: #fbeeea;
+        color: #9b2c2c;
+      }
+      .status-card.wait .status-ico {
+        background: var(--warn-bg);
+        color: var(--warn-ink);
+      }
+      /* Hitung mundur kedaluwarsa bayar: mono, angka tabular. */
+      .countdown {
+        font-family: var(--mono);
+        font-size: 1.05rem;
+        font-variant-numeric: tabular-nums;
+        color: var(--ink);
+      }
+      /* Sel centang di tabel perbandingan. */
+      .ya {
+        color: var(--accent);
+        font-weight: 700;
+      }
       .footlinks { display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; }
       .footlinks a { min-height: 44px; display: inline-flex; align-items: center; }
       footer {

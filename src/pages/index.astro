@@ -15,40 +15,60 @@ const jenjangAda = JENJANG.filter((j) => products.some((p) => p.jenjang === j));
 ---
 
 <Base title="Beranda">
-  <section class="hero">
-    <div class="hero-text">
-      <h1>Template artikel untuk peneliti</h1>
-      <p>{intro}</p>
-      <p class="from">
-        {
-          mulai !== null ? (
-            <>Mulai dari <strong>{formatRupiah(mulai)}</strong>. </>
-          ) : (
-            <>Harga template diumumkan segera. </>
-          )
-        }
-        Lihat-lihat tanpa login.
-      </p>
-      <p><a class="btn" href="/templates">Lihat semua template</a></p>
-    </div>
+  <section class="hero-center">
+    <h1>Template artikel untuk <span class="hl">peneliti</span></h1>
+    <p class="lede">{intro}</p>
+    <p class="from">
+      {
+        mulai !== null ? (
+          <>Mulai dari <strong>{formatRupiah(mulai)}</strong>. </>
+        ) : (
+          <>Harga tiap jenjang tercantum di <a href="/harga">halaman Harga</a>. </>
+        )
+      }
+      Lihat-lihat tanpa login.
+    </p>
+    <p class="hero-ctas">
+      <a class="btn" href="/templates">Lihat template</a>
+      <a class="btn ghost" href="#cara-kerja">Cara kerja</a>
+    </p>
+    <ul class="proof" aria-label="Rekam jejak tim">
+      <li><strong>4</strong> artikel terindeks Scopus pada 2026</li>
+      <li><strong>95</strong> Skor SINTA</li>
+      <li><strong>Reviewer</strong> PLOS ONE</li>
+    </ul>
+    <p class="proof-more"><a href="/tentang">Lihat bukti di halaman Tentang</a></p>
 
-    <figure class="sheet-wrap" aria-hidden="true">
-      <div class="sheet">
-        <p class="s-meta">Jurnal Contoh, Vol. 12 No. 2</p>
-        <p class="s-title">Judul artikel ditulis ringkas dan spesifik</p>
-        <p class="s-auth">Nama Penulis, Afiliasi, email@kampus.ac.id</p>
-        <p class="s-h">Abstrak</p>
-        <p class="s-body">Latar belakang, tujuan, metode, hasil, dan simpulan ditulis dalam satu paragraf tanpa rujukan, mengikuti batas kata yang diminta jurnal.</p>
-        <p class="s-body">Kata kunci: format naskah; template; jurnal</p>
-        <p class="s-h s-h2">1. Pendahuluan</p>
-        <p class="s-body">Paragraf pembuka menjelaskan masalah penelitian, celah pada kajian terdahulu, dan tujuan artikel ini dalam bahasa yang lugas.</p>
-        <p class="s-body">Sitasi mengikuti gaya selingkung jurnal, misalnya (Penulis, 2024), dan daftar pustaka disusun alfabetis.</p>
-        <span class="note n1"><i></i>Margin 3 cm</span>
-        <span class="note n2"><i></i>Abstrak maks. 250 kata</span>
-        <span class="note n3"><i></i>Font 12 pt</span>
+    <div class="fan" aria-hidden="true">
+      <div class="fan-sheet">
+        <p class="fs-meta">Scopus Q1</p>
+        <p class="fs-title">Judul artikel ditulis ringkas dan spesifik</p>
+        <p class="fs-auth">Nama Penulis, Afiliasi</p>
+        <p class="fs-h">Abstrak</p>
+        <p class="fs-body">Latar belakang, tujuan, metode, hasil, dan simpulan dalam satu paragraf.</p>
+        <p class="fs-h">1. Pendahuluan</p>
+        <p class="fs-body">Paragraf pembuka menjelaskan masalah, celah kajian, dan tujuan artikel.</p>
       </div>
-      <figcaption>Contoh tata letak, bukan template asli</figcaption>
-    </figure>
+      <div class="fan-sheet">
+        <p class="fs-meta">Sinta</p>
+        <p class="fs-title">Judul artikel ditulis ringkas dan spesifik</p>
+        <p class="fs-auth">Nama Penulis, Afiliasi</p>
+        <p class="fs-h">Abstrak</p>
+        <p class="fs-body">Latar belakang, tujuan, metode, hasil, dan simpulan dalam satu paragraf.</p>
+        <p class="fs-h">1. Pendahuluan</p>
+        <p class="fs-body">Paragraf pembuka menjelaskan masalah, celah kajian, dan tujuan artikel.</p>
+      </div>
+      <div class="fan-sheet">
+        <p class="fs-meta">Prosiding</p>
+        <p class="fs-title">Judul artikel ditulis ringkas dan spesifik</p>
+        <p class="fs-auth">Nama Penulis, Afiliasi</p>
+        <p class="fs-h">Abstrak</p>
+        <p class="fs-body">Latar belakang, tujuan, metode, hasil, dan simpulan dalam satu paragraf.</p>
+        <p class="fs-h">1. Pendahuluan</p>
+        <p class="fs-body">Paragraf pembuka menjelaskan masalah, celah kajian, dan tujuan artikel.</p>
+      </div>
+    </div>
+    <p class="fan-cap">Contoh tata letak template Q1, Sinta, dan Prosiding — bukan file asli.</p>
   </section>
 
   <h2>Template terbaru</h2>
@@ -79,7 +99,7 @@ const jenjangAda = JENJANG.filter((j) => products.some((p) => p.jenjang === j));
     ) : null
   }
 
-  <h2>Apa yang kamu dapat</h2>
+  <h2 id="cara-kerja">Apa yang kamu dapat</h2>
   <ul class="points">
     <li>File template siap isi, sesuai jenjang yang dituju.</li>
     <li>Panduan pengisian dan checklist kepatuhan terhadap author guidelines.</li>
@@ -95,7 +115,7 @@ const jenjangAda = JENJANG.filter((j) => products.some((p) => p.jenjang === j));
     <details><summary>Perlu daftar dulu untuk membeli?</summary>
       <p>Tidak. Isi nama dan email saat checkout, akun dibuat otomatis. Masuk lewat "Lupa kata sandi" untuk mengatur kata sandi dan mengunduh.</p></details>
     <details><summary>Bayar lewat apa?</summary>
-      <p>QRIS atau Virtual Account lewat BorderPay. Pembayaran online belum dibuka; pengumuman menyusul.</p></details>
+      <p>QRIS atau Virtual Account lewat BorderPay. Setelah checkout, pilih metode di halaman status pesanan, lalu buka halaman bayar BorderPay.</p></details>
     <details><summary>Bisa unduh ulang?</summary>
       <p>Bisa. Setelah pesanan lunas, file ada di halaman <a href="/akun">Akun</a> selama akunmu aktif.</p></details>
     <details><summary>Bagaimana dengan refund?</summary>
@@ -114,33 +134,45 @@ const jenjangAda = JENJANG.filter((j) => products.some((p) => p.jenjang === j));
 </Base>
 
 <style>
-  .hero { display: grid; gap: 2rem; margin-bottom: 1rem; }
-  .hero .from { color: var(--muted); }
-  .sheet-wrap { margin: 0; }
-  .sheet-wrap figcaption { font-family: var(--mono); font-size: 0.75rem; color: var(--muted); margin-top: 0.75rem; }
-  .sheet { position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: 4px; padding: 1.75rem 1.75rem 2rem 2.25rem; box-shadow: 0 1px 2px rgba(31, 41, 55, 0.06), 0 12px 24px -12px rgba(31, 41, 55, 0.12); max-width: 380px; margin-left: auto; margin-right: auto; aspect-ratio: 1 / 1.3; overflow: hidden; }
-  .sheet::before { content: ""; position: absolute; top: 0; bottom: 0; left: 1.25rem; border-left: 1px solid var(--line); }
-  .sheet p { margin: 0; }
-  .s-meta { font-family: var(--mono); font-size: 0.65rem; color: var(--muted); }
-  .s-title { font-family: Georgia, "Times New Roman", serif; font-size: 1.15rem; line-height: 1.3; margin: 0.9rem 0 0.4rem !important; font-weight: 500; }
-  .s-auth { font-size: 0.7rem; color: var(--muted); margin-bottom: 1.25rem !important; }
-  .s-h { font-size: 0.8rem; font-weight: 500; margin-bottom: 0.25rem !important; }
-  .s-h2 { margin-top: 1rem !important; }
-  .s-body { font-size: 0.7rem; line-height: 1.6; color: var(--ink); margin-bottom: 0.5rem !important; }
-  .note { position: absolute; right: 0; display: inline-flex; align-items: center; gap: 0.4rem; background: var(--accent-soft); color: var(--accent); font-family: var(--mono); font-size: 0.68rem; padding: 0.3rem 0.6rem 0.3rem 0.5rem; border-radius: 4px 0 0 4px; }
-  .note i { width: 12px; height: 12px; flex: none; background: currentColor; -webkit-mask: var(--check) center / contain no-repeat; mask: var(--check) center / contain no-repeat; }
-  .n1 { top: 20%; } .n2 { top: 46%; } .n3 { top: 80%; }
-  .sheet, .points li { --check: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 8.5l3.2 3.2L13 4.8'/%3E%3C/svg%3E"); }
-  @media (min-width: 720px) {
-    .hero { grid-template-columns: 1.1fr 0.9fr; align-items: center; gap: 3rem; min-height: 60vh; }
-  }
+  /* Hero tengah (referensi: 21st.dev hero-10 "Centered Hero with Image Fan",
+     PETA.md §7.2 baris 1) — komposisi ditiru, dibangun ulang Astro + CSS. */
+  .hero-center { text-align: center; max-width: 760px; margin: 0 auto 1rem; }
+  .hero-center h1 { font-size: clamp(2.1rem, 8vw, 3.4rem); }
+  .hero-center .hl { color: var(--accent); }
+  .hero-center .lede { font-size: 1.08rem; }
+  .hero-center .from { color: var(--muted); }
+  .hero-ctas { display: flex; flex-wrap: wrap; gap: 0.6rem; justify-content: center; margin: 1.25rem 0 0.25rem; }
+  .proof { list-style: none; display: flex; flex-wrap: wrap; gap: 0.25rem 1.5rem; justify-content: center; padding: 0; margin: 1.5rem 0 0; }
+  .proof li { font-size: 0.92rem; color: var(--muted); }
+  .proof strong { color: var(--accent); font-family: Georgia, "Times New Roman", serif; font-size: 1.05rem; }
+  .proof-more { font-size: 0.9rem; margin-top: 0.25rem; }
+  /* Kipas 3 lembar mock template (CSS saja, tanpa foto stok). */
+  .fan { display: flex; justify-content: center; align-items: flex-start; margin: 2.25rem auto 0; }
+  .fan-sheet { flex: 0 0 36%; max-width: 230px; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 0.8rem 0.85rem 1rem; box-shadow: 0 1px 2px rgba(31, 41, 55, 0.06), 0 12px 24px -12px rgba(31, 41, 55, 0.18); aspect-ratio: 1 / 1.3; overflow: hidden; text-align: left; }
+  .fan-sheet:nth-child(1) { transform: rotate(-5deg) translateY(10px); margin-right: -5%; }
+  .fan-sheet:nth-child(2) { z-index: 2; }
+  .fan-sheet:nth-child(3) { transform: rotate(5deg) translateY(10px); margin-left: -5%; }
+  .fan-sheet p { margin: 0; }
+  .fs-meta { font-family: var(--mono); font-size: 0.55rem; color: var(--muted); }
+  .fs-title { font-family: Georgia, "Times New Roman", serif; font-size: 0.72rem; line-height: 1.3; margin: 0.5rem 0 0.25rem !important; font-weight: 500; }
+  .fs-auth { font-size: 0.55rem; color: var(--muted); margin-bottom: 0.7rem !important; }
+  .fs-h { font-size: 0.6rem; font-weight: 600; margin-bottom: 0.15rem !important; }
+  .fs-body { font-size: 0.58rem; line-height: 1.55; color: var(--ink); margin-bottom: 0.45rem !important; }
+  .fan-cap { font-family: var(--mono); font-size: 0.75rem; color: var(--muted); margin-top: 1rem; }
   .chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
   .chips a { text-decoration: none; min-height: 44px; display: inline-flex; align-items: center; padding: 0 0.9rem; }
   .points { padding-left: 0; list-style: none; display: grid; gap: 0.5rem; }
   .points li { display: grid; grid-template-columns: 16px 1fr; gap: 0.6rem; align-items: start; }
-  .points li::before { content: ""; width: 16px; height: 16px; margin-top: 0.3rem; background: var(--accent); -webkit-mask: var(--check) center / contain no-repeat; mask: var(--check) center / contain no-repeat; }
+  .points li::before { content: ""; width: 16px; height: 16px; margin-top: 0.3rem; background: var(--accent); -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 8.5l3.2 3.2L13 4.8'/%3E%3C/svg%3E") center / contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 8.5l3.2 3.2L13 4.8'/%3E%3C/svg%3E") center / contain no-repeat; }
   .note-text { color: var(--muted); font-size: 0.92rem; }
   .faq details { border-top: 1px solid var(--line); padding: 0.2rem 0; }
   .faq details:first-child { border-top: 0; }
   .faq summary { cursor: pointer; font-weight: 500; min-height: 44px; display: flex; align-items: center; }
+  @media (min-width: 720px) {
+    .fs-meta { font-size: 0.65rem; }
+    .fs-title { font-size: 0.95rem; }
+    .fs-auth { font-size: 0.65rem; }
+    .fs-h { font-size: 0.75rem; }
+    .fs-body { font-size: 0.7rem; }
+  }
 </style>
