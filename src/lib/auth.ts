@@ -170,3 +170,71 @@ export function isNotConfirmedError(error: AuthErrorLike | null | undefined): bo
     (error.message ?? '').toLowerCase().includes('not confirmed')
   );
 }
+
+// Pola flow id PKCE auth-js (helpers.js validatePKCEFlowId): 8..64 karakter
+// [A-Za-z0-9_-]. Dipakai untuk memvalidasi `sb_flow_id` dari URL callback
+// sebelum diteruskan ke exchangeCodeForSession — nilai lain diabaikan.
+const FLOW_ID_RE = /^[A-Za-z0-9_-]{8,64}$/;
+
+/** true bila nilai adalah flow id PKCE yang sah (parameter `sb_flow_id`). */
+export function validFlowId(value: unknown): value is string {
+  return typeof value === 'string' && FLOW_ID_RE.test(value);
+}
+
+/**
+ * true bila error exchangeCodeForSession berarti "verifier tidak cocok /
+ * tidak ditemukan" — BUKAN tautan tidak valid:
+ * - `bad_code_verifier` (AuthApiError.code dari GoTrue, HTTP 400): ada
+ *   verifier yang terkirim tapi salah (basi dari alur lain / alur dari
+ *   klien lain). Langkah /verify GoTrue SUDAH mengonfirmasi email sebelum
+ *   mengeluarkan code, jadi user bisa langsung masuk dengan kata sandi.
+ * - `pkce_code_verifier_not_found` / AuthPKCECodeVerifierMissingError:
+ *   tidak ada verifier sama sekali (alur dimulai di browser/perangkat
+ *   lain). auth-js melempar ini TANPA POST /token, jadi tidak ada
+ *   bad_code_verifier di log untuk kasus ini.
+ */
+export function isVerifierError(
+  error: (AuthErrorLike & { name?: string | null }) | null | undefined,
+): boolean {
+  if (!error) return false;
+  const code = (error.code ?? '').toLowerCase();
+  return (
+    code === 'bad_code_verifier' ||
+    code === 'pkce_code_verifier_not_found' ||
+    error.name === 'AuthPKCECodeVerifierMissingError'
+  );
+}
+
+/**
+ * Kode error verifikasi kode 6 digit (dipakai sebagai ?e=... di
+ * /konfirmasi-kode). Dipetakan dari kode error GoTrue + pesan + status.
+ * - 'kode': kode salah, sudah dipakai, atau sudah kedaluwarsa
+ *   (`otp_expired` — termasuk kode dari email yang tautannya sudah
+ *   diklik: tautan dan kode menebus token sekali pakai yang sama).
+ * - 'batas': rate limit verifikasi (429 / `over_request_rate_limit`).
+ * - 'gagal': sisanya.
+ */
+export type VerifyOtpErrorCode = 'kode' | 'batas' | 'gagal' | 'email';
+
+export function verifyOtpErrorCode(error: AuthErrorLike | null | undefined): VerifyOtpErrorCode {
+  if (!error) return 'gagal';
+  const code = (error.code ?? '').toLowerCase();
+  const msg = (error.message ?? '').toLowerCase();
+  if (
+    code === 'otp_expired' ||
+    msg.includes('expired') ||
+    msg.includes('invalid token') ||
+    msg.includes('token has expired')
+  ) {
+    return 'kode';
+  }
+  if (
+    code === 'over_request_rate_limit' ||
+    code === 'over_email_send_rate_limit' ||
+    error.status === 429 ||
+    msg.includes('rate limit')
+  ) {
+    return 'batas';
+  }
+  return 'gagal';
+}

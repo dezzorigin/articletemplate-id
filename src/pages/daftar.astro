@@ -33,9 +33,18 @@ const error = code ? messages[code] : undefined;
     {error ? <p class="notice" role="alert">{error}</p> : null}
     {
       ok ? (
-        <p class="notice ok" role="status">
-          Cek email kamu. Jika pendaftaran bisa dilanjutkan, tautan konfirmasi sudah dikirim.
-        </p>
+        <>
+          <p class="notice ok" role="status">
+            Cek email kamu. Jika pendaftaran bisa dilanjutkan, tautan konfirmasi sudah dikirim.
+          </p>
+          <p class="notice" role="note">
+            Tautan tidak bisa dibuka? Masukkan kode 6 digit dari email di{' '}
+            <a href={`/konfirmasi-kode?jenis=signup&email=${encodeURIComponent(emailVal)}`}>
+              halaman konfirmasi kode
+            </a>{' '}
+            — tanpa mengklik tautannya.
+          </p>
+        </>
       ) : (
         <>
           {
