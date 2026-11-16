@@ -6,6 +6,7 @@ Sumber: PRD v3.0 (paket delegasi v2). Dokumen ini menerjemahkan PRD jadi urutan 
 - Repo `dezzorigin/articletemplate-id`, 4 commit. Astro 5 + React 19 + adapter Cloudflare. Build lulus (di path tanpa `#`).
 - Semua halaman placeholder. Webhook BorderPay 501. Tidak ada auth, keranjang, checkout, download, admin berfungsi.
 - Supabase: proyek lama (`azazbeufwmkaiajosunh`, pause) tidak terjangkau. Dibuat proyek baru milik Westindo `articletemplate-id` (ref `kckivepafrmyihoigcnb`, Singapura) dengan skema + migrasi pengamanan RLS + bucket. Migrasi di `supabase/migrations/`.
+- Update 16 Nov 2026 (keputusan Nabil): backend kanonis = Supabase SELF-HOSTED di Coolify (service `supabase-kfuuqefxogdl5q4bam7t93vu`, project Coolify "ArticleTemplate.id"). Project Supabase Cloud `azazbeufwmkaiajosunh` (Nabil, dipulihkan 16 Nov 2026, ACTIVE_HEALTHY) = CADANGAN. Project Supabase Cloud Westindo (`kckivepafrmyihoigcnb`) = dev/test. Status migrasi pengamanan RLS (`supabase/migrations/20261113_harden_rls.sql`) di database self-hosted: BELUM TERVERIFIKASI — menunggu konfirmasi Westindo.
 - Situs live https://articletemplate.id 200, `/api/health` OK.
 
 ## 2. Prinsip
@@ -20,7 +21,7 @@ Sumber: PRD v3.0 (paket delegasi v2). Dokumen ini menerjemahkan PRD jadi urutan 
 ## 3. Arsitektur target
 ```
 Browser (mobile) -> Astro SSR (Node, Docker, Coolify)
-  -> Supabase (Postgres + Auth + Storage, RLS)
+  -> Supabase SELF-HOSTED di Coolify (Postgres + Auth + Storage, RLS)
   -> BorderPay (QRIS/VA) -> POST /api/webhook-borderpay -> orders.status
   -> Email transaksional (provider dipilih tim)
 ```
@@ -62,8 +63,8 @@ Perubahan dari scaffold: adapter `@astrojs/cloudflare` jadi `@astrojs/node` (sta
 4. Sentralkan format harga (Rp) dan perhitungan total di satu modul.
 5. Validasi env saat start (gagal jelas, bukan placeholder diam-diam seperti `supabase.ts` sekarang).
 6. Header keamanan (CSP, X-Frame-Options, Referrer-Policy) dan rate limit endpoint publik.
-7. Keepalive: tetap dipantau, plus health check Supabase terpisah.
+7. Keepalive: workflow GitHub Actions menjaga project Supabase Cloud CADANGAN (`azazbeufwmkaiajosunh`) agar tidak pause; backend kanonis self-hosted tidak butuh keepalive. Plus health check Supabase terpisah.
 8. Tes otomatis untuk logika kritis (total, status order, otorisasi download).
 
 ## 8. Blocker di luar kode (butuh keputusan tim)
-Harga final + fee BorderPay, akun merchant BorderPay, skema signature webhook, provider email, kebijakan refund/lisensi, format file template, review draf Q1 oleh Nizam, akses proyek Supabase ArticleTemplate ke akun ini.
+Harga final + fee BorderPay, akun merchant BorderPay, skema signature webhook, provider email, kebijakan refund/lisensi, format file template, review draf Q1 oleh Nizam, akses ke project Coolify "ArticleTemplate.id" (service Supabase + aplikasi) untuk URL + kunci backend.
