@@ -55,10 +55,10 @@ const note = m ? msg[m] : undefined;
     align-items: center;
     justify-content: center;
     min-height: 44px;
-    background: var(--accent);
-    color: #fff;
+    background: var(--btn-bg);
+    color: var(--btn-ink);
     border: 0;
-    border-radius: 8px;
+    border-radius: 999px;
     padding: 0.6rem 1.25rem;
     font: inherit;
     font-weight: 500;
@@ -75,8 +75,8 @@ const note = m ? msg[m] : undefined;
   }
   .notice.ok {
     background: var(--accent-soft);
-    border-color: #b9ccc1;
-    color: var(--accent);
+    border-color: var(--ok-soft-line);
+    color: var(--ok-soft-ink);
   }
   .badge {
     display: inline-block;
@@ -89,13 +89,13 @@ const note = m ? msg[m] : undefined;
   }
   .badge.on {
     background: var(--accent-soft);
-    border-color: #b9ccc1;
-    color: var(--accent);
+    border-color: var(--ok-soft-line);
+    color: var(--ok-soft-ink);
   }
   .badge.warn {
-    background: #f6f1e4;
-    border-color: #dcd0ad;
-    color: #5e4a14;
+    background: var(--warn-bg);
+    border-color: var(--warn-line);
+    color: var(--warn-ink);
   }
   .hint {
     color: var(--muted);

@@ -41,21 +41,27 @@ const error = code ? messages[code] : undefined;
         <span>Kata sandi</span>
         <input type="password" name="password" required autocomplete="current-password" minlength="8" maxlength="72" />
       </label>
+      <p class="forgot"><a href="/lupa-password">Lupa kata sandi?</a></p>
       <button type="submit">Masuk</button>
     </form>
 
     <div class="linkrow">
       <a href="/daftar">Belum punya akun? Daftar</a>
-      <a href="/lupa-password">Lupa kata sandi</a>
       <a href="/admin/masuk">Masuk sebagai admin</a>
     </div>
   </AuthSplit>
 </Base>
 
 <style>
-  /* Form memakai lebar penuh kolom split (bukan 420px global). */
+  /* Form memakai lebar penuh kolom kartu (bukan 420px global). */
   .form {
     max-width: none;
+  }
+  /* "Forgot password?" ala pola sign-in: kanan, di atas tombol. */
+  .forgot {
+    text-align: right;
+    font-size: 0.9rem;
+    margin: -0.35rem 0 0;
   }
   .google {
     margin: 0 0 0.25rem;

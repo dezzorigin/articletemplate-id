@@ -232,18 +232,18 @@ const fileName = (p: string | null) => (p ? p.split('/').pop() : null);
   }
   .notice.ok {
     background: var(--accent-soft);
-    border-color: #b9ccc1;
-    color: var(--accent);
+    border-color: var(--ok-soft-line);
+    color: var(--ok-soft-ink);
   }
   button {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     min-height: 44px;
-    background: var(--accent);
-    color: #fff;
+    background: var(--btn-bg);
+    color: var(--btn-ink);
     border: 0;
-    border-radius: 8px;
+    border-radius: 999px;
     padding: 0.6rem 1.25rem;
     font: inherit;
     font-weight: 500;
@@ -251,8 +251,8 @@ const fileName = (p: string | null) => (p ? p.split('/').pop() : null);
   }
   button.ghost {
     background: transparent;
-    color: var(--accent);
-    border: 1px solid var(--accent);
+    color: var(--ink);
+    border: 1px solid var(--line-strong);
   }
   .files {
     border: 1px solid var(--line);

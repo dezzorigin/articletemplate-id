@@ -5,16 +5,13 @@ import { formatRupiah, isPurchasable } from '../lib/money';
 
 export const prerender = false;
 
-// Halaman harga mandiri (/harga) — matriks perbandingan mengikuti referensi
-// "Comparison Table" (21st.dev/@mohammadshehadeh/components/comparison-02,
-// PETA.md §7.2 baris 5): baris = fitur, kolom = paket, satu kolom di-highlight,
-// CTA di tiap kolom. Adaptasi: 7 jenjang tidak muat sebagai 7 kolom di HP,
-// jadi halaman ini memakai kartu harga (mobile-first) + tabel perbandingan
-// yang bisa di-scroll horizontal; kolom yang di-highlight adalah Paket Lengkap
-// (nilai paling hemat), bukan kolom tengah secara geometris.
+// Halaman harga mandiri (/harga) — kartu tier bersih mengikuti referensi
+// "pricing" (21st.dev/@uilayout.contact/components/pricing): tier rapi,
+// satu aksen oranye hangat, satu tier paling menonjol (Paket Lengkap).
 // Semua harga dibaca dari kolom products.harga (satu sumber, PRD §7.10) —
 // tidak ada harga yang ditulis di halaman ini. Baris fitur diturunkan dari
 // data produk (format, jumlah butir checklist, pratinjau, file), bukan karangan.
+// Toggle bulanan/tahunan TIDAK dipasang: produk sekali bayar, toggle itu palsu.
 // Tombol beli HANYA aktif bila produk sudah visible + berharga + punya file
 // template; bila belum, tampil "Segera hadir" (tidak mengarah ke checkout).
 
@@ -120,10 +117,12 @@ const hemat =
       return (
         <article class={`card tier${t.paket ? ' paket' : ''}`}>
           <span class="badge">{t.label}</span>
+          {t.paket ? <span class="badge hemat">Paling hemat</span> : null}
           {t.paket && hemat ? <span class="badge hemat">Hemat {formatRupiah(hemat.rupiah)} (~{hemat.persen}%)</span> : null}
           <h2>{t.row?.judul || t.judul}</h2>
           <p class="desc">{t.keterangan}</p>
           <p class="price">{formatRupiah(t.row?.harga ?? null)}</p>
+          <p class="sekali">Sekali bayar</p>
           {t.paket && hemat ? <p class="meta">Total satuan: {formatRupiah(singleTotal)}</p> : null}
           {buyable ? (
             <form method="post" action="/keranjang/tambah">
@@ -236,12 +235,16 @@ const hemat =
 
 <style>
   .lead { font-size: 1.05rem; }
+  .tier { border-radius: 16px; padding: 1.25rem 1.5rem; }
   .tier h2 { font-size: 1.15rem; margin: 0.5rem 0 0.35rem; }
   .tier .desc { color: var(--muted); font-size: 0.92rem; margin: 0 0 0.5rem; }
-  .tier .price { font-size: 1.35rem; font-weight: 700; margin: 0.5rem 0 0.75rem; }
+  .tier .price { font-family: Georgia, "Times New Roman", serif; font-size: 1.9rem; font-weight: 500; line-height: 1.2; margin: 0.5rem 0 0.25rem; }
+  .tier .sekali { color: var(--muted); font-size: 0.85rem; margin: 0 0 0.75rem; }
   .tier .meta { color: var(--muted); font-size: 0.9rem; margin: 0.5rem 0 0; }
+  /* Satu tier paling menonjol: Paket Lengkap — border + tint oranye hangat. */
   .tier.paket { border: 2px solid var(--accent); background: var(--accent-soft); }
-  .badge.hemat { background: var(--accent); color: #fff; border-color: var(--accent); margin-left: 0.4rem; }
+  .tier.paket .price { color: var(--accent-dark); }
+  .badge.hemat { background: var(--accent-dark); color: #fff; border-color: var(--accent-dark); margin-left: 0.4rem; }
   .tier form { margin: 0; }
   .tier button { width: 100%; }
   .tablewrap { overflow-x: auto; margin: 1rem 0; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
@@ -254,6 +257,7 @@ const hemat =
   tfoot form { margin: 0; }
   tfoot button { width: 100%; }
   th.hl, td.hl { background: var(--accent-soft); }
+  thead th.hl { color: var(--accent-dark); }
   @media (min-width: 720px) {
     .grid { grid-template-columns: 1fr 1fr; }
   }

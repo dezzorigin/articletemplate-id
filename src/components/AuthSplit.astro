@@ -1,145 +1,195 @@
 ---
-// Kartu auth split (pola "Sign In" 21st.dev/@jahed — komposisi ditiru,
-// dibangun ulang sebagai Astro + CSS biasa).
-// Satu kolom penuh di HP; di layar lebar form di satu kolom dan panel hijau
-// di kolom sebelah. Panel HANYA berisi klaim terverifikasi (sama seperti
-// /tentang — PRD §7.8), bukan testimoni karangan; tanpa foto stok.
+// Kartu masuk/daftar tengah BARU (redesign v2, pola "Clean & Minimal Sign In"
+// 21st.dev/@preetsuthar17 — komposisi ditiru, dibangun ulang Astro + CSS
+// biasa; komponen React-nya tidak diadaptasi).
+// Menggantikan split dua kolom lama (form + panel klaim hijau): kartu tengah
+// satu kolom, judul serif, field email/password, tautan "Lupa kata sandi?",
+// tombol gelap penuh, validasi client-side inline (format email, panjang
+// minimal kata sandi, kecocokan ulangi) — HANYA pelapis; aturan server dan
+// endpoint auth TIDAK berubah. Tombol sosial (Google) TIDAK ada di komponen
+// ini: halaman /masuk dan /daftar menampilkannya sendiri hanya bila
+// googleEnabled() — saat ini nonaktif, jadi tidak ada tombol Google yang mati.
+// Panel klaim terverifikasi lama dihapus dari halaman auth; klaim yang sama
+// tetap tampil di /tentang.
 interface Props {
   title: string;
   lead?: string;
 }
 const { title, lead } = Astro.props;
-// Klaim terverifikasi Nizam Albar (CV + ORCID + SINTA + Scopus, 27 Okt 2026).
-// Jangan tambah klaim baru di sini tanpa lewat PRD §7.8.
-const klaim = [
-  '4 artikel terindeks Scopus pada 2026.',
-  'SINTA Score 95.',
-  'Reviewer untuk PLOS ONE dan PLOS Global Public Health.',
-  'Dosen di Universitas Serambi Mekkah.',
-];
-const identitas = [
-  { label: 'ORCID', href: 'https://orcid.org/0009-0009-0254-1920', teks: '0009-0009-0254-1920' },
-  { label: 'Scopus', href: 'https://www.scopus.com/authid/detail.uri?authorId=58763735100', teks: '58763735100' },
-  { label: 'SINTA', href: 'https://sinta.kemdiktisaintek.go.id/authors/profile/6983413', teks: '6983413' },
-];
 ---
 
-<div class="auth-split">
-  <div class="auth-form">
+<div class="auth-wrap">
+  <div class="auth-card">
+    <p class="auth-brand">ArticleTemplate<em>.id</em></p>
     <h1>{title}</h1>
     {lead ? <p class="lead">{lead}</p> : null}
     <slot />
   </div>
-
-  <aside class="auth-panel" aria-label="Tentang ArticleTemplate.id">
-    <p class="panel-eyebrow">Template artikel untuk peneliti</p>
-    <p class="panel-quote">
-      “Template artikel yang rapi dan sesuai format jurnal — beli, bayar, unduh, lalu kelola dari akunmu.”
-    </p>
-    <ul class="panel-klaim">
-      {klaim.map((k) => <li>{k}</li>)}
-      <li>Disusun oleh <strong>Nizam Albar</strong>, pemasaran dan representatif akademik ArticleTemplate.id.</li>
-    </ul>
-    <p class="panel-note">
-      Semua butir di atas bisa dicek lewat identitas publik berikut. Kami tidak menampilkan angka yang tidak
-      bisa kamu klik buktinya.
-    </p>
-    <ul class="panel-identitas">
-      {identitas.map((i) => (
-        <li>
-          {i.label}: <a href={i.href} target="_blank" rel="noopener noreferrer">{i.teks}</a>
-        </li>
-      ))}
-    </ul>
-    <p class="panel-janji">
-      Kami menyediakan template berkualitas dan pendampingan. Hasil penilaian naskah sepenuhnya keputusan
-      jurnal dan reviewer, jadi kami tidak membuat janji soal itu.
-    </p>
-  </aside>
 </div>
 
+<script>
+  // Validasi client-side untuk form di dalam kartu auth: pesan inline di bawah
+  // field, fokus ke field pertama yang salah, cegah double-submit. Aturan
+  // diambil dari atribut field itu sendiri (required, type=email, minlength)
+  // supaya tetap sama dengan validasi server di src/lib/auth.ts.
+  (function () {
+    var card = document.querySelector('.auth-card');
+    if (!card) return;
+    var form = card.querySelector('form');
+    if (!form) return;
+    // Matikan bubble validasi bawaan browser (JS yang menampilkan pesan);
+    // tanpa JS, validasi bawaan tetap jalan.
+    form.noValidate = true;
+
+    function fieldError(input) {
+      var label = input.closest('.field');
+      if (!label) return null;
+      var err = label.querySelector('.field-error');
+      if (!err) {
+        err = document.createElement('p');
+        err.className = 'field-error';
+        err.setAttribute('role', 'alert');
+        label.appendChild(err);
+      }
+      return err;
+    }
+    function setError(input, message) {
+      var err = fieldError(input);
+      if (!err) return;
+      if (message) {
+        err.textContent = message;
+        err.hidden = false;
+        input.setAttribute('aria-invalid', 'true');
+      } else {
+        err.textContent = '';
+        err.hidden = true;
+        input.removeAttribute('aria-invalid');
+      }
+    }
+    function check(input) {
+      var value = input.value.trim();
+      if (input.hasAttribute('required') && !value) return 'Kolom ini wajib diisi.';
+      if (!value) return '';
+      if (input.type === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+        return 'Masukkan alamat email yang valid.';
+      }
+      if (input.type === 'password' && input.minLength > 0 && input.value.length < input.minLength) {
+        return 'Minimal ' + input.minLength + ' karakter.';
+      }
+      return '';
+    }
+    var submitBtn = form.querySelector('button[type="submit"]');
+    var originalLabel = submitBtn ? submitBtn.textContent : '';
+    form.addEventListener('submit', function (event) {
+      var inputs = Array.prototype.slice.call(form.querySelectorAll('input'));
+      var firstBad = null;
+      inputs.forEach(function (input) {
+        var msg = check(input);
+        setError(input, msg);
+        if (msg && !firstBad) firstBad = input;
+      });
+      // Kata sandi + ulangi (halaman atur kata sandi): harus sama.
+      var pass = form.querySelector('input[name="password"]');
+      var pass2 = form.querySelector('input[name="ulangi"]');
+      if (pass && pass2 && pass.value && pass2.value && pass.value !== pass2.value) {
+        setError(pass2, 'Kedua kata sandi tidak sama.');
+        if (!firstBad) firstBad = pass2;
+      }
+      if (firstBad) {
+        event.preventDefault();
+        firstBad.focus();
+        return;
+      }
+      // Cegah klik ganda saat form terkirim.
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Memproses…';
+        setTimeout(function () {
+          submitBtn.disabled = false;
+          submitBtn.textContent = originalLabel;
+        }, 8000);
+      }
+    });
+    form.addEventListener('input', function (event) {
+      var target = event.target;
+      if (target && target.tagName === 'INPUT') setError(target, check(target));
+    });
+  })();
+</script>
+
 <style>
-  .auth-split {
-    display: grid;
-    grid-template-columns: 1fr;
+  .auth-wrap {
+    display: flex;
+    justify-content: center;
+    padding: 0.5rem 0 1rem;
+  }
+  .auth-card {
+    width: 100%;
+    max-width: 440px;
+    background: var(--surface);
     border: 1px solid var(--line);
     border-radius: 16px;
-    overflow: hidden;
-    background: var(--surface);
+    padding: 1.75rem 1.5rem 2rem;
   }
-  .auth-form {
-    padding: 1.5rem 1.25rem 1.75rem;
+  .auth-brand {
+    margin: 0 0 0.25rem;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 1.05rem;
+    font-weight: 500;
+    color: var(--muted);
   }
-  .auth-form h1 {
+  .auth-brand em {
+    font-style: normal;
+    color: var(--accent);
+  }
+  .auth-card h1 {
     margin-bottom: 0.5rem;
+    font-size: clamp(1.6rem, 5vw, 2rem);
   }
   .lead {
     color: var(--muted);
-    margin: 0 0 1.25rem;
+    margin: 0 0 1.5rem;
   }
-  .auth-panel {
-    background: #1b4d3e;
-    color: #fbfaf7;
-    padding: 1.5rem 1.25rem 1.75rem;
+  .auth-card :global(.form) {
+    max-width: none;
   }
-  .panel-eyebrow {
-    color: #dcd0ad;
-    font-size: 0.82rem;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    margin: 0 0 0.75rem;
+  .auth-card :global(.form button[type="submit"]) {
+    width: 100%;
   }
-  .panel-quote {
-    font-family: Georgia, "Times New Roman", serif;
-    font-size: 1.25rem;
-    line-height: 1.45;
-    margin: 0 0 1rem;
+  .auth-card :global(.field-error) {
+    margin: 0.15rem 0 0;
+    color: var(--st-bad-ink);
+    font-size: 0.85rem;
+    font-weight: 400;
   }
-  .panel-klaim {
-    margin: 0 0 1rem;
-    padding-left: 1.15rem;
-    display: grid;
-    gap: 0.35rem;
-    font-size: 0.95rem;
+  .auth-card :global(.field input[aria-invalid="true"]) {
+    border-color: var(--st-bad-line);
+    outline: 2px solid var(--st-bad-bg);
+    outline-offset: 0;
   }
-  .panel-klaim strong {
-    color: #dcd0ad;
-    font-weight: 600;
+  .auth-card :global(.google-btn) {
+    width: 100%;
   }
-  .panel-note,
-  .panel-janji {
-    font-size: 0.9rem;
-    color: #d8e2dc;
-    margin: 0 0 0.75rem;
+  .auth-card :global(.divider) {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: var(--muted);
+    font-size: 0.85rem;
+    margin: 0.75rem 0 1rem;
   }
-  .panel-identitas {
-    list-style: none;
-    margin: 0 0 1rem;
-    padding: 0;
-    display: grid;
-    gap: 0.3rem;
-    font-size: 0.9rem;
+  .auth-card :global(.divider::before),
+  .auth-card :global(.divider::after) {
+    content: "";
+    flex: 1;
+    border-top: 1px solid var(--line);
   }
-  .panel-identitas a {
-    color: #dcd0ad;
-    overflow-wrap: anywhere;
+  .auth-card :global(.divider span) {
+    white-space: nowrap;
   }
-  .panel-janji {
-    margin-bottom: 0;
-    border-top: 1px solid rgba(220, 208, 173, 0.35);
-    padding-top: 0.75rem;
-  }
-  @media (min-width: 880px) {
-    .auth-split {
-      grid-template-columns: minmax(340px, 5fr) 6fr;
-    }
-    .auth-form,
-    .auth-panel {
-      padding: 2rem 2rem 2.25rem;
-    }
-    .panel-quote {
-      font-size: 1.45rem;
+  @media (min-width: 720px) {
+    .auth-card {
+      padding: 2.25rem 2rem 2.5rem;
     }
   }
 </style>

@@ -1,0 +1,897 @@
+---
+// Shell dashboard BERSAMA (redesign v2, pola "Dashboard with Collapsible
+// Sidebar" 21st.dev/@uniquesonu — komposisi ditiru, dibangun ulang Astro +
+// CSS biasa; komponen React-nya tidak diadaptasi, tidak ada dependensi baru).
+// Satu shell untuk admin (penjualan/produk/member) dan buyer (pesanan/unduhan)
+// dengan menukar item sidebar + konten. Sidebar bisa dilipat (ikon saja) di
+// desktop; di HP hamburger membuka sheet menu. Dark mode toggle BENAR-BENAR
+// bekerja: tema disimpan di localStorage, diterapkan sebelum paint lewat
+// skrip inline di <head>, semua warna halaman dashboard memakai variabel
+// yang punya pasangan gelap. Semua angka statistik/aktivitas tetap dari data
+// yang sudah ada di halaman itu — shell ini tidak membawa angka apa pun.
+// Dipakai lewat Admin.astro (admin) dan langsung oleh halaman /akun/* (buyer).
+interface NavItem {
+  href: string;
+  label: string;
+  icon: string;
+}
+interface Props {
+  title: string;
+  eyebrow: string;
+  nav: NavItem[];
+}
+const { title, eyebrow, nav } = Astro.props;
+const path = Astro.url.pathname;
+const isActive = (href: string) =>
+  href === '/admin' || href === '/akun'
+    ? path === href
+    : path.startsWith(href);
+const icons: Record<string, string> = {
+  grid: 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z',
+  box: 'M21 8l-9-5-9 5v8l9 5 9-5zM3.3 8.3L12 13l8.7-4.7M12 13v8.5',
+  receipt: 'M6 3h12v18l-2-1.5L14 21l-2-1.5L10 21l-2-1.5L6 21zM9 7h6M9 11h6',
+  file: 'M7 3h7l5 5v13H7zM14 3v5h5M10 13h6M10 17h6',
+  home: 'M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10',
+  user: 'M12 12a4 4 0 100-8 4 4 0 000 8zM4 21c0-4 3.6-7 8-7s8 3 8 7',
+  tag: 'M3 3h8l10 10-8 8L3 11zM7.5 7.5h.01',
+  logout: 'M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9',
+  collapse: 'M15 6l-6 6 6 6',
+  menu: 'M4 7h16M4 12h16M4 17h16',
+  close: 'M6 6l12 12M18 6L6 18',
+  sun: 'M12 17a5 5 0 100-10 5 5 0 000 10zM12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4',
+  moon: 'M20.6 14.5A8.5 8.5 0 019.5 3.4 8.5 8.5 0 1020.6 14.5z',
+};
+---
+
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content"
+    />
+    <meta name="theme-color" content="#fbfaf7" />
+    <meta name="color-scheme" content="light dark" />
+    <title>{title} — {eyebrow} · ArticleTemplate.id</title>
+    <script is:inline>
+      (function () {
+        try {
+          var stored = localStorage.getItem('at-theme');
+          var theme = stored || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+          document.documentElement.setAttribute('data-theme', theme);
+          if (localStorage.getItem('at-sidebar-collapsed') === '1') {
+            document.documentElement.classList.add('at-sidebar-collapsed');
+          }
+        } catch (e) {
+          document.documentElement.setAttribute('data-theme', 'light');
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div class="dash-shell" id="dash-shell">
+      <aside class="dash-sidebar" aria-label="Navigasi dashboard">
+        <div class="dash-brand">
+          <a href="/">ArticleTemplate<em>.id</em></a>
+          <span class="dash-brand-sub">{eyebrow}</span>
+        </div>
+        <nav class="dash-nav" aria-label="Menu dashboard">
+          {
+            nav.map((item) => (
+              <a
+                href={item.href}
+                class={isActive(item.href) ? 'active' : undefined}
+                aria-current={isActive(item.href) ? 'page' : undefined}
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d={icons[item.icon]} /></svg>
+                <span>{item.label}</span>
+              </a>
+            ))
+          }
+        </nav>
+        <div class="dash-side-foot">
+          <a href="/">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d={icons.home} /></svg>
+            <span>Lihat situs</span>
+          </a>
+          <form method="post" action="/auth/keluar">
+            <button type="submit">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d={icons.logout} /></svg>
+              <span>Keluar</span>
+            </button>
+          </form>
+        </div>
+      </aside>
+
+      <div class="dash-main-col">
+        <header class="dash-header">
+          <button
+            type="button"
+            class="dash-menu"
+            id="dash-menu"
+            aria-expanded="false"
+            aria-controls="dash-sheet"
+            aria-label="Buka menu"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d={icons.menu} /></svg>
+          </button>
+          <button
+            type="button"
+            class="dash-collapse"
+            id="dash-collapse"
+            aria-expanded="true"
+            aria-label="Lipat sidebar"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d={icons.collapse} /></svg>
+          </button>
+          <p class="dash-crumb">{eyebrow}</p>
+          <div class="dash-head-actions">
+            <button
+              type="button"
+              class="dash-theme"
+              id="dash-theme"
+              aria-label="Aktifkan mode gelap"
+              aria-pressed="false"
+            >
+              <svg class="ico-moon" viewBox="0 0 24 24" aria-hidden="true"><path d={icons.moon} /></svg>
+              <svg class="ico-sun" viewBox="0 0 24 24" aria-hidden="true"><path d={icons.sun} /></svg>
+            </button>
+          </div>
+        </header>
+        <main class="dash-main" id="isi">
+          <slot />
+        </main>
+        <footer class="dash-foot">
+          <p>ArticleTemplate.id — {eyebrow.toLowerCase()}.</p>
+        </footer>
+      </div>
+    </div>
+
+    <div class="dash-overlay" id="dash-overlay" hidden></div>
+    <div class="dash-sheet" id="dash-sheet" role="dialog" aria-modal="true" aria-label="Menu dashboard" hidden>
+      <div class="dash-sheet-head">
+        <div class="dash-brand">
+          <a href="/">ArticleTemplate<em>.id</em></a>
+          <span class="dash-brand-sub">{eyebrow}</span>
+        </div>
+        <button type="button" class="dash-sheet-close" id="dash-sheet-close" aria-label="Tutup menu">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d={icons.close} /></svg>
+        </button>
+      </div>
+      <nav class="dash-sheet-nav" aria-label="Menu dashboard (menu)">
+        {
+          nav.map((item) => (
+            <a
+              href={item.href}
+              class={isActive(item.href) ? 'active' : undefined}
+              aria-current={isActive(item.href) ? 'page' : undefined}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d={icons[item.icon]} /></svg>
+              <span>{item.label}</span>
+            </a>
+          ))
+        }
+      </nav>
+      <div class="dash-sheet-foot">
+        <a href="/">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d={icons.home} /></svg>
+          <span>Lihat situs</span>
+        </a>
+        <form method="post" action="/auth/keluar">
+          <button type="submit">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d={icons.logout} /></svg>
+            <span>Keluar</span>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <script is:inline>
+      (function () {
+        var root = document.documentElement;
+        var shell = document.getElementById('dash-shell');
+        // Terapkan status lipat yang dibaca skrip <head> (kelas di <html>).
+        if (shell && root.classList.contains('at-sidebar-collapsed')) {
+          shell.classList.add('dash-collapsed');
+          var c0 = document.getElementById('dash-collapse');
+          if (c0) {
+            c0.setAttribute('aria-expanded', 'false');
+            c0.setAttribute('aria-label', 'Buka sidebar');
+          }
+        }
+        // Lipat sidebar (desktop).
+        var collapseBtn = document.getElementById('dash-collapse');
+        if (collapseBtn && shell) {
+          collapseBtn.addEventListener('click', function () {
+            var collapsed = shell.classList.toggle('dash-collapsed');
+            collapseBtn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+            collapseBtn.setAttribute('aria-label', collapsed ? 'Buka sidebar' : 'Lipat sidebar');
+            try {
+              localStorage.setItem('at-sidebar-collapsed', collapsed ? '1' : '0');
+            } catch (e) {}
+          });
+        }
+        // Toggle tema gelap/terang (benar-benar mengganti variabel warna).
+        var themeBtn = document.getElementById('dash-theme');
+        function paintTheme(theme) {
+          root.setAttribute('data-theme', theme);
+          if (!themeBtn) return;
+          var dark = theme === 'dark';
+          themeBtn.setAttribute('aria-pressed', dark ? 'true' : 'false');
+          themeBtn.setAttribute('aria-label', dark ? 'Aktifkan mode terang' : 'Aktifkan mode gelap');
+        }
+        if (themeBtn) {
+          paintTheme(root.getAttribute('data-theme') || 'light');
+          themeBtn.addEventListener('click', function () {
+            var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+            try {
+              localStorage.setItem('at-theme', next);
+            } catch (e) {}
+            paintTheme(next);
+          });
+        }
+        // Sheet menu (HP).
+        var menuBtn = document.getElementById('dash-menu');
+        var sheet = document.getElementById('dash-sheet');
+        var overlay = document.getElementById('dash-overlay');
+        var closeBtn = document.getElementById('dash-sheet-close');
+        if (!menuBtn || !sheet || !overlay || !closeBtn) return;
+        var lastFocus = null;
+        function open() {
+          lastFocus = document.activeElement;
+          sheet.hidden = false;
+          overlay.hidden = false;
+          requestAnimationFrame(function () {
+            sheet.classList.add('open');
+            overlay.classList.add('open');
+          });
+          document.body.style.overflow = 'hidden';
+          menuBtn.setAttribute('aria-expanded', 'true');
+          closeBtn.focus();
+        }
+        function close() {
+          sheet.classList.remove('open');
+          overlay.classList.remove('open');
+          document.body.style.overflow = '';
+          menuBtn.setAttribute('aria-expanded', 'false');
+          setTimeout(function () {
+            sheet.hidden = true;
+            overlay.hidden = true;
+          }, 220);
+          if (lastFocus && lastFocus.focus) lastFocus.focus();
+        }
+        menuBtn.addEventListener('click', function () {
+          if (sheet.classList.contains('open')) close();
+          else open();
+        });
+        closeBtn.addEventListener('click', close);
+        overlay.addEventListener('click', close);
+        document.addEventListener('keydown', function (e) {
+          if (e.key === 'Escape' && sheet.classList.contains('open')) close();
+        });
+      })();
+    </script>
+  </body>
+</html>
+
+<style is:global>
+  /* Token yang sama dengan Base.astro + pasangan gelap untuk dashboard. */
+  :root {
+    color-scheme: light;
+    --paper: #fbfaf7;
+    --surface: #ffffff;
+    --ink: #1c1917;
+    --muted: #5b6470;
+    --line: #e7e2d6;
+    --line-strong: #d5cfbf;
+    --accent: #c2410c;
+    --accent-dark: #9a3412;
+    --accent-soft: #fdefe4;
+    --btn-bg: #1c1917;
+    --btn-ink: #fbfaf7;
+    --warn-bg: #f6f1e4;
+    --warn-line: #dcd0ad;
+    --warn-ink: #5e4a14;
+    --code-bg: #f1efe9;
+    --st-ok-bg: #1c1917;
+    --st-ok-line: #1c1917;
+    --st-ok-ink: #fbfaf7;
+    --st-wait-bg: #fdefe4;
+    --st-wait-line: #f0c9a8;
+    --st-wait-ink: #9a3412;
+    --st-bad-bg: #fdf0ed;
+    --st-bad-line: #e8c4bc;
+    --st-bad-ink: #8a2f23;
+    --st-mut-bg: #f1efe9;
+    --st-mut-line: #e7e2d6;
+    --st-mut-ink: #5b6470;
+    --ok-soft-bg: #fdefe4;
+    --ok-soft-line: #f0c9a8;
+    --ok-soft-ink: #9a3412;
+    --mono: ui-monospace, "Cascadia Code", "SF Mono", Menlo, Consolas, monospace;
+  }
+  [data-theme="dark"] {
+    color-scheme: dark;
+    --paper: #171310;
+    --surface: #221d19;
+    --ink: #f5f0e8;
+    --muted: #b3a99a;
+    --line: #3b342c;
+    --line-strong: #4d453a;
+    --accent: #f07b3f;
+    --accent-dark: #fb923c;
+    --accent-soft: #3a2318;
+    --btn-bg: #f5f0e8;
+    --btn-ink: #171310;
+    --warn-bg: #33291a;
+    --warn-line: #6b5a35;
+    --warn-ink: #ecd9a8;
+    --code-bg: #2b251f;
+    --st-ok-bg: #f5f0e8;
+    --st-ok-line: #f5f0e8;
+    --st-ok-ink: #171310;
+    --st-wait-bg: #3a2318;
+    --st-wait-line: #7c4a26;
+    --st-wait-ink: #fb923c;
+    --st-bad-bg: #3d1f1a;
+    --st-bad-line: #6e3530;
+    --st-bad-ink: #f2a49b;
+    --st-mut-bg: #2b251f;
+    --st-mut-line: #3b342c;
+    --st-mut-ink: #b3a99a;
+    --ok-soft-bg: #3a2318;
+    --ok-soft-line: #7c4a26;
+    --ok-soft-ink: #fb923c;
+  }
+  * {
+    box-sizing: border-box;
+  }
+  html {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    margin: 0;
+    min-height: 100dvh;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    line-height: 1.65;
+    overflow-wrap: anywhere;
+  }
+  a {
+    color: var(--ink);
+    text-decoration: underline;
+    text-decoration-color: var(--line-strong);
+    text-underline-offset: 3px;
+  }
+  a,
+  button {
+    touch-action: manipulation;
+  }
+  input,
+  textarea,
+  select {
+    font: inherit;
+    font-size: 16px;
+    min-height: 44px;
+  }
+  :focus-visible {
+    outline: 3px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+  /* ---------- kelas bersama yang dipakai halaman dashboard ---------- */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+  }
+  .card p:last-child {
+    margin-bottom: 0;
+  }
+  button,
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    background: var(--btn-bg);
+    color: var(--btn-ink);
+    border: 0;
+    border-radius: 999px;
+    padding: 0.6rem 1.25rem;
+    font: inherit;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  button:disabled {
+    background: #e7e5e4;
+    color: #57534e;
+    cursor: not-allowed;
+  }
+  .btn.ghost {
+    background: transparent;
+    color: var(--ink);
+    border: 1px solid var(--line-strong);
+  }
+  .btn.kecil {
+    min-height: 36px;
+    padding: 0.35rem 0.85rem;
+    font-size: 0.9rem;
+  }
+  .badge {
+    display: inline-block;
+    border: 1px solid var(--line);
+    color: var(--muted);
+    padding: 0.05rem 0.5rem;
+    border-radius: 4px;
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    font-weight: 400;
+    white-space: nowrap;
+  }
+  .badge.st-lunas {
+    background: var(--st-ok-bg);
+    border-color: var(--st-ok-line);
+    color: var(--st-ok-ink);
+  }
+  .badge.st-menunggu_bayar {
+    background: var(--st-wait-bg);
+    border-color: var(--st-wait-line);
+    color: var(--st-wait-ink);
+  }
+  .badge.st-gagal {
+    background: var(--st-bad-bg);
+    border-color: var(--st-bad-line);
+    color: var(--st-bad-ink);
+  }
+  .badge.st-kedaluwarsa {
+    background: var(--st-mut-bg);
+    border-color: var(--st-mut-line);
+    color: var(--st-mut-ink);
+  }
+  .badge.warn {
+    background: var(--warn-bg);
+    border-color: var(--warn-line);
+    color: var(--warn-ink);
+  }
+  .badge.on {
+    background: var(--ok-soft-bg);
+    border-color: var(--ok-soft-line);
+    color: var(--ok-soft-ink);
+  }
+  .notice {
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    margin: 0 0 1rem;
+    background: var(--warn-bg);
+    border: 1px solid var(--warn-line);
+    color: var(--warn-ink);
+  }
+  .notice.ok {
+    background: var(--ok-soft-bg);
+    border-color: var(--ok-soft-line);
+    color: var(--ok-soft-ink);
+  }
+  .form {
+    display: grid;
+    gap: 0.9rem;
+    max-width: 420px;
+  }
+  .form .field {
+    display: grid;
+    gap: 0.3rem;
+    font-weight: 500;
+    font-size: 0.9rem;
+  }
+  .form .field input {
+    width: 100%;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 0.5rem 0.8rem;
+    background: var(--surface);
+    color: var(--ink);
+    font-weight: 400;
+  }
+  .form .hint {
+    color: var(--muted);
+    font-size: 0.85rem;
+    font-weight: 400;
+  }
+  .linkrow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 1rem;
+    margin-top: 1rem;
+  }
+  .linkrow a {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+  .hint {
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+  code {
+    background: var(--code-bg);
+    padding: 0.15rem 0.45rem;
+    border-radius: 6px;
+    font-size: 0.9em;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    a:hover {
+      text-decoration-color: var(--accent);
+    }
+    button:not(:disabled):hover,
+    .btn:hover {
+      filter: brightness(1.08);
+    }
+    .btn.ghost:hover {
+      background: var(--code-bg);
+    }
+  }
+</style>
+
+<style>
+  .dash-shell {
+    display: flex;
+    min-height: 100dvh;
+  }
+  .dash-sidebar {
+    display: none;
+  }
+  .dash-main-col {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .dash-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.7rem 16px;
+    border-bottom: 1px solid var(--line);
+    background: var(--surface);
+    position: sticky;
+    top: 0;
+    z-index: 20;
+  }
+  .dash-menu,
+  .dash-collapse,
+  .dash-theme,
+  .dash-sheet-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--ink);
+    cursor: pointer;
+    flex: none;
+  }
+  .dash-menu svg,
+  .dash-collapse svg,
+  .dash-theme svg,
+  .dash-sheet-close svg {
+    width: 22px;
+    height: 22px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .dash-collapse {
+    display: none;
+  }
+  .dash-collapse svg {
+    transition: transform 150ms ease-out;
+  }
+  .dash-crumb {
+    margin: 0;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 1.05rem;
+    color: var(--muted);
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .dash-head-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-left: auto;
+  }
+  /* Ikon tema: terang tampilkan bulan, gelap tampilkan matahari. */
+  .dash-theme .ico-sun {
+    display: none;
+  }
+  [data-theme="dark"] .dash-theme .ico-sun {
+    display: block;
+  }
+  [data-theme="dark"] .dash-theme .ico-moon {
+    display: none;
+  }
+  .dash-main {
+    padding: 1.5rem 16px 0;
+    max-width: 960px;
+    width: 100%;
+    margin: 0 auto;
+  }
+  .dash-main h1 {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: clamp(1.7rem, 6vw, 2.4rem);
+    font-weight: 500;
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+    margin: 0 0 1rem;
+  }
+  .dash-main h2 {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 1.3rem;
+    font-weight: 500;
+    line-height: 1.3;
+    margin: 2rem 0 0.75rem;
+  }
+  .dash-main p {
+    margin: 0 0 1rem;
+  }
+  .dash-foot {
+    margin-top: 2.5rem;
+    padding: 1.25rem 16px 1.5rem;
+    border-top: 1px solid var(--line);
+    font-size: 0.9rem;
+    color: var(--muted);
+  }
+  .dash-foot p {
+    margin: 0;
+    max-width: 960px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  /* ---------- sheet menu (HP) ---------- */
+  .dash-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 90;
+    background: rgba(28, 25, 23, 0.45);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 180ms ease-out;
+  }
+  .dash-overlay.open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .dash-sheet {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 95;
+    width: min(320px, 88vw);
+    background: var(--surface);
+    border-right: 1px solid var(--line);
+    padding: 1rem 1.25rem calc(1.5rem + env(safe-area-inset-bottom, 0px));
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    transform: translateX(-100%);
+    transition: transform 220ms ease-out;
+    overflow-y: auto;
+  }
+  .dash-sheet.open {
+    transform: translateX(0);
+  }
+  .dash-sheet-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 0.75rem;
+  }
+  .dash-sheet-nav,
+  .dash-sheet-foot {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+  .dash-sheet-nav a,
+  .dash-sheet-foot a,
+  .dash-sheet-foot button {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-height: 48px;
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    color: var(--ink);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.95rem;
+    background: transparent;
+    border: 0;
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .dash-sheet-nav a svg,
+  .dash-sheet-foot a svg,
+  .dash-sheet-foot button svg {
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .dash-sheet-nav a.active {
+    background: var(--code-bg);
+    color: var(--accent-dark);
+  }
+  .dash-sheet-foot {
+    margin-top: auto;
+    padding-top: 1rem;
+    border-top: 1px solid var(--line);
+  }
+  .dash-sheet-foot form {
+    margin: 0;
+  }
+  /* ---------- layar lebar: sidebar + lipat ---------- */
+  @media (min-width: 860px) {
+    .dash-menu {
+      display: none;
+    }
+    .dash-collapse {
+      display: inline-flex;
+    }
+    .dash-sidebar {
+      display: flex;
+      flex-direction: column;
+      width: 240px;
+      flex-shrink: 0;
+      background: var(--surface);
+      border-right: 1px solid var(--line);
+      min-height: 100dvh;
+      position: sticky;
+      top: 0;
+      height: 100dvh;
+      transition: width 150ms ease-out;
+    }
+    .dash-brand {
+      padding: 1.25rem 1.25rem 1rem;
+      border-bottom: 1px solid var(--line);
+    }
+    .dash-brand a {
+      color: var(--ink);
+      text-decoration: none;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 1.25rem;
+      font-weight: 500;
+      display: block;
+      min-height: 44px;
+    }
+    .dash-brand a em {
+      font-style: normal;
+      color: var(--accent);
+    }
+    .dash-brand-sub {
+      display: block;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+    .dash-nav {
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+      padding: 1rem 0.75rem;
+      flex: 1;
+    }
+    .dash-nav a,
+    .dash-side-foot a,
+    .dash-side-foot button {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      min-height: 44px;
+      padding: 0.5rem 0.75rem;
+      border-radius: 999px;
+      color: var(--muted);
+      text-decoration: none;
+      font-weight: 500;
+      font-size: 0.95rem;
+      white-space: nowrap;
+      background: transparent;
+      border: 0;
+      width: 100%;
+      text-align: left;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .dash-nav a svg,
+    .dash-side-foot a svg,
+    .dash-side-foot button svg {
+      width: 22px;
+      height: 22px;
+      flex-shrink: 0;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .dash-nav a.active {
+      background: var(--btn-bg);
+      color: var(--btn-ink);
+    }
+    .dash-side-foot {
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+      padding: 1rem 0.75rem;
+      border-top: 1px solid var(--line);
+    }
+    .dash-side-foot form {
+      margin: 0;
+    }
+    /* Sidebar terlipat: ikon saja. */
+    .dash-shell.dash-collapsed .dash-sidebar {
+      width: 68px;
+    }
+    .dash-shell.dash-collapsed .dash-brand a,
+    .dash-shell.dash-collapsed .dash-brand-sub,
+    .dash-shell.dash-collapsed .dash-nav a span,
+    .dash-shell.dash-collapsed .dash-side-foot a span,
+    .dash-shell.dash-collapsed .dash-side-foot button span {
+      display: none;
+    }
+    .dash-shell.dash-collapsed .dash-brand {
+      padding: 1.25rem 0.5rem 1rem;
+      text-align: center;
+    }
+    .dash-shell.dash-collapsed .dash-brand a {
+      font-size: 1.1rem;
+    }
+    .dash-shell.dash-collapsed .dash-nav a,
+    .dash-shell.dash-collapsed .dash-side-foot a,
+    .dash-shell.dash-collapsed .dash-side-foot button {
+      justify-content: center;
+      padding: 0.5rem 0;
+    }
+    .dash-shell.dash-collapsed .dash-collapse svg {
+      transform: rotate(180deg);
+    }
+    .dash-main {
+      padding: 2rem 24px 0;
+    }
+    .dash-header {
+      padding: 0.7rem 24px;
+    }
+    .dash-foot {
+      padding: 1.25rem 24px 1.5rem;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      transition: none !important;
+    }
+  }
+</style>

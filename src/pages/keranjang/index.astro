@@ -98,13 +98,13 @@ const payable = view.lines.filter((l) => l.buyable);
   }
   button.ghost {
     background: transparent;
-    color: var(--accent);
-    border: 1px solid var(--line);
+    color: var(--ink);
+    border: 1px solid var(--line-strong);
     flex: none;
   }
   .summary {
     position: sticky;
-    bottom: calc(var(--tab-h) + env(safe-area-inset-bottom, 0px));
+    bottom: env(safe-area-inset-bottom, 0px);
     display: flex;
     align-items: center;
     justify-content: space-between;

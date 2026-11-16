@@ -118,10 +118,10 @@ const waktu = (s: string) => new Date(s).toLocaleDateString('id-ID', { day: 'num
     align-items: center;
     justify-content: center;
     min-height: 44px;
-    background: var(--accent);
-    color: #fff;
+    background: var(--btn-bg);
+    color: var(--btn-ink);
     border: 0;
-    border-radius: 8px;
+    border-radius: 999px;
     padding: 0.6rem 1.25rem;
     font: inherit;
     font-weight: 500;
@@ -130,8 +130,8 @@ const waktu = (s: string) => new Date(s).toLocaleDateString('id-ID', { day: 'num
   }
   .btn.ghost {
     background: transparent;
-    color: var(--accent);
-    border: 1px solid var(--accent);
+    color: var(--ink);
+    border: 1px solid var(--line-strong);
   }
   .badge {
     display: inline-block;
@@ -143,29 +143,29 @@ const waktu = (s: string) => new Date(s).toLocaleDateString('id-ID', { day: 'num
     white-space: nowrap;
   }
   .badge.st-lunas {
-    background: #e9efea;
-    border-color: #b9ccc1;
-    color: #1b4d3e;
+    background: var(--st-ok-bg);
+    border-color: var(--st-ok-line);
+    color: var(--st-ok-ink);
   }
   .badge.st-menunggu_bayar {
-    background: #f6f1e4;
-    border-color: #dcd0ad;
-    color: #5e4a14;
+    background: var(--st-wait-bg);
+    border-color: var(--st-wait-line);
+    color: var(--st-wait-ink);
   }
   .badge.st-gagal {
-    background: #fdf0ed;
-    border-color: #e8c4bc;
-    color: #8a2f23;
+    background: var(--st-bad-bg);
+    border-color: var(--st-bad-line);
+    color: var(--st-bad-ink);
   }
   .badge.st-kedaluwarsa {
-    background: #f1efe9;
-    border-color: #e7e2d6;
-    color: #5b6470;
+    background: var(--st-mut-bg);
+    border-color: var(--st-mut-line);
+    color: var(--st-mut-ink);
   }
   .badge.warn {
-    background: #f6f1e4;
-    border-color: #dcd0ad;
-    color: #5e4a14;
+    background: var(--warn-bg);
+    border-color: var(--warn-line);
+    color: var(--warn-ink);
   }
   .hint {
     color: var(--muted);
@@ -185,12 +185,13 @@ const waktu = (s: string) => new Date(s).toLocaleDateString('id-ID', { day: 'num
     padding: 0.9rem 1rem;
   }
   .stat.utama {
-    background: #1b4d3e;
-    border-color: #1b4d3e;
-    color: #fbfaf7;
+    background: var(--ink);
+    border-color: var(--ink);
+    color: var(--paper);
   }
   .stat.utama .stat-label {
-    color: #dcd0ad;
+    color: var(--paper);
+    opacity: 0.75;
   }
   .stat-angka {
     font-family: Georgia, "Times New Roman", serif;
