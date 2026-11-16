@@ -8,7 +8,7 @@ import { sendOrderPaidEmail } from './email';
 
 export type PayStatus = 'menunggu_bayar' | 'lunas' | 'gagal' | 'kedaluwarsa';
 export type FinalResult = Exclude<PayStatus, 'menunggu_bayar'>;
-export type Metode = 'QRIS' | 'VA';
+export type Metode = 'QRIS' | 'VA' | 'EWALLET';
 
 /** Masa berlaku order menunggu bayar. */
 export const ORDER_TTL_MS = 24 * 60 * 60 * 1000;
@@ -26,7 +26,7 @@ export function isMockEnabled(): boolean {
 }
 
 export function isMetode(v: unknown): v is Metode {
-  return v === 'QRIS' || v === 'VA';
+  return v === 'QRIS' || v === 'VA' || v === 'EWALLET';
 }
 
 export function isFinalResult(v: unknown): v is FinalResult {
@@ -154,7 +154,7 @@ export async function getBorderPayPayment(orderId: string): Promise<StoredBorder
 export async function startBorderPayPayment(
   orderId: string,
   metode: Metode,
-  payment: { id: string; payUrl: string; expiresAt: string },
+  payment: { id: string; payUrl: string; expiresAt: string | undefined },
 ): Promise<boolean> {
   const admin = getSupabaseAdmin();
   const { data: order } = await admin.from('orders').select('status').eq('id', orderId).maybeSingle();
@@ -165,7 +165,8 @@ export async function startBorderPayPayment(
     borderpay_ref: payment.id,
     status: 'menunggu_bayar',
     pay_url: payment.payUrl,
-    pay_expires_at: payment.expiresAt,
+    // null bila API tidak memberi expires_at — jangan isi durasi asumsi.
+    pay_expires_at: payment.expiresAt ?? null,
   };
   const minimal = {
     metode,

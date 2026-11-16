@@ -1,5 +1,7 @@
 import type { APIRoute } from 'astro';
 import {
+  FALLBACK_EWALLET_PROVIDERS,
+  FALLBACK_VA_BANKS,
   createBorderPayPayment,
   getBorderPayConfig,
   isBorderPayEnabled,
@@ -13,11 +15,18 @@ import {
   startBorderPayPayment,
 } from '../../lib/payments';
 import { getOrderView } from '../../lib/orders';
+import { optionalEnv } from '../../lib/env';
 
-// POST /checkout/borderpay  (order, aksi = QRIS | VA)
+// POST /checkout/borderpay  (order, aksi = QRIS | VA | EWALLET, bank = kode bank/penyedia)
 // Membuat pembayaran BorderPay untuk order menunggu_bayar, lalu kembali ke
 // halaman status yang menampilkan tautan bayar (pay_url).
-// - Tanpa key/base URL BorderPay -> 404 (sama seperti simulasi saat mock mati).
+// - Tanpa key BorderPay -> 404 (sama seperti simulasi saat mock mati).
+// - VA/E-Wallet WAJIB bank_code (Referensi API): pembeli memilih bank/penyedia
+//   dari daftar aktif GET /payment-methods; bila discovery tidak menjawab,
+//   dipakai daftar fallback (BCA/BNI/BRI/MANDIRI/PERMATA/CIMB, DANA/OVO/
+//   GOPAY/SHOPEEPAY). Tanpa bank_code yang valid -> kembali dengan ?e=bank.
+// - return_url dikirim: halaman status order (pembeli diarahkan ke sini
+//   setelah bayar di BorderPay).
 // - Pembayaran yang masih berlaku dipakai ulang (tidak membuat tagihan ganda);
 //   yang sudah kedaluwarsa diganti dengan yang baru.
 // - Gagal menghubungi BorderPay -> kembali ke status dengan ?e=bayar.
@@ -38,18 +47,30 @@ export const POST: APIRoute = async ({ request, redirect }) => {
     return redirect(`/checkout/status?order=${order.id}`, 303);
   }
 
-  // Validasi metode ke discovery BorderPay bila API-nya menjawab; bila tidak
-  // menjawab, pakai QRIS/VA bawaan (docs: dua metode itu yang tersedia).
-  const known = await listBorderPayMethods();
+  // Validasi metode + bank ke discovery BorderPay bila API-nya menjawab.
   const method = toBorderPayMethod(aksi);
-  if (known.length > 0 && !known.includes(method)) {
+  const info = await listBorderPayMethods();
+  if (method === 'qris' && !info.qrisEnabled) {
     return redirect(`/checkout/status?order=${order.id}&e=metode`, 303);
   }
+  let bankCode: string | undefined;
+  if (method === 'va' || method === 'ewallet') {
+    const live = method === 'va' ? info.vaBanks : info.ewalletBanks;
+    const fallback = method === 'va' ? FALLBACK_VA_BANKS : FALLBACK_EWALLET_PROVIDERS;
+    const allowed = live.length > 0 ? live : fallback;
+    bankCode = String(form.get('bank') ?? '').trim().toUpperCase();
+    if (!bankCode || !allowed.some((b) => b.code === bankCode)) {
+      return redirect(`/checkout/status?order=${order.id}&e=bank`, 303);
+    }
+  }
+
+  const site = (optionalEnv('SITE_URL') ?? 'https://articletemplate.id').replace(/\/$/, '');
+  const returnUrl = `${site}/checkout/status?order=${order.id}`;
 
   let payment;
   try {
     payment = await createBorderPayPayment(
-      { amount: Math.round(order.total), method, referenceId: order.id },
+      { amount: Math.round(order.total), method, referenceId: order.id, bankCode, returnUrl },
       getBorderPayConfig(),
     );
   } catch (e) {

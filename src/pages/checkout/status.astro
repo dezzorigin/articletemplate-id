@@ -3,7 +3,12 @@ import Base from '../../layouts/Base.astro';
 import { getOrderView } from '../../lib/orders';
 import { formatRupiah } from '../../lib/money';
 import { getBorderPayPayment, isMockEnabled, isRealBorderPayRef } from '../../lib/payments';
-import { isBorderPayEnabled } from '../../lib/borderpay';
+import {
+  FALLBACK_EWALLET_PROVIDERS,
+  FALLBACK_VA_BANKS,
+  isBorderPayEnabled,
+  listBorderPayMethods,
+} from '../../lib/borderpay';
 import { writeCart } from '../../lib/cart';
 
 const order = await getOrderView(Astro.url.searchParams.get('order') ?? '');
@@ -16,10 +21,17 @@ const borderpay = !mock && isBorderPayEnabled();
 const bp = order.status === 'menunggu_bayar' && borderpay ? await getBorderPayPayment(order.id) : null;
 const bpLive = bp && isRealBorderPayRef(bp.borderpayRef) && bp.payUrl ? bp : null;
 const bpExpired = bpLive?.expiresAt ? Date.now() > new Date(bpLive.expiresAt).getTime() : false;
+// Daftar bank/penyedia aktif dari BorderPay; bila discovery tidak menjawab,
+// pakai daftar fallback (Referensi API adalah sumber utama).
+const bpMethods = order.status === 'menunggu_bayar' && borderpay ? await listBorderPayMethods() : null;
+const vaBanks = bpMethods && bpMethods.vaBanks.length > 0 ? bpMethods.vaBanks : FALLBACK_VA_BANKS;
+const ewalletBanks =
+  bpMethods && bpMethods.ewalletBanks.length > 0 ? bpMethods.ewalletBanks : FALLBACK_EWALLET_PROVIDERS;
 const code = Astro.url.searchParams.get('e');
 const payError: Record<string, string> = {
   bayar: 'Pembayaran belum bisa dibuat. Coba lagi sebentar lagi.',
   metode: 'Metode itu sedang tidak tersedia di BorderPay. Pilih yang lain.',
+  bank: 'Pilih bank / penyedia e-wallet yang tersedia.',
 };
 const error = code ? payError[code] : undefined;
 
@@ -57,6 +69,7 @@ const label: Record<string, string> = {
             <input type="hidden" name="order" value={order.id} />
             <button name="aksi" value="QRIS" class={order.metode === 'QRIS' ? '' : 'ghost'}>QRIS</button>
             <button name="aksi" value="VA" class={order.metode === 'VA' ? '' : 'ghost'}>Virtual Account</button>
+            <button name="aksi" value="EWALLET" class={order.metode === 'EWALLET' ? '' : 'ghost'}>E-Wallet</button>
           </form>
           {order.metode ? (
             <form method="post" action="/checkout/simulasi" class="row">
@@ -79,11 +92,13 @@ const label: Record<string, string> = {
             <>
               <p class="hint">
                 {bpLive.metode === 'QRIS'
-                  ? 'Scan QRIS di halaman bayar (berlaku 60 menit).'
-                  : 'Transfer ke nomor Virtual Account di halaman bayar (berlaku 24 jam).'}
+                  ? 'Scan QRIS di halaman bayar.'
+                  : bpLive.metode === 'VA'
+                    ? 'Transfer ke nomor Virtual Account di halaman bayar.'
+                    : 'Bayar lewat e-wallet di halaman bayar.'}
                 {bpLive.expiresAt
                   ? ` Bayar sebelum ${new Date(bpLive.expiresAt).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })} WIB.`
-                  : ''}
+                  : ' Masa berlaku tercantum di halaman bayar BorderPay.'}
               </p>
               <p>
                 <a class="btn" href={bpLive.payUrl} target="_blank" rel="noopener">Buka halaman bayar</a>
@@ -99,8 +114,28 @@ const label: Record<string, string> = {
               </p>
               <form method="post" action="/checkout/borderpay" class="row">
                 <input type="hidden" name="order" value={order.id} />
+                <label>
+                  Bank / e-wallet (wajib untuk Virtual Account & E-Wallet)
+                  <select name="bank">
+                    <optgroup label="Virtual Account">
+                      {
+                        vaBanks.map((b) => (
+                          <option value={b.code}>{b.name}</option>
+                        ))
+                      }
+                    </optgroup>
+                    <optgroup label="E-Wallet">
+                      {
+                        ewalletBanks.map((b) => (
+                          <option value={b.code}>{b.name}</option>
+                        ))
+                      }
+                    </optgroup>
+                  </select>
+                </label>
                 <button name="aksi" value="QRIS">QRIS</button>
                 <button name="aksi" value="VA" class="ghost">Virtual Account</button>
+                <button name="aksi" value="EWALLET" class="ghost">E-Wallet</button>
               </form>
             </>
           )}

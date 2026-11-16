@@ -8,7 +8,7 @@ paket delegasi tim, bukan di repo — ringkasan eksekusi di `docs/FRAMEWORK.md`)
 - **Astro** (halaman server-rendered) — adapter Node (standalone)
 - **Coolify** — hosting lewat Docker (domain/Cloudflare DNS diurus belakangan)
 - **Supabase self-hosted di Coolify** — Postgres + Auth + Storage (service `supabase-kfuuqefxogdl5q4bam7t93vu`, project Coolify "ArticleTemplate.id"; tidak pernah pause, tanpa keepalive)
-- **BorderPay** — checkout QRIS/VA (WES-17, 16 Nov 2026; mode test dulu, live setelah KYC)
+- **BorderPay** — checkout QRIS/VA/E-Wallet (WES-17, 16 Nov 2026; mode test dulu, live setelah KYC)
 
 ## Struktur
 
@@ -76,33 +76,41 @@ dari dashboard Supabase Cloud.
 
 ## BorderPay (WES-17)
 
-Alur: pembeli buat pesanan → pilih QRIS/VA di halaman status →
-`POST /checkout/borderpay` membuat pembayaran (`POST /api/v1/payments`,
-`reference_id` = ID order) → halaman status menampilkan tautan bayar
-(`pay_url`) → BorderPay mengirim webhook ke
-`https://articletemplate.id/api/webhook-borderpay` → order jadi
-`lunas`/`kedaluwarsa`/`gagal` + email lunas terkirim.
+Alur: pembeli buat pesanan → pilih QRIS/VA/E-Wallet di halaman status
+(untuk VA/E-Wallet wajib pilih bank/penyedia — bank_code wajib menurut
+Referensi API) → `POST /checkout/borderpay` membuat pembayaran
+(`POST https://borderpay.id/api/v1/payments`, `reference_id` = ID order,
+`return_url` = halaman status order) → halaman status menampilkan tautan
+bayar (`pay_url`) + masa berlaku dari `expires_at` respons API → BorderPay
+mengirim webhook ke `https://articletemplate.id/api/webhook-borderpay` →
+order jadi `lunas`/`kedaluwarsa`/`gagal` + email lunas terkirim.
 
 Aktivasi (yang harus dilakukan pemilik akun BorderPay):
 1. Terapkan migrasi `supabase/migrations/20261116_borderpay_pay_url.sql` ke
    database self-hosted (kolom `payments.pay_url`, `pay_expires_at`).
 2. Coolify → Environment Variables aplikasi: isi `BORDERPAY_API_KEY` (key test
    `bp_test_...` dulu; key live `bp_live_...` setelah KYC),
-   `BORDERPAY_BASE_URL` (host API sesuai halaman Referensi API BorderPay),
+   `BORDERPAY_BASE_URL` (opsional — default `https://borderpay.id/api/v1`),
    `BORDERPAY_WEBHOOK_TOKEN` (token verifikasi webhook dari dashboard BorderPay).
 3. Dashboard BorderPay → atur endpoint webhook ke
    `https://articletemplate.id/api/webhook-borderpay` (ganti placeholder).
-4. Uji di mode test: buat pembayaran → bayar (simulasi dashboard) → order
-   lunas + email masuk + download aktif; lalu kirim-ulang webhook dan
-   pastikan tidak ada pemrosesan ganda.
+4. Uji di mode test: buat pembayaran → tandai paid lewat endpoint simulate
+   (`POST /payments/{reference}/simulate`, hanya mode test) atau bayar di
+   halaman BorderPay → order lunas + email masuk + download aktif; lalu
+   kirim-ulang webhook dan pastikan tidak ada pemrosesan ganda. Pembatalan:
+   `POST /payments/{reference}/cancel` (menandai expired, hanya saat pending).
 
-Yang perlu dikonfirmasi dari Referensi API/dashboard BorderPay sebelum live
-(lihat asumsi A1–A8 di `src/lib/borderpay.ts`): host API yang benar, skema
-auth, nilai `method`, nama field respons (pay_url/QR/VA). Verifikasi webhook
-SUDAH terkonfirmasi (16 Nov 2026): header `x-borderpay-token` dicocokkan
-dengan token dari env `BORDERPAY_WEBHOOK_TOKEN`; verifikasi HMAC hanya legacy
-untuk integrasi lama dan tidak dipakai. Fee TIDAK ditambahkan ke tagihan
-(ditanggung penjual) sampai tim memutuskan.
+Terkonfirmasi dari Referensi API resmi (dibaca penuh 16 Nov 2026,
+https://borderpay.id/api-reference): base URL satu-satunya
+`https://borderpay.id/api/v1` (mode test/live dari prefix key, tanpa host
+sandbox terpisah); auth `Authorization: Bearer <key>`; method persis
+`qris`/`va`/`ewallet`; `bank_code` wajib untuk va/ewallet; `reference_id`
+selalu dikirim (idempotensi, `reused=true` bila diulang); masa berlaku
+SELALU dari `expires_at` respons (durasi tidak ditulis di referensi, tidak
+ada asumsi di kode). Verifikasi webhook: header `x-borderpay-token`
+dicocokkan dengan token dari env `BORDERPAY_WEBHOOK_TOKEN`; TIDAK ADA
+verifikasi HMAC (HMAC hanya legacy). Biaya (`fee_borne_by`) DEPRECATED —
+diatur per-project di dashboard BorderPay, bukan di kode.
 4. Domain + DNS: `articletemplate.id` + `www` sudah mengarah ke Coolify sejak
    16 Nov 2026 (A @ + A www → IP VPS, DNS only) dan terpasang di aplikasi Coolify.
 
