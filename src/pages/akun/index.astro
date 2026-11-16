@@ -1,7 +1,16 @@
 ---
-import Base from '../../layouts/Base.astro';
+import Dashboard from '../../layouts/Dashboard.astro';
 import { listMyOrders } from '../../lib/downloads';
 import { formatRupiah } from '../../lib/money';
+
+// Dashboard buyer (redesign v2): shell bersama admin + buyer, sidebar
+// Pesanan/Profil/Template/Harga. Logika order/unduhan TIDAK berubah.
+const buyerNav = [
+  { href: '/akun', label: 'Pesanan', icon: 'receipt' },
+  { href: '/akun/profil', label: 'Profil', icon: 'user' },
+  { href: '/templates', label: 'Template', icon: 'file' },
+  { href: '/harga', label: 'Harga', icon: 'tag' },
+];
 
 // Middleware sudah memastikan user ada (redirect ke /masuk bila belum).
 const user = Astro.locals.user!;
@@ -24,7 +33,7 @@ const label: Record<string, string> = { menunggu_bayar: 'Menunggu bayar', lunas:
 const tgl = (s: string) => new Date(s).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
 ---
 
-<Base title="Akun saya">
+<Dashboard title="Akun saya" eyebrow="Akun saya" nav={buyerNav}>
   <h1>Akun saya</h1>
   {ok === 'sandi' ? <p class="notice ok" role="status">Kata sandi berhasil disimpan.</p> : null}
   {ok === 'email' ? <p class="notice ok" role="status">Email unduhan sudah dikirim ke {user.email}.</p> : null}
@@ -104,7 +113,7 @@ const tgl = (s: string) => new Date(s).toLocaleDateString('id-ID', { day: 'numer
     <a href="/akun/profil">Ubah profil</a>
     <a href="/atur-password">Ubah kata sandi</a>
   </div>
-</Base>
+</Dashboard>
 
 <style>
   .profil p {
@@ -165,31 +174,26 @@ const tgl = (s: string) => new Date(s).toLocaleDateString('id-ID', { day: 'numer
   .aksi form {
     margin-top: 0.35rem;
   }
-  .btn.kecil {
-    min-height: 36px;
-    padding: 0.35rem 0.85rem;
-    font-size: 0.9rem;
-  }
-  /* ---------- badge status (4 status order, warna beda) ---------- */
+  /* ---------- badge status (4 status order; warna ikut tema gelap/terang) ---------- */
   .badge.st-lunas {
-    background: #e9efea;
-    border-color: #b9ccc1;
-    color: #1b4d3e;
+    background: var(--st-ok-bg);
+    border-color: var(--st-ok-line);
+    color: var(--st-ok-ink);
   }
   .badge.st-menunggu_bayar {
-    background: #f6f1e4;
-    border-color: #dcd0ad;
-    color: #5e4a14;
+    background: var(--st-wait-bg);
+    border-color: var(--st-wait-line);
+    color: var(--st-wait-ink);
   }
   .badge.st-gagal {
-    background: #fdf0ed;
-    border-color: #e8c4bc;
-    color: #8a2f23;
+    background: var(--st-bad-bg);
+    border-color: var(--st-bad-line);
+    color: var(--st-bad-ink);
   }
   .badge.st-kedaluwarsa {
-    background: #f1efe9;
-    border-color: #e7e2d6;
-    color: #5b6470;
+    background: var(--st-mut-bg);
+    border-color: var(--st-mut-line);
+    color: var(--st-mut-ink);
   }
   /* ---------- HP: tabel jadi kartu per order ---------- */
   @media (max-width: 719px) {

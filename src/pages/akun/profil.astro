@@ -1,6 +1,14 @@
 ---
-import Base from '../../layouts/Base.astro';
+import Dashboard from '../../layouts/Dashboard.astro';
 import { cleanName } from '../../lib/auth';
+
+// Dashboard buyer (redesign v2): profil di shell bersama admin + buyer.
+const buyerNav = [
+  { href: '/akun', label: 'Pesanan', icon: 'receipt' },
+  { href: '/akun/profil', label: 'Profil', icon: 'user' },
+  { href: '/templates', label: 'Template', icon: 'file' },
+  { href: '/harga', label: 'Harga', icon: 'tag' },
+];
 
 // Ubah profil (PRD §6): nama pembeli. Kata sandi tidak diubah di sini —
 // alurnya lewat tautan email ("Lupa kata sandi" / "Ubah kata sandi").
@@ -39,8 +47,7 @@ if (Astro.request.method === 'POST') {
 }
 ---
 
-<Base title="Ubah profil">
-  <p><a href="/akun">← Akun saya</a></p>
+<Dashboard title="Ubah profil" eyebrow="Akun saya" nav={buyerNav}>
   <h1>Ubah profil</h1>
   {saved ? <p class="notice ok" role="status">Profil berhasil disimpan.</p> : null}
   {errors.length ? (
@@ -64,7 +71,7 @@ if (Astro.request.method === 'POST') {
   <div class="linkrow">
     <a href="/atur-password">Ubah kata sandi</a>
   </div>
-</Base>
+</Dashboard>
 
 <style>
   .errs { margin: 0; padding-left: 1.2rem; }

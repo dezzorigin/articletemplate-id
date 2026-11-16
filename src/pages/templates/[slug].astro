@@ -167,8 +167,8 @@ const refused = Astro.url.searchParams.get('e') === 'belum-dijual';
   }
   .btn.ghost {
     background: transparent;
-    color: var(--accent);
-    border: 1px solid var(--accent);
+    color: var(--ink);
+    border: 1px solid var(--line-strong);
   }
   .rel {
     display: grid;
@@ -178,7 +178,7 @@ const refused = Astro.url.searchParams.get('e') === 'belum-dijual';
   }
   .buybar {
     position: sticky;
-    bottom: calc(var(--tab-h) + env(safe-area-inset-bottom, 0px));
+    bottom: env(safe-area-inset-bottom, 0px);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -207,8 +207,8 @@ const refused = Astro.url.searchParams.get('e') === 'belum-dijual';
   }
   .ghost-btn {
     background: transparent;
-    color: var(--accent);
-    border: 1px solid var(--accent);
+    color: var(--ink);
+    border: 1px solid var(--line-strong);
   }
   @media (min-width: 720px) {
     .buybar {

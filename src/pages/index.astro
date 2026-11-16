@@ -15,60 +15,56 @@ const jenjangAda = JENJANG.filter((j) => products.some((p) => p.jenjang === j));
 ---
 
 <Base title="Beranda">
-  <section class="hero-center">
-    <h1>Template artikel untuk <span class="hl">peneliti</span></h1>
-    <p class="lede">{intro}</p>
-    <p class="from">
-      {
-        mulai !== null ? (
-          <>Mulai dari <strong>{formatRupiah(mulai)}</strong>. </>
-        ) : (
-          <>Harga tiap jenjang tercantum di <a href="/harga">halaman Harga</a>. </>
-        )
-      }
-      Lihat-lihat tanpa login.
-    </p>
-    <p class="hero-ctas">
-      <a class="btn" href="/templates">Lihat template</a>
-      <a class="btn ghost" href="#cara-kerja">Cara kerja</a>
-    </p>
-    <ul class="proof" aria-label="Rekam jejak tim">
-      <li><strong>4</strong> artikel terindeks Scopus pada 2026</li>
-      <li><strong>95</strong> Skor SINTA</li>
-      <li><strong>Reviewer</strong> PLOS ONE</li>
-    </ul>
-    <p class="proof-more"><a href="/tentang">Lihat bukti di halaman Tentang</a></p>
-
-    <div class="fan" aria-hidden="true">
-      <div class="fan-sheet">
-        <p class="fs-meta">Scopus Q1</p>
-        <p class="fs-title">Judul artikel ditulis ringkas dan spesifik</p>
-        <p class="fs-auth">Nama Penulis, Afiliasi</p>
-        <p class="fs-h">Abstrak</p>
-        <p class="fs-body">Latar belakang, tujuan, metode, hasil, dan simpulan dalam satu paragraf.</p>
-        <p class="fs-h">1. Pendahuluan</p>
-        <p class="fs-body">Paragraf pembuka menjelaskan masalah, celah kajian, dan tujuan artikel.</p>
-      </div>
-      <div class="fan-sheet">
-        <p class="fs-meta">Sinta</p>
-        <p class="fs-title">Judul artikel ditulis ringkas dan spesifik</p>
-        <p class="fs-auth">Nama Penulis, Afiliasi</p>
-        <p class="fs-h">Abstrak</p>
-        <p class="fs-body">Latar belakang, tujuan, metode, hasil, dan simpulan dalam satu paragraf.</p>
-        <p class="fs-h">1. Pendahuluan</p>
-        <p class="fs-body">Paragraf pembuka menjelaskan masalah, celah kajian, dan tujuan artikel.</p>
-      </div>
-      <div class="fan-sheet">
-        <p class="fs-meta">Prosiding</p>
-        <p class="fs-title">Judul artikel ditulis ringkas dan spesifik</p>
-        <p class="fs-auth">Nama Penulis, Afiliasi</p>
-        <p class="fs-h">Abstrak</p>
-        <p class="fs-body">Latar belakang, tujuan, metode, hasil, dan simpulan dalam satu paragraf.</p>
-        <p class="fs-h">1. Pendahuluan</p>
-        <p class="fs-body">Paragraf pembuka menjelaskan masalah, celah kajian, dan tujuan artikel.</p>
-      </div>
+  <section class="hero-ed">
+    <div class="hero-copy">
+      <p class="eyebrow">Template artikel · Sekali bayar</p>
+      <h1>Template artikel untuk <span class="hl">peneliti.</span></h1>
+      <p class="lede">{intro}</p>
+      <p class="from">
+        {
+          mulai !== null ? (
+            <>Mulai dari <strong>{formatRupiah(mulai)}</strong>. </>
+          ) : (
+            <>Harga tiap jenjang tercantum di <a href="/harga">halaman Harga</a>. </>
+          )
+        }
+        Lihat-lihat tanpa login.
+      </p>
+      <p class="hero-ctas">
+        <a class="btn" href="/templates">Lihat template</a>
+        <a class="cta-link" href="#cara-kerja">Cara kerja ↓</a>
+      </p>
+      <ul class="proof" aria-label="Rekam jejak tim">
+        <li><strong>4</strong> artikel terindeks Scopus pada 2026</li>
+        <li><strong>95</strong> Skor SINTA</li>
+        <li><strong>Reviewer</strong> PLOS ONE</li>
+      </ul>
+      <p class="proof-more"><a href="/tentang">Lihat bukti di halaman Tentang</a></p>
     </div>
-    <p class="fan-cap">Contoh tata letak template Q1, Sinta, dan Prosiding — bukan file asli.</p>
+
+    <div class="hero-collage">
+      <div class="wash" aria-hidden="true">
+        <div class="col-sheet secondary">
+          <p class="fs-meta">Sinta</p>
+          <p class="fs-title">Judul artikel ditulis ringkas dan spesifik</p>
+          <p class="fs-auth">Nama Penulis, Afiliasi</p>
+          <p class="fs-h">Abstrak</p>
+          <p class="fs-body">Latar belakang, tujuan, metode, hasil, dan simpulan dalam satu paragraf.</p>
+          <p class="fs-h">1. Pendahuluan</p>
+          <p class="fs-body">Paragraf pembuka menjelaskan masalah, celah kajian, dan tujuan artikel.</p>
+        </div>
+        <div class="col-sheet primary">
+          <p class="fs-meta">Scopus Q1</p>
+          <p class="fs-title">Judul artikel ditulis ringkas dan spesifik</p>
+          <p class="fs-auth">Nama Penulis, Afiliasi</p>
+          <p class="fs-h">Abstrak</p>
+          <p class="fs-body">Latar belakang, tujuan, metode, hasil, dan simpulan dalam satu paragraf.</p>
+          <p class="fs-h">1. Pendahuluan</p>
+          <p class="fs-body">Paragraf pembuka menjelaskan masalah, celah kajian, dan tujuan artikel.</p>
+        </div>
+      </div>
+      <p class="collage-cap">Contoh tata letak template Q1 dan Sinta — bukan file asli.</p>
+    </div>
   </section>
 
   <h2>Template terbaru</h2>
@@ -134,31 +130,116 @@ const jenjangAda = JENJANG.filter((j) => products.some((p) => p.jenjang === j));
 </Base>
 
 <style>
-  /* Hero tengah (referensi: 21st.dev hero-10 "Centered Hero with Image Fan",
-     PETA.md §7.2 baris 1) — komposisi ditiru, dibangun ulang Astro + CSS. */
-  .hero-center { text-align: center; max-width: 760px; margin: 0 auto 1rem; }
-  .hero-center h1 { font-size: clamp(2.1rem, 8vw, 3.4rem); }
-  .hero-center .hl { color: var(--accent); }
-  .hero-center .lede { font-size: 1.08rem; }
-  .hero-center .from { color: var(--muted); }
-  .hero-ctas { display: flex; flex-wrap: wrap; gap: 0.6rem; justify-content: center; margin: 1.25rem 0 0.25rem; }
-  .proof { list-style: none; display: flex; flex-wrap: wrap; gap: 0.25rem 1.5rem; justify-content: center; padding: 0; margin: 1.5rem 0 0; }
+  /* Hero dua kolom (referensi: 21st.dev hero-04 "Editorial Collage Hero" —
+     komposisi ditiru, dibangun ulang Astro + CSS; gambar kolase diganti kartu
+     tipografis lembar template karena repo tidak punya foto produk dan URL
+     cdn.21st.dev adalah artwork demo orang lain). Headline serif dua baris
+     (title + titleLine2), deskripsi dari beranda.intro, CTA primer default +
+     CTA sekunder varian link, animasi 'subtle' (fade naik, hormat
+     prefers-reduced-motion). */
+  .hero-ed {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--accent-dark);
+    margin: 0 0 0.75rem;
+  }
+  .hero-copy h1 {
+    font-size: clamp(2.2rem, 8vw, 3.6rem);
+    margin-bottom: 1rem;
+  }
+  .hero-copy .hl {
+    color: var(--accent);
+    font-style: italic;
+  }
+  .hero-copy .lede {
+    font-size: 1.08rem;
+  }
+  .hero-copy .from {
+    color: var(--muted);
+  }
+  .hero-ctas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem 1.25rem;
+    align-items: center;
+    margin: 1.25rem 0 0.25rem;
+  }
+  .cta-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    font-weight: 500;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
+  .proof {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 1.5rem;
+    padding: 0;
+    margin: 1.5rem 0 0;
+  }
   .proof li { font-size: 0.92rem; color: var(--muted); }
-  .proof strong { color: var(--accent); font-family: Georgia, "Times New Roman", serif; font-size: 1.05rem; }
+  .proof strong { color: var(--accent-dark); font-family: Georgia, "Times New Roman", serif; font-size: 1.05rem; }
   .proof-more { font-size: 0.9rem; margin-top: 0.25rem; }
-  /* Kipas 3 lembar mock template (CSS saja, tanpa foto stok). */
-  .fan { display: flex; justify-content: center; align-items: flex-start; margin: 2.25rem auto 0; }
-  .fan-sheet { flex: 0 0 36%; max-width: 230px; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 0.8rem 0.85rem 1rem; box-shadow: 0 1px 2px rgba(31, 41, 55, 0.06), 0 12px 24px -12px rgba(31, 41, 55, 0.18); aspect-ratio: 1 / 1.3; overflow: hidden; text-align: left; }
-  .fan-sheet:nth-child(1) { transform: rotate(-5deg) translateY(10px); margin-right: -5%; }
-  .fan-sheet:nth-child(2) { z-index: 2; }
-  .fan-sheet:nth-child(3) { transform: rotate(5deg) translateY(10px); margin-left: -5%; }
-  .fan-sheet p { margin: 0; }
-  .fs-meta { font-family: var(--mono); font-size: 0.55rem; color: var(--muted); }
-  .fs-title { font-family: Georgia, "Times New Roman", serif; font-size: 0.72rem; line-height: 1.3; margin: 0.5rem 0 0.25rem !important; font-weight: 500; }
-  .fs-auth { font-size: 0.55rem; color: var(--muted); margin-bottom: 0.7rem !important; }
-  .fs-h { font-size: 0.6rem; font-weight: 600; margin-bottom: 0.15rem !important; }
-  .fs-body { font-size: 0.58rem; line-height: 1.55; color: var(--ink); margin-bottom: 0.45rem !important; }
-  .fan-cap { font-family: var(--mono); font-size: 0.75rem; color: var(--muted); margin-top: 1rem; }
+  /* Kolase: dua lembar tipografis tumpang tindih di atas wash krem hangat. */
+  .hero-collage {
+    animation: rise 0.6s var(--ease-out) both;
+  }
+  .wash {
+    position: relative;
+    background: #f6f1e4;
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    padding: 1.75rem 1.25rem 1.5rem;
+    min-height: 340px;
+    overflow: hidden;
+  }
+  .col-sheet {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 0.9rem 0.95rem 1.1rem;
+    box-shadow: 0 1px 2px rgba(31, 41, 55, 0.06), 0 12px 24px -12px rgba(31, 41, 55, 0.18);
+    text-align: left;
+  }
+  .col-sheet p { margin: 0; }
+  .col-sheet.secondary {
+    position: absolute;
+    top: 1.25rem;
+    left: 1.25rem;
+    width: 62%;
+    transform: rotate(-5deg);
+    opacity: 0.92;
+  }
+  .col-sheet.primary {
+    position: relative;
+    z-index: 2;
+    width: 68%;
+    margin-left: auto;
+    margin-top: 4.5rem;
+    transform: rotate(2.5deg);
+  }
+  .fs-meta { font-family: var(--mono); font-size: 0.6rem; color: var(--muted); }
+  .fs-title { font-family: Georgia, "Times New Roman", serif; font-size: 0.85rem; line-height: 1.3; margin: 0.5rem 0 0.25rem !important; font-weight: 500; }
+  .fs-auth { font-size: 0.6rem; color: var(--muted); margin-bottom: 0.7rem !important; }
+  .fs-h { font-size: 0.68rem; font-weight: 600; margin-bottom: 0.15rem !important; }
+  .fs-body { font-size: 0.64rem; line-height: 1.55; color: var(--ink); margin-bottom: 0.45rem !important; }
+  .collage-cap { font-family: var(--mono); font-size: 0.75rem; color: var(--muted); margin-top: 0.75rem; }
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
   .chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
   .chips a { text-decoration: none; min-height: 44px; display: inline-flex; align-items: center; padding: 0 0.9rem; }
   .points { padding-left: 0; list-style: none; display: grid; gap: 0.5rem; }
@@ -168,11 +249,21 @@ const jenjangAda = JENJANG.filter((j) => products.some((p) => p.jenjang === j));
   .faq details { border-top: 1px solid var(--line); padding: 0.2rem 0; }
   .faq details:first-child { border-top: 0; }
   .faq summary { cursor: pointer; font-weight: 500; min-height: 44px; display: flex; align-items: center; }
-  @media (min-width: 720px) {
+  @media (min-width: 880px) {
+    .hero-ed {
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: 2.5rem;
+      padding-top: 1rem;
+    }
     .fs-meta { font-size: 0.65rem; }
     .fs-title { font-size: 0.95rem; }
     .fs-auth { font-size: 0.65rem; }
     .fs-h { font-size: 0.75rem; }
     .fs-body { font-size: 0.7rem; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .hero-collage {
+      animation: none;
+    }
   }
 </style>
