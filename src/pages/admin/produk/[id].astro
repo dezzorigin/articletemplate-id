@@ -36,6 +36,17 @@ if (Astro.request.method === 'POST') {
   if (!parsed.ok || fileErrs.length) {
     errors = [...(parsed.ok ? [] : parsed.errors), ...fileErrs];
   } else {
+    // Guard (AUDIT F-P1-4): produk tanpa file template tidak boleh tampil di
+    // katalog — pembeli yang membayar produk tanpa file tidak akan pernah bisa
+    // mengunduh. File dianggap ada bila sudah terpasang atau baru dipilih di form ini.
+    const fileBaru = form.get('file');
+    const adaFile = Boolean(product?.file_path) || (fileBaru instanceof File && fileBaru.size > 0);
+    if (parsed.data.is_visible && !adaFile) {
+      errors.push('Produk tanpa file template tidak bisa ditampilkan di katalog. Unggah dulu file template-nya, atau biarkan tidak tampil.');
+    }
+    // Bila guard di atas menolak, jangan simpan apa pun: form ditampilkan lagi
+    // dengan isian terakhir lewat penugasan `v` di bawah.
+    if (!errors.length) {
     const admin = getSupabaseAdmin();
     const data = parsed.data;
     let productId = product?.id;
@@ -76,6 +87,7 @@ if (Astro.request.method === 'POST') {
     if (isNew && productId) {
       // Baris sudah dibuat tapi file gagal: lanjutkan di halaman ubah.
       return Astro.redirect(`/admin/produk/${productId}?e=file`, 303);
+    }
     }
   }
   v = {
@@ -165,6 +177,7 @@ const fileName = (p: string | null) => (p ? p.split('/').pop() : null);
     </fieldset>
 
     <label class="check"><input type="checkbox" name="is_visible" value="1" checked={!!v.is_visible} /> Tampilkan di katalog</label>
+    <span class="hint">Produk tanpa file template tidak bisa ditampilkan — unggah dulu file-nya di atas.</span>
 
     <button type="submit">{isNew ? 'Buat produk' : 'Simpan perubahan'}</button>
   </form>

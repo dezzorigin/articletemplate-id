@@ -7,7 +7,7 @@ import { ORDER_TTL_MS, expireIfStale, getPaymentMetode, type Metode } from './pa
 
 export type OrderResult =
   | { ok: true; orderId: string; total: number }
-  | { ok: false; reason: 'kosong' | 'tidak-ada-harga' | 'gagal' };
+  | { ok: false; reason: 'kosong' | 'tidak-ada-harga' | 'tanpa-file' | 'gagal' };
 
 /**
  * Cari akun berdasarkan email; kalau belum ada, buat otomatis (checkout guest).
@@ -69,7 +69,7 @@ async function createOrderInner(userId: string, slugs: string[]): Promise<OrderR
 
   const { data: products, error: readErr } = await admin
     .from('products')
-    .select('id, slug, harga')
+    .select('id, slug, harga, file_path')
     .in('slug', slugs)
     .eq('is_visible', true);
   if (readErr) {
@@ -79,6 +79,19 @@ async function createOrderInner(userId: string, slugs: string[]): Promise<OrderR
 
   const buyable = (products ?? []).filter((p) => isPurchasable(p.harga as number | null));
   if (buyable.length === 0) return { ok: false, reason: 'tidak-ada-harga' };
+
+  // Jaring pengaman: produk tanpa file template TIDAK BOLEH dijual, lewat jalur
+  // apa pun. Pembeli yang membayar produk tanpa file tidak akan pernah bisa
+  // mengunduh (authorizeDownload mengembalikan 'file-belum-ada'), jadi order
+  // ditolak utuh di sini — bukan dibuat sebagian tanpa item itu.
+  const tanpaFile = buyable.filter((p) => !(p as any).file_path);
+  if (tanpaFile.length > 0) {
+    console.error(
+      '[orders] tolak order: produk tanpa file:',
+      tanpaFile.map((p) => p.slug as string).join(', '),
+    );
+    return { ok: false, reason: 'tanpa-file' };
+  }
 
   const total = cartTotal(buyable.map((p) => ({ harga: p.harga as number })));
 

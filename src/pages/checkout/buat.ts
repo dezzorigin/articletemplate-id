@@ -22,7 +22,7 @@ export const POST: APIRoute = async ({ request, cookies, locals, redirect }) => 
 
   const result = await createOrder(userId, slugs);
   if (!result.ok) {
-    const code = result.reason === 'gagal' ? 'gagal' : 'harga';
+    const code = result.reason === 'gagal' ? 'gagal' : result.reason === 'tanpa-file' ? 'file' : 'harga';
     return redirect(`/checkout?e=${code}`, 303);
   }
   return redirect(`/checkout/status?order=${result.orderId}`, 303);
