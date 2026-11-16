@@ -70,19 +70,18 @@ export const RULES: Rule[] = [
 const hits = new Map<string, number[]>();
 let lastSweep = Date.now();
 
-/** IP klien untuk rate limit: entri PALING KIRI X-Forwarded-For.
- *  ASUMSI INFRA: aplikasi hanya diekspos lewat SATU proxy tepercaya
- *  (Traefik/Coolify) yang menulis X-Forwarded-For dari IP peer yang
- *  dilihatnya — sehingga entri kiri adalah IP asli klien. Bila suatu hari ada
- *  proxy lain di depan, atau aplikasi diekspos langsung tanpa proxy yang
- *  membersihkan header ini, entri kiri bisa dipalsukan klien dan kunci rate
- *  limit menjadi tidak bisa diandalkan; dalam hal itu pakai IP peer
- *  (context.clientAddress) sebagai kunci. */
+/** IP klien untuk rate limit: entri PALING KANAN X-Forwarded-For.
+ *  Proxy (Traefik/Coolify) menambahkan IP peer yang dilihatnya di kanan, jadi
+ *  entri kanan tidak bisa dipalsukan klien; entri kiri bisa. Diuji di produksi
+ *  16 Nov 2026: memutar entri kiri tetap kena 429 (proxy menimpa header), jadi
+ *  kiri/kanan sama di sana, tetapi kanan aman di kedua kondisi. Tanpa XFF
+ *  dipakai IP peer (context.clientAddress). */
 export function clientKey(request: Request, fallback: string | undefined): string {
   const xff = request.headers.get('x-forwarded-for');
   if (xff) {
-    const first = xff.split(',').map((s) => s.trim()).filter(Boolean)[0];
-    if (first) return first;
+    const parts = xff.split(',').map((s) => s.trim()).filter(Boolean);
+    const last = parts[parts.length - 1];
+    if (last) return last;
   }
   return fallback ?? 'tak-dikenal';
 }
