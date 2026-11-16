@@ -1,0 +1,68 @@
+---
+import Base from '../layouts/Base.astro';
+import AuthSplit from '../components/AuthSplit.astro';
+
+// Halaman entri kode 6 digit dari email (jalur tanpa PKCE — tidak butuh
+// cookie verifier). Dipakai bila tautan email tidak bisa dipakai, mis.
+// alur dimulai di perangkat lain. Kode dan tautan menebus token sekali
+// pakai yang SAMA: pakai kode dari email terbaru TANPA mengklik tautan
+// di email itu — kode dari email yang tautannya sudah diklik tidak bisa
+// dipakai lagi.
+if (Astro.locals.user) return Astro.redirect('/akun');
+
+const jenis = Astro.url.searchParams.get('jenis') === 'recovery' ? 'recovery' : 'signup';
+const next = Astro.url.searchParams.get('next') ?? '';
+const emailVal = (Astro.url.searchParams.get('email') ?? '').slice(0, 254);
+const code = Astro.url.searchParams.get('e');
+const messages: Record<string, string> = {
+  email: 'Format email tidak valid.',
+  kode: 'Kode salah, sudah dipakai, atau sudah kedaluwarsa. Minta email baru lalu masukkan kode dari email itu tanpa mengklik tautannya.',
+  batas: 'Terlalu banyak percobaan. Tunggu sebentar lalu coba lagi.',
+  gagal: 'Kode belum berhasil diverifikasi. Coba lagi sebentar.',
+};
+const error = code ? messages[code] : undefined;
+const title = jenis === 'recovery' ? 'Konfirmasi kode reset' : 'Konfirmasi kode dari email';
+const lead =
+  jenis === 'recovery'
+    ? 'Masukkan kode 6 digit dari email reset kata sandi untuk melanjutkan ke halaman atur kata sandi.'
+    : 'Masukkan kode 6 digit dari email konfirmasi untuk mengaktifkan akunmu.';
+---
+
+<Base title={title}>
+  <AuthSplit title={title} lead={lead}>
+    {error ? <p class="notice" role="alert">{error}</p> : null}
+    <p class="notice" role="note">
+      Pakai kode dari email terbaru, dan jangan klik tautan di email itu dulu — tautan dan kode memakai
+      token yang sama, jadi sekali tautan diklik, kodenya tidak bisa dipakai lagi.
+    </p>
+    <form class="form" method="post" action="/auth/verifikasi-kode">
+      <input type="hidden" name="jenis" value={jenis} />
+      <input type="hidden" name="next" value={next} />
+      <label class="field">
+        <span>Email</span>
+        <input type="email" name="email" required autocomplete="email" inputmode="email" autocapitalize="none" autocorrect="off" maxlength="254" value={emailVal} />
+      </label>
+      <label class="field">
+        <span>Kode 6 digit</span>
+        <input type="text" name="kode" required autocomplete="one-time-code" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" />
+        <span class="hint">6 angka dari email.</span>
+      </label>
+      <button type="submit">Verifikasi kode</button>
+    </form>
+    <div class="linkrow">
+      {
+        jenis === 'recovery' ? (
+          <a href="/lupa-password">Minta tautan reset baru</a>
+        ) : (
+          <a href="/masuk">Kembali ke masuk</a>
+        )
+      }
+    </div>
+  </AuthSplit>
+</Base>
+
+<style>
+  .form {
+    max-width: none;
+  }
+</style>

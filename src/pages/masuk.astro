@@ -13,6 +13,8 @@ const emailVal = (Astro.url.searchParams.get('email') ?? '').slice(0, 254);
 const messages: Record<string, string> = {
   salah: 'Email atau kata sandi salah.',
   konfirmasi: 'Email kamu belum dikonfirmasi. Cek kotak masuk untuk tautan konfirmasi.',
+  terkonfirmasi:
+    'Email kamu sudah terkonfirmasi. Silakan masuk dengan kata sandi yang kamu buat saat daftar.',
   tautan: 'Tautan tidak valid atau sudah kedaluwarsa. Minta tautan baru.',
   google: 'Masuk dengan Google belum tersedia.',
   'kirim-gagal': 'Tidak bisa mengirim ulang tautan konfirmasi. Coba lagi sebentar.',

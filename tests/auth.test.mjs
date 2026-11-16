@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { loadLib } from './helpers.mjs';
 
 const auth = await loadLib('auth.ts');
-const { cleanName, cleanEmail, validPassword, safeNext, isExampleDomain, signUpErrorCode, isNotConfirmedError } = auth;
+const { cleanName, cleanEmail, validPassword, safeNext, isExampleDomain, signUpErrorCode, isNotConfirmedError, validFlowId, isVerifierError, verifyOtpErrorCode } = auth;
 
 test('cleanName: ciutkan spasi, trim, maks 80 karakter', () => {
   assert.equal(cleanName('  Nabil   Aulia  Dika '), 'Nabil Aulia Dika');
@@ -80,6 +80,34 @@ test('isNotConfirmedError: kode atau pesan GoTrue', () => {
   assert.equal(isNotConfirmedError({ code: 'unexpected_failure', message: 'Email not confirmed', status: 401 }), true);
   assert.equal(isNotConfirmedError({ code: 'invalid_credentials', message: 'Invalid login credentials', status: 400 }), false);
   assert.equal(isNotConfirmedError(null), false);
+});
+
+test('validFlowId: pola flow id PKCE auth-js (8..64 karakter [A-Za-z0-9_-])', () => {
+  assert.equal(validFlowId('9667b22e30bb0fbca74e1d550c94de92'), true);
+  assert.equal(validFlowId('aB-3_9xQ'), true);
+  assert.equal(validFlowId('pendek'), false);
+  assert.equal(validFlowId('a'.repeat(65)), false);
+  assert.equal(validFlowId('ada spasi'), false);
+  assert.equal(validFlowId('ada/tanda'), false);
+  assert.equal(validFlowId(null), false);
+  assert.equal(validFlowId(undefined), false);
+});
+
+test('isVerifierError: bad_code_verifier / verifier hilang (bukan tautan tidak valid)', () => {
+  assert.equal(isVerifierError({ code: 'bad_code_verifier', message: 'Bad code verifier', status: 400 }), true);
+  assert.equal(isVerifierError({ code: 'pkce_code_verifier_not_found', message: 'PKCE code verifier not found', status: 400 }), true);
+  assert.equal(isVerifierError({ code: 'unexpected_failure', message: 'PKCE code verifier not found in storage', status: 400, name: 'AuthPKCECodeVerifierMissingError' }), true);
+  assert.equal(isVerifierError({ code: 'otp_expired', message: 'Email link is invalid or has expired', status: 403 }), false);
+  assert.equal(isVerifierError({ code: 'unexpected_failure', message: 'Database error', status: 500 }), false);
+  assert.equal(isVerifierError(null), false);
+});
+
+test('verifyOtpErrorCode: petakan error verifyOtp kode 6 digit ke kode ?e=...', () => {
+  assert.equal(verifyOtpErrorCode({ code: 'otp_expired', message: 'Email link is invalid or has expired', status: 403 }), 'kode');
+  assert.equal(verifyOtpErrorCode({ code: 'unexpected_failure', message: 'Token has expired or is invalid', status: 403 }), 'kode');
+  assert.equal(verifyOtpErrorCode({ code: 'over_request_rate_limit', message: 'Rate limit exceeded', status: 429 }), 'batas');
+  assert.equal(verifyOtpErrorCode({ code: 'unexpected_failure', message: 'Database error', status: 500 }), 'gagal');
+  assert.equal(verifyOtpErrorCode(null), 'gagal');
 });
 
 test('safeNext: hanya path internal', () => {
