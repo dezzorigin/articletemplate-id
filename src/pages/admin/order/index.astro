@@ -1,11 +1,14 @@
 ---
 import Admin from '../../../layouts/Admin.astro';
 import { formatRupiah } from '../../../lib/money';
+import { isBorderPayTestMode } from '../../../lib/borderpay';
 import { requireAdmin, adminListOrders, parseOrderQuery, ORDER_STATUS } from '../../../lib/admin';
 
 export const prerender = false;
 if (!(await requireAdmin(Astro.locals.supabase, Astro.locals.user))) return Astro.rewrite('/404');
 
+const testMode = isBorderPayTestMode();
+const pesan = Astro.url.searchParams.get('m') ?? '';
 const query = parseOrderQuery(Astro.url.searchParams);
 const orders = await adminListOrders(query);
 const label: Record<string, string> = { menunggu_bayar: 'Menunggu bayar', lunas: 'Lunas', gagal: 'Gagal', kedaluwarsa: 'Kedaluwarsa' };
@@ -25,6 +28,8 @@ const waktu = (s: string) => new Date(s).toLocaleString('id-ID', { day: 'numeric
     <button type="submit">Cari</button>
   </form>
 
+  {pesan === 'simulasi-ok' ? <p class="hint" role="status">Simulasi terkirim. Status berubah lewat webhook, muat ulang bila belum lunas.</p> : null}
+  {pesan.startsWith('simulasi-gagal') ? <p class="hint" role="alert">Simulasi ditolak BorderPay ({pesan.replace('simulasi-gagal-', 'HTTP ')}). Cek log server.</p> : null}
   <p class="hint">{orders.length} order{orders.length === 100 ? ' (100 terbaru)' : ''}.</p>
 
   {orders.length === 0 ? <div class="card"><p>Tidak ada order yang cocok.</p></div> : (
@@ -57,6 +62,12 @@ const waktu = (s: string) => new Date(s).toLocaleString('id-ID', { day: 'numeric
                 <span class="hint">{waktu(o.created_at)}</span>
                 <br />
                 <span class="hint">Unduhan: {o.unduhan} · <code>{o.id}</code></span>
+                {testMode && o.status === 'menunggu_bayar' && o.metode ? (
+                  <form method="post" action="/admin/order/simulasi">
+                    <input type="hidden" name="order" value={o.id} />
+                    <button type="submit" class="sim">Simulasi bayar (test)</button>
+                  </form>
+                ) : null}
               </td>
             </tr>
           ))}
@@ -115,6 +126,18 @@ const waktu = (s: string) => new Date(s).toLocaleString('id-ID', { day: 'numeric
     background: var(--st-mut-bg);
     border-color: var(--st-mut-line);
     color: var(--st-mut-ink);
+  }
+  .sim {
+    margin-top: 0.4rem;
+    min-height: 36px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 0.3rem 0.9rem;
+    background: var(--surface);
+    color: var(--ink);
+    font: inherit;
+    font-size: 0.85rem;
+    cursor: pointer;
   }
   /* ---------- filter ---------- */
   .filter {

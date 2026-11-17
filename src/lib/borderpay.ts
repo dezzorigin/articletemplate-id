@@ -102,6 +102,11 @@ export function isBorderPayEnabled(): boolean {
   return c.apiKey !== '';
 }
 
+/** true bila key berawalan bp_test_ (mode test). Dipakai menjaga fitur simulasi tak pernah aktif di live. */
+export function isBorderPayTestMode(): boolean {
+  return getBorderPayConfig().apiKey.startsWith('bp_test_');
+}
+
 export class BorderPayError extends Error {
   status: number;
   constructor(message: string, status = 0) {
