@@ -254,8 +254,10 @@ export async function createBorderPayPayment(
     json = null;
   }
   if (!res.ok) {
-    const msg = asNonEmptyString(asRecord(json).message ?? asRecord(json).error) ?? `HTTP ${res.status}`;
-    throw new BorderPayError(`BorderPay menolak pembuatan pembayaran: ${msg}`, res.status);
+    throw new BorderPayError(
+      `BorderPay menolak pembuatan pembayaran: ${borderPayErrorMessage(json, res.status)}`,
+      res.status,
+    );
   }
   return parseCreatePaymentResponse(json);
 }
@@ -340,48 +342,69 @@ export function buildPaymentActionRequest(
   };
 }
 
-/**
- * Batalkan pembayaran (menandai expired, hanya saat pending).
- * Dipakai admin/manual — belum ada UI-nya; fungsi ini disiapkan untuk itu.
- */
-export async function cancelBorderPayPayment(
+/** Pesan error BorderPay. Format resmi: {error: {code, message}}; fallback ke message/error string. */
+export function borderPayErrorMessage(json: unknown, status: number): string {
+  const root = asRecord(json);
+  const err = asRecord(root.error);
+  const code = asNonEmptyString(err.code);
+  const msg = asNonEmptyString(err.message) ?? asNonEmptyString(root.message) ?? asNonEmptyString(root.error);
+  if (code && msg) return `${code}: ${msg} (HTTP ${status})`;
+  return msg ?? code ?? `HTTP ${status}`;
+}
+
+export interface PaymentActionResult {
+  referenceId: string | undefined;
+  status: string | undefined;
+}
+
+/** Respons cancel/simulate (OpenAPI): {reference_id, status}. */
+export function parsePaymentActionResponse(json: unknown): PaymentActionResult {
+  const root = asRecord(json);
+  const data = asRecord(root.data ?? root);
+  return { referenceId: asNonEmptyString(data.reference_id), status: asNonEmptyString(data.status) };
+}
+
+async function postPaymentAction(
   referenceId: string,
-  config: BorderPayConfig = getBorderPayConfig(),
-): Promise<BorderPayPayment> {
-  const req = buildPaymentActionRequest(config, referenceId, 'cancel');
-  const res = await fetch(req.url, {
-    method: 'POST',
-    headers: req.headers,
-    signal: AbortSignal.timeout(15_000),
-  });
+  action: 'cancel' | 'simulate',
+  config: BorderPayConfig,
+): Promise<PaymentActionResult> {
+  const req = buildPaymentActionRequest(config, referenceId, action);
+  let res: Response;
+  try {
+    res = await fetch(req.url, { method: 'POST', headers: req.headers, signal: AbortSignal.timeout(15_000) });
+  } catch (e) {
+    throw new BorderPayError(`tidak bisa menghubungi BorderPay: ${(e as Error).message}`, 0);
+  }
   const json: unknown = await res.json().catch(() => null);
   if (!res.ok) {
-    const msg = asNonEmptyString(asRecord(json).message ?? asRecord(json).error) ?? `HTTP ${res.status}`;
-    throw new BorderPayError(`BorderPay menolak pembatalan: ${msg}`, res.status);
+    const label = action === 'cancel' ? 'pembatalan' : 'simulasi';
+    throw new BorderPayError(`BorderPay menolak ${label}: ${borderPayErrorMessage(json, res.status)}`, res.status);
   }
-  return parseCreatePaymentResponse(json);
+  return parsePaymentActionResponse(json);
 }
 
 /**
- * Tandai test payment sebagai paid — HANYA mode test (Referensi API).
- * Dipakai untuk uji end-to-end tanpa uang sungguhan; di live API menolak.
+ * Batalkan pembayaran (menandai expired, hanya saat pending).
+ * `referenceId` = reference_id yang kita kirim saat membuat pembayaran (id order).
+ * Dipakai admin/manual; belum ada UI-nya.
  */
-export async function simulateBorderPayPayment(
+export function cancelBorderPayPayment(
   referenceId: string,
   config: BorderPayConfig = getBorderPayConfig(),
-): Promise<BorderPayPayment> {
-  const req = buildPaymentActionRequest(config, referenceId, 'simulate');
-  const res = await fetch(req.url, {
-    method: 'POST',
-    headers: req.headers,
-    signal: AbortSignal.timeout(15_000),
-  });
-  const json: unknown = await res.json().catch(() => null);
-  if (!res.ok) {
-    const msg = asNonEmptyString(asRecord(json).message ?? asRecord(json).error) ?? `HTTP ${res.status}`;
-    throw new BorderPayError(`BorderPay menolak simulasi: ${msg}`, res.status);
-  }
-  return parseCreatePaymentResponse(json);
+): Promise<PaymentActionResult> {
+  return postPaymentAction(referenceId, 'cancel', config);
+}
+
+/**
+ * Tandai test payment sebagai paid, HANYA mode test (OpenAPI: 403 bila bukan test).
+ * `referenceId` = reference_id (id order), BUKAN id pembayaran BorderPay.
+ */
+export function simulateBorderPayPayment(
+  referenceId: string,
+  config: BorderPayConfig = getBorderPayConfig(),
+): Promise<PaymentActionResult> {
+  return postPaymentAction(referenceId, 'simulate', config);
 }
 
 // ---------- webhook: verifikasi token (skema terkonfirmasi, Referensi API) ----------
