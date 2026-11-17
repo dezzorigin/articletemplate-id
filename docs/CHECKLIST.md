@@ -61,14 +61,14 @@ Legenda: `[ ]` belum, `[x]` lulus, `[!]` gagal.
 > live masih menunggu (key test + env var + endpoint webhook; migrasi pay_url
 > SUDAH di-apply ke database self-hosted & terverifikasi 16 Nov 2026).
 - [ ] F1 Form nama + email tervalidasi
-- [x] F2 Bayar sukses: order `lunas`, download aktif (bukti 17-18 Nov 2026: order fcefa90d lunas lewat webhook payment.paid BorderPay (test) di produksi, halaman status "Lunas, file bisa diunduh"; e2e-checkout-login 16 PASS)
+- [x] F2 Bayar sukses: order `lunas`, download aktif (bukti 17-18 Nov 2026: order fcefa90d lunas lewat webhook payment.paid BorderPay (test) di produksi, halaman status "Lunas, file bisa diunduh"; e2e-checkout-login 16 PASS. VA juga terbukti 18 Nov: amount webhook = gross 252500 untuk total 249000 (fee 3500 ditanggung pembeli), guard menerima amount == total atau amount - fee == total, commit 9f2f60c)
 - [ ] F3 Bayar gagal: order `gagal`, download tidak aktif
 - [ ] F4 Kedaluwarsa: order `kedaluwarsa`, bisa checkout ulang tanpa order ganda
 - [x] F5 Webhook palsu/tanpa signature ditolak (bukti 17-18 Nov 2026: produksi: webhook tanpa token dan token salah -> 401; e2e-webhook 16 PASS)
 - [x] F6 Webhook diulang (idempotent) tidak mengubah hasil (bukti 17-18 Nov 2026: e2e-webhook: paid dikirim ulang changed=false, expired setelah lunas tidak menurunkan status)
 - [ ] F7 `harga_saat_beli` tersimpan, tidak ikut berubah
 - [ ] F8 Tidak ada order lunas tanpa download aktif, dan sebaliknya
-- [ ] F9 Email: order dibuat, lunas, gagal/kedaluwarsa (lunas SUDAH terkirim nyata 14 Nov; order dibuat dan gagal/kedaluwarsa belum ada emailnya)
+- [ ] F9 Email: order dibuat, lunas, gagal/kedaluwarsa (lunas SUDAH terkirim nyata 14 Nov dan 18 Nov lewat Brevo (log Sent lalu Delivered, commit 8cb1343) tapi masuk SPAM Gmail karena domain pengirim belum diautentikasi (SPF/DKIM menunggu verifikasi domain); order dibuat dan gagal/kedaluwarsa belum ada emailnya)
 
 ## G. Download
 - [x] G1 Tanpa login ditolak (bukti 17-18 Nov 2026: e2e-download: tanpa login -> 303 /masuk)
@@ -112,7 +112,7 @@ Legenda: `[ ]` belum, `[x]` lulus, `[!]` gagal.
 
 ## L. Non-fungsional
 - [ ] L1 Halaman 404 dan 500 ramah (404 lulus: `/nope` status 404 + halaman ramah. 500: `src/pages/500.astro` sudah mengatur status HTTP 500 sejak 16 Nov 2026, tapi belum dipicu/diuji dengan error nyata)
-- [ ] L2 Aksesibilitas dasar: kontras, label form, fokus keyboard, alt gambar (Lighthouse a11y 100 di Beranda, 13 Nov; fokus keyboard belum dicek manual)
+- [ ] L2 Aksesibilitas dasar: kontras, label form, fokus keyboard, alt gambar (Lighthouse a11y 100 di Beranda, 13 Nov; fokus keyboard: 18 Nov ditinjau lewat kode, `:focus-visible` outline 3px ada di Base dan Dashboard, tidak ada `outline: none`, tidak ada div klik tanpa role; uji tab manual di browser belum)
 - [ ] L3 Lighthouse desktop >= 90 performa, >= 90 a11y
 - [x] L4 Meta title/description/OG per halaman, robots.txt, sitemap.xml (produk visible saja)
 - [ ] L5 Backup database terjadwal + monitoring uptime aktif
@@ -134,7 +134,7 @@ Legenda: `[ ]` belum, `[x]` lulus, `[!]` gagal.
 - [ ] N5 Safe-area (notch) dan tinggi layar (tanpa bug 100vh) (kode: viewport-fit=cover, env(safe-area-inset-*), 100dvh sudah ada; BUTUH HP nyata untuk bukti)
 - [ ] N6 Dashboard/admin berupa kartu atau tabel yang bisa di-scroll terkontrol
 - [ ] N7 Lighthouse mobile >= 85 performa, >= 90 a11y
-- [ ] N8 `prefers-reduced-motion` dihormati (kode ada di Base.astro; belum diuji dengan pengaturan OS)
+- [ ] N8 `prefers-reduced-motion` dihormati (kode ada di Base.astro, index.astro, dan Dashboard.astro (18 Nov: ditambah `animation: none`); belum diuji dengan pengaturan OS)
 
 ## Rekap hasil
 | Tanggal | Tahap | Lulus | Gagal | Belum | Catatan |
