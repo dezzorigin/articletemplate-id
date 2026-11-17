@@ -61,22 +61,22 @@ Legenda: `[ ]` belum, `[x]` lulus, `[!]` gagal.
 > live masih menunggu (key test + env var + endpoint webhook; migrasi pay_url
 > SUDAH di-apply ke database self-hosted & terverifikasi 16 Nov 2026).
 - [ ] F1 Form nama + email tervalidasi
-- [ ] F2 Bayar sukses: order `lunas`, download aktif
+- [x] F2 Bayar sukses: order `lunas`, download aktif (bukti 17-18 Nov 2026: order fcefa90d lunas lewat webhook payment.paid BorderPay (test) di produksi, halaman status "Lunas, file bisa diunduh"; e2e-checkout-login 16 PASS)
 - [ ] F3 Bayar gagal: order `gagal`, download tidak aktif
 - [ ] F4 Kedaluwarsa: order `kedaluwarsa`, bisa checkout ulang tanpa order ganda
-- [ ] F5 Webhook palsu/tanpa signature ditolak
-- [ ] F6 Webhook diulang (idempotent) tidak mengubah hasil
+- [x] F5 Webhook palsu/tanpa signature ditolak (bukti 17-18 Nov 2026: produksi: webhook tanpa token dan token salah -> 401; e2e-webhook 16 PASS)
+- [x] F6 Webhook diulang (idempotent) tidak mengubah hasil (bukti 17-18 Nov 2026: e2e-webhook: paid dikirim ulang changed=false, expired setelah lunas tidak menurunkan status)
 - [ ] F7 `harga_saat_beli` tersimpan, tidak ikut berubah
 - [ ] F8 Tidak ada order lunas tanpa download aktif, dan sebaliknya
 - [ ] F9 Email: order dibuat, lunas, gagal/kedaluwarsa (lunas SUDAH terkirim nyata 14 Nov; order dibuat dan gagal/kedaluwarsa belum ada emailnya)
 
 ## G. Download
-- [ ] G1 Tanpa login ditolak
-- [ ] G2 Login tapi order belum lunas ditolak
-- [ ] G3 Akun lain tidak bisa mengunduh order orang lain
-- [ ] G4 Order lunas: unduh berhasil, file benar (cek host signed URL di `scripts/e2e-download.cjs` sudah diperbaiki 16 Nov 2026 menjadi host-agnostic dari `PUBLIC_SUPABASE_URL`; e2e tetap belum dijalankan melawan backend self-hosted)
-- [ ] G5 Unduh ulang dari dashboard berhasil
-- [ ] G6 Tiap unduhan tercatat di `downloads`
+- [x] G1 Tanpa login ditolak (bukti 17-18 Nov 2026: e2e-download: tanpa login -> 303 /masuk)
+- [x] G2 Login tapi order belum lunas ditolak (bukti 17-18 Nov 2026: e2e-download: belum lunas -> 303 /akun?e=belum-lunas)
+- [x] G3 Akun lain tidak bisa mengunduh order orang lain (bukti 17-18 Nov 2026: e2e-download: akun lain -> 404)
+- [x] G4 Order lunas: unduh berhasil, file benar (cek host signed URL di `scripts/e2e-download.cjs` sudah diperbaiki 16 Nov 2026 menjadi host-agnostic dari `PUBLIC_SUPABASE_URL`; e2e tetap belum dijalankan melawan backend self-hosted) (bukti 17-18 Nov 2026: e2e-download melawan backend self-hosted: 302 signed URL host Kong, isi file benar)
+- [x] G5 Unduh ulang dari dashboard berhasil (bukti 17-18 Nov 2026: e2e-download: unduh ulang -> 302)
+- [x] G6 Tiap unduhan tercatat di `downloads` (bukti 17-18 Nov 2026: e2e-download: 2 baris downloads tercatat untuk pemilik, akun lain 0)
 - [ ] G7 URL file tidak bisa ditebak, signed URL kedaluwarsa
 
 ## H. Admin
