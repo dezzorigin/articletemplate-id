@@ -1,8 +1,9 @@
 import { optionalEnv } from './env';
 import { getSupabaseAdmin } from './supabase';
 
-// Satu pintu kirim email (WES-18). Provider: Resend lewat HTTP API.
-// Ganti provider = ubah isi sendEmail() saja. Kegagalan kirim TIDAK boleh menggagalkan order.
+// Satu pintu kirim email (WES-18). Provider: Brevo (bila BREVO_API_KEY terisi) atau Resend,
+// keduanya lewat HTTP API. Ganti provider = ubah isi sendEmail() saja.
+// Kegagalan kirim TIDAK boleh menggagalkan order.
 
 export interface EmailMessage {
   to: string;
@@ -19,16 +20,54 @@ function esc(s: string): string {
   return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 }
 
+const FROM_NAME = 'ArticleTemplate.id';
+
+/**
+ * Pilih provider dari env: BREVO_API_KEY terisi -> Brevo; selain itu Resend.
+ * Pengirim (EMAIL_FROM) harus alamat yang sudah diverifikasi di provider itu
+ * (Brevo: Senders & IP, verifikasi lewat email, tanpa DNS; Resend: domain terverifikasi).
+ */
 export async function sendEmail(msg: EmailMessage): Promise<EmailResult> {
-  const key = optionalEnv('RESEND_API_KEY');
   const from = optionalEnv('EMAIL_FROM');
+  const brevoKey = optionalEnv('BREVO_API_KEY');
+  if (brevoKey) {
+    if (!from) return { ok: false, reason: 'EMAIL_FROM belum diisi' };
+    return sendViaBrevo(brevoKey, from, msg);
+  }
+  return sendViaResend(from, msg);
+}
+
+async function sendViaBrevo(key: string, from: string, msg: EmailMessage): Promise<EmailResult> {
+  try {
+    const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: { 'api-key': key, 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({
+        sender: { name: FROM_NAME, email: from },
+        to: [{ email: msg.to }],
+        subject: msg.subject,
+        htmlContent: msg.html,
+        textContent: msg.text,
+      }),
+      signal: AbortSignal.timeout(10_000),
+    });
+    const body: any = await res.json().catch(() => ({}));
+    if (!res.ok) return { ok: false, reason: `Brevo ${res.status}: ${body?.code ?? ''} ${body?.message ?? 'gagal'}`.trim() };
+    return { ok: true, id: body?.messageId };
+  } catch (e: any) {
+    return { ok: false, reason: `kirim email gagal: ${e?.message ?? e}` };
+  }
+}
+
+async function sendViaResend(from: string | undefined, msg: EmailMessage): Promise<EmailResult> {
+  const key = optionalEnv('RESEND_API_KEY');
   if (!key || !from) return { ok: false, reason: 'RESEND_API_KEY atau EMAIL_FROM belum diisi' };
   try {
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        from: `ArticleTemplate.id <${from}>`,
+        from: `${FROM_NAME} <${from}>`,
         to: [msg.to],
         subject: msg.subject,
         html: msg.html,
