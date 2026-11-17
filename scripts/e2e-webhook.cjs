@@ -46,6 +46,7 @@ const statusOf = async (id) => (await admin.from('orders').select('status').eq('
       return o.id;
     };
     const a = await mkOrder(), b = await mkOrder(), c = await mkOrder(), d = await mkOrder();
+    const e = await mkOrder(), f = await mkOrder();
 
     let r = await hook(payload('payment.paid', a, 1000), null);
     check('tanpa token -> 401', r.status === 401, r.status);
@@ -78,6 +79,13 @@ const statusOf = async (id) => (await admin.from('orders').select('status').eq('
     await hook(payload('payment.failed', c, 1000), TOKEN);
     check('payment.failed -> gagal', (await statusOf(c)) === 'gagal', await statusOf(c));
     check('order lain tidak tersentuh', (await statusOf(d)) === 'menunggu_bayar');
+
+    // Biaya ditanggung pembeli (VA): amount = gross = total + fee. Bug produksi 18 Nov 2026 (252500 vs 249000).
+    const withFee = (ref, amount, fee) => ({ event: 'payment.paid', mode: 'test', data: { reference_id: ref, status: 'paid', amount, fee, method: 'va' } });
+    r = await hook(withFee(f, 1000 + 500 + 7, 500), TOKEN);
+    check('amount - fee != total -> tetap diabaikan', r.status === 200 && (await r.json()).ignored === 'amount_mismatch' && (await statusOf(f)) === 'menunggu_bayar');
+    r = await hook(withFee(e, 1000 + 500, 500), TOKEN);
+    check('VA biaya ditanggung pembeli (amount=total+fee) -> lunas', r.status === 200 && (await statusOf(e)) === 'lunas', await statusOf(e));
 
     r = await fetch(BASE + '/api/webhook-borderpay');
     check('GET -> 405', r.status === 405, r.status);

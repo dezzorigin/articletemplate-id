@@ -78,12 +78,21 @@ export const POST: APIRoute = async ({ request }) => {
     return json({ received: true, ignored: 'order_not_found' }, 200);
   }
 
+  // `amount` di webhook = gross yang dibayar pembeli (OpenAPI BorderPay). Bila biaya
+  // ditanggung pembeli (mis. VA, ditemukan 18 Nov 2026: 252500 untuk order 249000),
+  // gross = total + fee. Cocok bila amount == total ATAU amount - fee == total.
+  // Selisih lain tetap ditolak.
   const amountRaw = data.amount ?? data.total ?? data.gross_amount;
-  if (typeof amountRaw === 'number' && Math.round(amountRaw) !== Math.round(order.total)) {
-    console.warn(
-      `[webhook-borderpay] amount ${amountRaw} != total order ${order.total} untuk ${referenceId} — diabaikan`,
-    );
-    return json({ received: true, ignored: 'amount_mismatch' }, 200);
+  const feeRaw = typeof data.fee === 'number' && Number.isFinite(data.fee) && data.fee >= 0 ? data.fee : 0;
+  if (typeof amountRaw === 'number') {
+    const gross = Math.round(amountRaw);
+    const total = Math.round(order.total);
+    if (gross !== total && gross - Math.round(feeRaw) !== total) {
+      console.warn(
+        `[webhook-borderpay] amount ${amountRaw} (fee ${feeRaw}) != total order ${order.total} untuk ${referenceId} — diabaikan`,
+      );
+      return json({ received: true, ignored: 'amount_mismatch' }, 200);
+    }
   }
 
   const paymentId =
