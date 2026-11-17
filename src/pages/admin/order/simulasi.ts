@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { requireAdmin, isUuid } from '../../../lib/admin';
+import { getBorderPayPayment, isRealBorderPayRef } from '../../../lib/payments';
 import { BorderPayError, isBorderPayTestMode, simulateBorderPayPayment } from '../../../lib/borderpay';
 
 export const prerender = false;
@@ -13,8 +14,11 @@ export const POST: APIRoute = async ({ request, locals, redirect }) => {
   if (!isBorderPayTestMode()) return new Response('Tidak ditemukan', { status: 404 });
   const id = (await request.formData()).get('order');
   if (!isUuid(id)) return new Response('Tidak ditemukan', { status: 404 });
+  // Endpoint simulate memakai id pembayaran BorderPay (payments.borderpay_ref), bukan id order.
+  const pay = await getBorderPayPayment(id);
+  if (!pay || !isRealBorderPayRef(pay.borderpayRef)) return redirect('/admin/order?m=simulasi-gagal-0', 303);
   try {
-    await simulateBorderPayPayment(id);
+    await simulateBorderPayPayment(pay.borderpayRef as string);
   } catch (e) {
     const status = e instanceof BorderPayError ? e.status : 0;
     console.error('[admin] simulasi bayar gagal:', (e as Error).message);
