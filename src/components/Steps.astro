@@ -1,0 +1,107 @@
+---
+// Penunjuk langkah alur beli: Keranjang > Checkout > Bayar > Unduh.
+// `current` = indeks langkah aktif (0..3). Langkah sebelum current tampil selesai.
+interface Props {
+  current: 0 | 1 | 2 | 3;
+}
+const { current } = Astro.props;
+const steps = ['Keranjang', 'Checkout', 'Bayar', 'Unduh'];
+---
+
+<ol class="steps" aria-label="Langkah pembelian">
+  {
+    steps.map((s, i) => (
+      <li class={i < current ? 'done' : i === current ? 'now' : undefined} aria-current={i === current ? 'step' : undefined}>
+        <span class="dot" aria-hidden="true">
+          {i < current ? (
+            <svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
+          ) : (
+            i + 1
+          )}
+        </span>
+        <span class="lbl">{s}</span>
+      </li>
+    ))
+  }
+</ol>
+
+<style>
+  .steps {
+    list-style: none;
+    margin: 0 0 1.25rem;
+    padding: 0;
+    display: flex;
+    gap: 0.25rem;
+    counter-reset: none;
+  }
+  .steps li {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--muted);
+    min-width: 0;
+  }
+  .steps li:not(:last-child)::after {
+    content: '';
+    flex: 1;
+    height: 2px;
+    border-radius: 2px;
+    background: var(--line);
+    min-width: 0.5rem;
+  }
+  .steps li.done:not(:last-child)::after {
+    background: var(--ink);
+  }
+  .dot {
+    flex: none;
+    width: 26px;
+    height: 26px;
+    border-radius: 999px;
+    display: inline-grid;
+    place-items: center;
+    border: 1.5px solid var(--line-strong);
+    background: var(--surface);
+    font-size: 0.78rem;
+    font-weight: 600;
+  }
+  .dot svg {
+    width: 15px;
+    height: 15px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2.4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .done .dot {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: var(--paper);
+  }
+  .now {
+    color: var(--ink);
+    font-weight: 600;
+  }
+  .now .dot {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+    color: var(--accent-dark);
+  }
+  .lbl {
+    white-space: nowrap;
+  }
+  /* HP sempit: label hanya untuk langkah aktif supaya tidak berdesakan. */
+  @media (max-width: 479px) {
+    .steps li:not(.now) .lbl {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+    }
+  }
+</style>

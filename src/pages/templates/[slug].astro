@@ -27,16 +27,65 @@ const refused = Astro.url.searchParams.get('e') === 'belum-dijual';
   ) : (
     <Base title={product.judul} description={product.deskripsi ?? `Template ${product.jenjang} untuk artikel ilmiah.`}>
       <p class="crumb"><a href="/templates">Katalog</a> / {product.jenjang}</p>
-      <span class="badge">{product.jenjang}</span>
-      {product.jurnal ? <span class="badge">{product.jurnal}</span> : null}
-      <h1>{product.judul}</h1>
-      {product.deskripsi ? <p class="lead">{product.deskripsi}</p> : null}
 
-      <dl class="facts">
-        <div><dt>Format file</dt><dd>{formatLabel(product.format) ?? 'Segera diumumkan'}</dd></div>
-        {product.bidang ? <div><dt>Bidang</dt><dd>{product.bidang}</dd></div> : null}
-        <div><dt>Harga</dt><dd class="price">{formatRupiah(product.harga)}</dd></div>
-      </dl>
+      <div class="hero">
+        <div class="hero-media">
+          {preview && isPreviewImage(product.preview_path) ? (
+            <a class="shot" href={preview} rel="noopener noreferrer" target="_blank" aria-label={`Buka pratinjau ${product.judul} di tab baru`}>
+              <img src={preview} alt={`Pratinjau halaman pertama ${product.judul}`} />
+              <span class="shot-tag">Pratinjau · klik untuk perbesar</span>
+            </a>
+          ) : (
+            <div class="shot empty" aria-hidden="true"><span>{product.jenjang}</span></div>
+          )}
+        </div>
+
+        <div class="hero-info">
+          <div class="tags">
+            <span class="badge">{product.jenjang}</span>
+            {product.jurnal ? <span class="badge">{product.jurnal}</span> : null}
+          </div>
+          <h1>{product.judul}</h1>
+          {product.deskripsi ? <p class="lead">{product.deskripsi}</p> : null}
+
+          <dl class="facts">
+            <div><dt>Format file</dt><dd>{formatLabel(product.format) ?? 'Segera diumumkan'}</dd></div>
+            {product.bidang ? <div><dt>Bidang</dt><dd>{product.bidang}</dd></div> : null}
+            {product.isi_template.length > 0 ? <div><dt>Isi</dt><dd>{product.isi_template.length} bagian</dd></div> : null}
+          </dl>
+
+          <div class="buybox" id="beli">
+            <p class="bb-price">
+              <span class="muted small">Harga sekali bayar</span>
+              <strong>{formatRupiah(product.harga)}</strong>
+            </p>
+            {!buyable ? (
+              <button type="button" disabled>Belum bisa dibeli</button>
+            ) : inCart ? (
+              <div class="bb-actions">
+                <a class="btn" href="/keranjang">Sudah di keranjang · Lanjut</a>
+              </div>
+            ) : (
+              <div class="bb-actions">
+                <form method="post" action="/keranjang/beli-sekarang">
+                  <input type="hidden" name="slug" value={product.slug} />
+                  <button type="submit">Beli sekarang</button>
+                </form>
+                <form method="post" action="/keranjang/tambah">
+                  <input type="hidden" name="slug" value={product.slug} />
+                  <button type="submit" class="ghost-btn">Tambah ke keranjang</button>
+                </form>
+              </div>
+            )}
+            {refused ? <p class="refused" role="alert">Template ini belum bisa dibeli karena harga finalnya belum ditetapkan.</p> : null}
+            <ul class="trust">
+              <li>File langsung bisa diunduh setelah pembayaran lunas</li>
+              <li>Unduh ulang kapan saja dari halaman Akun</li>
+              <li>Bayar lewat QRIS, Virtual Account, atau e-wallet</li>
+            </ul>
+          </div>
+        </div>
+      </div>
 
       {
         product.isi_template.length > 0 ? (
@@ -70,16 +119,12 @@ const refused = Astro.url.searchParams.get('e') === 'belum-dijual';
       }
 
       {
-        preview ? (
+        preview && isPreviewPdf(product.preview_path) ? (
           <section>
             <h2>Pratinjau</h2>
             <p class="muted">Pratinjau parsial. File lengkap hanya tersedia setelah pembayaran lunas.</p>
             <div class="preview">
-              {isPreviewImage(product.preview_path) ? (
-                <img src={preview} alt={`Pratinjau ${product.judul}`} loading="lazy" />
-              ) : isPreviewPdf(product.preview_path) ? (
-                <iframe src={preview} title={`Pratinjau ${product.judul}`} loading="lazy"></iframe>
-              ) : null}
+              <iframe src={preview} title={`Pratinjau ${product.judul}`} loading="lazy"></iframe>
             </div>
             <p><a class="btn ghost" href={preview} rel="noopener noreferrer" target="_blank">Buka pratinjau di tab baru</a></p>
           </section>
@@ -112,29 +157,22 @@ const refused = Astro.url.searchParams.get('e') === 'belum-dijual';
         ) : null
       }
 
-      <div class="buybar">
-        <div>
-          <span class="muted small">Harga</span>
-          <strong class="price">{formatRupiah(product.harga)}</strong>
-        </div>
-        {!buyable ? (
-          <button type="button" disabled>Belum bisa dibeli</button>
-        ) : inCart ? (
-          <a class="btn" href="/keranjang">Lihat keranjang</a>
-        ) : (
-          <div class="buy-actions">
-            <form method="post" action="/keranjang/tambah">
-              <input type="hidden" name="slug" value={product.slug} />
-              <button type="submit">Tambah ke keranjang</button>
-            </form>
+      {buyable ? (
+        <div class="buybar">
+          <div>
+            <span class="muted small">Harga</span>
+            <strong class="price">{formatRupiah(product.harga)}</strong>
+          </div>
+          {inCart ? (
+            <a class="btn" href="/keranjang">Lanjut ke keranjang</a>
+          ) : (
             <form method="post" action="/keranjang/beli-sekarang">
               <input type="hidden" name="slug" value={product.slug} />
-              <button type="submit" class="ghost-btn">Beli sekarang</button>
+              <button type="submit">Beli sekarang</button>
             </form>
-          </div>
-        )}
-      </div>
-      {refused ? <p class="refused" role="alert">Template ini belum bisa dibeli karena harga finalnya belum ditetapkan.</p> : null}
+          )}
+        </div>
+      ) : null}
     </Base>
   )
 }
@@ -146,8 +184,119 @@ const refused = Astro.url.searchParams.get('e') === 'belum-dijual';
     font-size: 0.9rem;
   }
   .lead {
-    font-size: 1.05rem;
+    font-size: 1.02rem;
     color: var(--muted);
+  }
+  .hero {
+    display: grid;
+    gap: 1.5rem;
+    margin-bottom: 1rem;
+  }
+  .hero h1 {
+    margin: 0.5rem 0 0.75rem;
+  }
+  .tags {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+  }
+  .shot {
+    position: relative;
+    display: block;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    overflow: hidden;
+    background: var(--surface);
+    aspect-ratio: 4 / 3;
+    box-shadow: 0 18px 40px -28px rgba(28, 25, 23, 0.45);
+  }
+  .shot img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: top center;
+  }
+  .shot.empty {
+    display: grid;
+    place-items: center;
+    background: var(--code-bg);
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 3rem;
+    color: var(--line-strong);
+  }
+  .shot-tag {
+    position: absolute;
+    left: 0.75rem;
+    bottom: 0.75rem;
+    background: rgba(28, 25, 23, 0.82);
+    color: #fbfaf7;
+    font-size: 0.78rem;
+    padding: 0.3rem 0.65rem;
+    border-radius: 999px;
+  }
+  .buybox {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 1.1rem 1.25rem 1.2rem;
+    display: grid;
+    gap: 0.85rem;
+  }
+  .bb-price {
+    margin: 0;
+  }
+  .bb-price strong {
+    font-size: 1.6rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  .bb-actions {
+    display: grid;
+    gap: 0.5rem;
+  }
+  .bb-actions form,
+  .bb-actions button,
+  .bb-actions .btn {
+    width: 100%;
+  }
+  .trust {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 0.35rem;
+    font-size: 0.88rem;
+    color: var(--muted);
+  }
+  .trust li {
+    display: flex;
+    gap: 0.5rem;
+    align-items: flex-start;
+    line-height: 1.45;
+  }
+  .trust li::before {
+    content: '';
+    flex: none;
+    width: 16px;
+    height: 16px;
+    margin-top: 0.12rem;
+    border-radius: 999px;
+    background: var(--accent-soft) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239a3412' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E") center / 11px no-repeat;
+  }
+  @media (min-width: 860px) {
+    .hero {
+      grid-template-columns: 1.05fr 1fr;
+      gap: 2.5rem;
+      align-items: start;
+    }
+    .hero-media {
+      position: sticky;
+      top: 5.5rem;
+    }
+    .shot {
+      aspect-ratio: 3 / 4;
+    }
   }
   .facts {
     display: grid;
@@ -246,11 +395,9 @@ const refused = Astro.url.searchParams.get('e') === 'belum-dijual';
     color: var(--ink);
     border: 1px solid var(--line-strong);
   }
-  @media (min-width: 720px) {
+  @media (min-width: 860px) {
     .buybar {
-      bottom: 0;
-      border-radius: 14px 14px 0 0;
-      margin: 2rem 0 0;
+      display: none;
     }
   }
 </style>

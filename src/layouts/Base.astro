@@ -17,7 +17,9 @@ const {
   title,
   description = 'Template artikel untuk peneliti: beli, bayar, unduh, dan kelola dari akunmu.',
 } = Astro.props;
+import { readCartItems } from '../lib/cart';
 const path = Astro.url.pathname;
+const cartCount = readCartItems(Astro.cookies).reduce((n, i) => n + i.qty, 0);
 const loggedIn = Boolean(Astro.locals.user);
 const nav = [
   { href: '/', label: 'Beranda' },
@@ -311,6 +313,45 @@ const isActive = (href: string) =>
         color: var(--muted);
       }
 
+      .cart-link {
+        position: relative;
+        display: inline-grid;
+        place-items: center;
+        width: 44px;
+        height: 44px;
+        border-radius: 999px;
+        color: var(--ink);
+      }
+      .header-right {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.35rem;
+      }
+      .cart-link svg {
+        width: 22px;
+        height: 22px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.7;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .cart-count {
+        position: absolute;
+        top: 4px;
+        right: 2px;
+        min-width: 18px;
+        height: 18px;
+        padding: 0 4px;
+        border-radius: 999px;
+        background: var(--accent);
+        color: #fff;
+        font-size: 0.68rem;
+        font-weight: 700;
+        line-height: 18px;
+        text-align: center;
+      }
       main {
         padding-top: 1.5rem;
       }
@@ -639,10 +680,15 @@ const isActive = (href: string) =>
           background: var(--code-bg);
           color: var(--ink);
         }
+        .header-right {
+          justify-self: end;
+        }
+        .cart-link:hover {
+          background: var(--code-bg);
+        }
         .header-actions {
           display: flex;
           align-items: center;
-          justify-self: end;
           gap: 0.25rem;
         }
         .header-actions .ghost-link {
@@ -706,6 +752,13 @@ const isActive = (href: string) =>
             ))
           }
         </nav>
+        <div class="header-right">
+        <a class="cart-link" href="/keranjang" aria-label={cartCount > 0 ? `Keranjang, ${cartCount} item` : 'Keranjang'}>
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M3 4h2l2.2 10.2a1.5 1.5 0 001.5 1.2h8.6a1.5 1.5 0 001.5-1.2L20.5 8H6.2M9.5 20a.5.5 0 100-1 .5.5 0 000 1zM17 20a.5.5 0 100-1 .5.5 0 000 1z" />
+          </svg>
+          {cartCount > 0 ? <span class="cart-count">{cartCount > 9 ? '9+' : cartCount}</span> : null}
+        </a>
         <div class="header-actions">
           {
             loggedIn ? (
@@ -728,6 +781,7 @@ const isActive = (href: string) =>
             <path d="M4 7h16M4 12h16M4 17h16" />
           </svg>
         </button>
+        </div>
       </div>
     </header>
     <div class="wrap">

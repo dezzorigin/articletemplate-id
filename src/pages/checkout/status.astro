@@ -1,5 +1,7 @@
 ---
 import Base from '../../layouts/Base.astro';
+import Steps from '../../components/Steps.astro';
+import PayMethods from '../../components/PayMethods.astro';
 import { getOrderView } from '../../lib/orders';
 import { formatRupiah } from '../../lib/money';
 import { getBorderPayPayment, isMockEnabled, isRealBorderPayRef } from '../../lib/payments';
@@ -75,6 +77,7 @@ const icons: Record<string, string> = {
 ---
 
 <Base title="Status pesanan">
+  <Steps current={order.status === 'lunas' ? 3 : 2} />
   <h1>Status pesanan</h1>
   <p class="order-no">
     Nomor pesanan <strong>#{order.id.slice(0, 8).toUpperCase()}</strong>
@@ -142,7 +145,8 @@ const icons: Record<string, string> = {
             <p class="notice" role="alert">{error}</p>
           ) : null}
           {bpLive && !bpExpired ? (
-            <>
+            <div class="paybox" data-pay-url={bpLive.payUrl} data-poll>
+              <p class="go-note" data-go-note hidden role="status">Membuka halaman bayar BorderPay…</p>
               <p class="hint">
                 {bpLive.metode === 'QRIS'
                   ? 'Scan QRIS di halaman bayar.'
@@ -158,10 +162,13 @@ const icons: Record<string, string> = {
                 <p class="hint">Masa berlaku tercantum di halaman bayar BorderPay.</p>
               )}
               <p>
-                <a class="btn" href={bpLive.payUrl} target="_blank" rel="noopener">Buka halaman bayar</a>
+                <a class="btn big" href={bpLive.payUrl} rel="noopener">Buka halaman bayar</a>
               </p>
-              <p class="hint">Sudah bayar? Status berubah otomatis begitu BorderPay mengonfirmasi. Muat ulang halaman ini untuk memeriksa.</p>
-            </>
+              <p class="hint live">
+                <span class="pulse" aria-hidden="true"></span>
+                Sudah bayar? Halaman ini memeriksa status otomatis tiap 10 detik.
+              </p>
+            </div>
           ) : (
             <>
               <p class="hint">
@@ -171,42 +178,8 @@ const icons: Record<string, string> = {
               </p>
               <form method="post" action="/checkout/borderpay" class="payform">
                 <input type="hidden" name="order" value={order.id} />
-                <fieldset class="radios">
-                  <legend>Pilih metode bayar</legend>
-                  <label class="radio-card">
-                    <input type="radio" name="aksi" value="QRIS" checked={order.metode !== 'VA' && order.metode !== 'EWALLET'} />
-                    <span>QRIS<small>Scan kode QR dari aplikasi apa pun. Berlaku 60 menit.</small></span>
-                  </label>
-                  <label class="radio-card">
-                    <input type="radio" name="aksi" value="VA" checked={order.metode === 'VA'} />
-                    <span>Virtual Account<small>Transfer ke nomor VA bank pilihanmu. Berlaku 24 jam.</small></span>
-                  </label>
-                  <label class="radio-card">
-                    <input type="radio" name="aksi" value="EWALLET" checked={order.metode === 'EWALLET'} />
-                    <span>E-Wallet<small>Bayar lewat DANA, OVO, GoPay, atau ShopeePay.</small></span>
-                  </label>
-                </fieldset>
-                <label class="field">
-                  <span>Bank / penyedia e-wallet</span>
-                  <select name="bank">
-                    <optgroup label="Virtual Account">
-                      {
-                        vaBanks.map((b) => (
-                          <option value={b.code}>{b.name}</option>
-                        ))
-                      }
-                    </optgroup>
-                    <optgroup label="E-Wallet">
-                      {
-                        ewalletBanks.map((b) => (
-                          <option value={b.code}>{b.name}</option>
-                        ))
-                      }
-                    </optgroup>
-                  </select>
-                  <span class="hint">Wajib untuk Virtual Account &amp; E-Wallet; diabaikan untuk QRIS.</span>
-                </label>
-                <button type="submit">Buat pembayaran</button>
+                <PayMethods vaBanks={vaBanks} ewalletBanks={ewalletBanks} selected={order.metode} />
+                <button type="submit" class="big">Lanjut ke pembayaran</button>
               </form>
             </>
           )}
@@ -215,19 +188,21 @@ const icons: Record<string, string> = {
         <p class="notice">Menunggu pembayaran. Halaman ini akan menunjukkan status terbaru saat dimuat ulang.</p>
       )
     ) : order.status === 'lunas' ? (
-      <div class="notice ok">
-        <p>
-          Unduhan tersedia:{' '}
-          {order.items.map((i, idx) => (
-            <>
-              {idx > 0 ? ', ' : ''}
-              <a href={`/unduh/${order.id}/${i.product_id}`}>Unduh {i.judul}</a>
-            </>
+      <section class="card dl" aria-label="Unduhan">
+        <h2>File siap diunduh</h2>
+        <ul class="dl-list">
+          {order.items.map((i) => (
+            <li>
+              <span class="dl-name">{i.judul}</span>
+              <a class="btn" href={`/unduh/${order.id}/${i.product_id}`}>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14" /></svg>
+                Unduh
+              </a>
+            </li>
           ))}
-          .
-        </p>
-        <p><a class="btn" href="/akun">Buka dashboard akun</a></p>
-      </div>
+        </ul>
+        <p class="hint">File ini juga selalu tersedia di <a href="/akun">halaman Akun</a>, jadi bisa diunduh ulang kapan saja.</p>
+      </section>
     ) : (
       <p class="notice">
         Pesanan ini tidak dilanjutkan. Keranjangmu masih tersimpan —{' '}
@@ -237,6 +212,7 @@ const icons: Record<string, string> = {
   }
 
   <script is:inline src="/js/countdown.js"></script>
+  <script is:inline src="/js/status-pay.js"></script>
 </Base>
 
 <style>
@@ -281,4 +257,51 @@ const icons: Record<string, string> = {
   }
   .payform .hint { color: var(--muted); font-size: 0.85rem; font-weight: 400; }
   .notice .btn { margin-top: 0.5rem; }
+  .big { min-height: 50px; padding-left: 1.6rem; padding-right: 1.6rem; font-weight: 600; }
+  .payform .big { width: 100%; }
+  .paybox { display: grid; gap: 0.25rem; }
+  .paybox p { margin: 0 0 0.5rem; }
+  .go-note {
+    background: var(--accent-soft);
+    color: var(--accent-dark);
+    border-radius: 10px;
+    padding: 0.6rem 0.9rem;
+    font-weight: 500;
+  }
+  .live { display: flex; align-items: center; gap: 0.5rem; color: var(--muted); font-size: 0.85rem; }
+  .pulse {
+    flex: none;
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: var(--accent);
+    animation: pulse 1.6s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+  .dl h2 { margin: 0 0 0.75rem; }
+  .dl-list { list-style: none; padding: 0; margin: 0 0 0.75rem; display: grid; gap: 0.5rem; }
+  .dl-list li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.6rem 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .dl-list li:last-child { border-bottom: 0; }
+  .dl-name { font-weight: 600; min-width: 0; }
+  .dl-list .btn { gap: 0.4rem; flex: none; }
+  .dl-list svg {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .dl .hint { color: var(--muted); font-size: 0.88rem; margin: 0; }
 </style>

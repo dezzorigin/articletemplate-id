@@ -120,32 +120,33 @@ const activeCount =
     products.length > 0 ? (
       <>
         <p class="count" aria-live="polite">{products.length} template</p>
-        <div class="grid">
+        <div class="grid catalog">
           {products.map((p) => (
-            <article class="card product">
-              <span class="badge">{p.jenjang}</span>
-              {isPreviewImage(p.preview_path) ? (
-                <a class="thumb" href={`/templates/${p.slug}`} tabindex="-1" aria-hidden="true">
-                  <img src={previewUrl(p.preview_path)!} alt="" loading="lazy" width="640" />
-                </a>
-              ) : null}
-              <h2><a href={`/templates/${p.slug}`}>{p.judul}</a></h2>
-              {formatLabel(p.format) ? <p class="meta">Format: {formatLabel(p.format)}</p> : null}
-              {p.deskripsi ? <p class="desc">{p.deskripsi}</p> : null}
-              {p.isi_template.length > 0 ? (
-                <ul class="isi">
-                  {p.isi_template.slice(0, 4).map((item) => <li>{item}</li>)}
-                  {p.isi_template.length > 4 ? (
-                    <li class="more-isi">+{p.isi_template.length - 4} isi lainnya — lihat detail</li>
-                  ) : null}
-                </ul>
-              ) : null}
-              <p class="price">{formatRupiah(p.harga)}</p>
-              <div class="cta">
-                <a class="btn ghost" href={`/templates/${p.slug}`}>Lihat detail</a>
-                {isPurchasable(p.harga) ? null : (
-                  <button type="button" disabled>Belum bisa dibeli</button>
+            <article class="product">
+              <a class="thumb" href={`/templates/${p.slug}`} tabindex="-1" aria-hidden="true">
+                {isPreviewImage(p.preview_path) ? (
+                  <img src={previewUrl(p.preview_path)!} alt="" loading="lazy" width="640" height="480" />
+                ) : (
+                  <span class="thumb-empty">{p.jenjang}</span>
                 )}
+              </a>
+              <div class="body">
+                <div class="tags">
+                  <span class="badge">{p.jenjang}</span>
+                  {formatLabel(p.format) ? <span class="fmt">{formatLabel(p.format)}</span> : null}
+                </div>
+                <h2><a class="stretch" href={`/templates/${p.slug}`}>{p.judul}</a></h2>
+                {p.deskripsi ? <p class="desc">{p.deskripsi}</p> : null}
+                <div class="foot">
+                  {isPurchasable(p.harga) ? (
+                    <span class="price">{formatRupiah(p.harga)}</span>
+                  ) : (
+                    <span class="soon">Segera dijual</span>
+                  )}
+                  <span class="go" aria-hidden="true">Lihat
+                    <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+                  </span>
+                </div>
               </div>
             </article>
           ))}
@@ -222,61 +223,144 @@ const activeCount =
     border-radius: 12px;
     padding: 0.75rem 1rem;
   }
-  .product h2 {
-    font-size: 1.15rem;
-    margin: 0.5rem 0 0.35rem;
+  /* Kartu produk: seluruh kartu bisa diklik (tautan judul diregangkan),
+     thumbnail dipotong rasio 4:3 dari bagian atas halaman pertama supaya
+     tinggi kartu seragam, deskripsi dibatasi 3 baris. */
+  .catalog {
+    gap: 1rem;
   }
-  /* Thumbnail pratinjau: gambar halaman pertama (potret A4); tanpa height
-     tetap supaya rasio asli tiap gambar terjaga. */
+  .product {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    overflow: hidden;
+    transition: border-color 160ms var(--ease-out), box-shadow 200ms var(--ease-out), transform 200ms var(--ease-out);
+  }
   .thumb {
     display: block;
-    margin-top: 0.5rem;
+    aspect-ratio: 4 / 3;
+    background: var(--code-bg);
+    border-bottom: 1px solid var(--line);
+    overflow: hidden;
   }
   .thumb img {
     display: block;
     width: 100%;
-    height: auto;
-    border: 1px solid var(--line);
-    border-radius: 12px;
+    height: 100%;
+    object-fit: cover;
+    object-position: top center;
+    transition: transform 400ms var(--ease-out);
+  }
+  .thumb-empty {
+    display: grid;
+    place-items: center;
+    height: 100%;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 2.2rem;
+    color: var(--line-strong);
+  }
+  .body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    padding: 1rem 1.15rem 1.1rem;
+    flex: 1;
+  }
+  .tags {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+  .fmt {
+    color: var(--muted);
+    font-size: 0.8rem;
+  }
+  .product h2 {
+    font-size: 1.15rem;
+    margin: 0;
   }
   .product h2 a {
     color: var(--ink);
     text-decoration: none;
   }
-  .meta,
+  .stretch::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 16px;
+  }
+  .stretch:focus-visible {
+    outline: none;
+  }
+  .stretch:focus-visible::after {
+    outline: 3px solid var(--accent);
+    outline-offset: -3px;
+  }
   .desc {
     color: var(--muted);
-    font-size: 0.92rem;
-    margin: 0 0 0.5rem;
-  }
-  .isi {
-    list-style: disc;
-    padding-left: 1.1rem;
-    color: var(--muted);
     font-size: 0.9rem;
-    margin: 0 0 0.5rem;
+    line-height: 1.55;
+    margin: 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
-  .isi li {
-    margin-bottom: 0.15rem;
-  }
-  .more-isi {
-    list-style: none;
-    margin-left: -1.1rem;
-    font-style: italic;
+  .foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-top: auto;
+    padding-top: 0.75rem;
   }
   .price {
     font-weight: 700;
-    margin: 0.5rem 0 0.75rem;
+    font-size: 1.05rem;
   }
-  .cta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
+  .soon {
+    color: var(--muted);
+    font-size: 0.9rem;
   }
-  .btn.ghost {
-    background: transparent;
-    color: var(--ink);
-    border: 1px solid var(--line-strong);
+  .go {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.88rem;
+    font-weight: 500;
+    color: var(--accent-dark);
+  }
+  .go svg {
+    width: 16px;
+    height: 16px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: transform 200ms var(--ease-out);
+  }
+  @media (hover: hover) {
+    .product:hover {
+      border-color: var(--line-strong);
+      box-shadow: 0 10px 30px -18px rgba(28, 25, 23, 0.35);
+      transform: translateY(-2px);
+    }
+    .product:hover .thumb img {
+      transform: scale(1.03);
+    }
+    .product:hover .go svg {
+      transform: translateX(3px);
+    }
+  }
+  @media (min-width: 1000px) {
+    .catalog {
+      grid-template-columns: repeat(3, 1fr);
+    }
   }
   @media (min-width: 720px) {
     .more-body {

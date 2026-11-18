@@ -1,5 +1,7 @@
 ---
 import Base from '../../layouts/Base.astro';
+import Steps from '../../components/Steps.astro';
+import { previewUrl, isPreviewImage } from '../../lib/catalog';
 import { readCart, loadCart } from '../../lib/cart';
 import { formatRupiah } from '../../lib/money';
 
@@ -9,13 +11,17 @@ const payable = view.lines.filter((l) => l.buyable);
 ---
 
 <Base title="Keranjang">
+  {empty ? null : <Steps current={0} />}
   <h1>Keranjang</h1>
 
   {
     empty ? (
-      <div class="card">
+      <div class="card empty">
+        <span class="empty-ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M3 4h2l2.2 10.2a1.5 1.5 0 001.5 1.2h8.6a1.5 1.5 0 001.5-1.2L20.5 8H6.2M9.5 20a.5.5 0 100-1 .5.5 0 000 1zM17 20a.5.5 0 100-1 .5.5 0 000 1z" /></svg>
+        </span>
         <strong>Keranjangmu masih kosong</strong>
-        <p>Pilih template yang sesuai jenjang targetmu.</p>
+        <p>Pilih template yang sesuai jenjang jurnal targetmu.</p>
         <a class="btn" href="/templates">Lihat katalog template</a>
       </div>
     ) : (
@@ -23,13 +29,20 @@ const payable = view.lines.filter((l) => l.buyable);
         <ul class="lines">
           {view.lines.map((l) => (
             <li class="card line">
+              <a class="mini" href={`/templates/${l.product.slug}`} tabindex="-1" aria-hidden="true">
+                {isPreviewImage(l.product.preview_path) ? (
+                  <img src={previewUrl(l.product.preview_path)!} alt="" loading="lazy" width="72" height="72" />
+                ) : (
+                  <span>{l.product.jenjang}</span>
+                )}
+              </a>
               <div class="info">
                 <span class="badge">{l.product.jenjang}</span>
                 <a class="title" href={`/templates/${l.product.slug}`}>{l.product.judul}</a>
                 {l.buyable ? (
                   <span class="price">
-                    {formatRupiah(l.product.harga)} / template
-                    {l.qty > 1 ? ` — subtotal ${formatRupiah(l.subtotal)}` : ''}
+                    {formatRupiah(l.subtotal)}
+                    {l.qty > 1 ? <small> ({l.qty} × {formatRupiah(l.product.harga)})</small> : null}
                   </span>
                 ) : (
                   <span class="warn">Harga belum final. Produk ini tidak ikut ditagih.</span>
@@ -50,9 +63,11 @@ const payable = view.lines.filter((l) => l.buyable);
                   </form>
                 </div>
               ) : null}
-              <form method="post" action="/keranjang/hapus">
+              <form method="post" action="/keranjang/hapus" class="del">
                 <input type="hidden" name="slug" value={l.product.slug} />
-                <button type="submit" class="ghost" aria-label={`Hapus ${l.product.judul} dari keranjang`}>Hapus</button>
+                <button type="submit" class="icon-btn" aria-label={`Hapus ${l.product.judul} dari keranjang`}>
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" /></svg>
+                </button>
               </form>
             </li>
           ))}
@@ -62,13 +77,15 @@ const payable = view.lines.filter((l) => l.buyable);
           <p class="warn">Beberapa template di keranjangmu sudah tidak tersedia dan tidak ikut dihitung.</p>
         ) : null}
 
+        <p class="more"><a href="/templates">+ Tambah template lain</a></p>
+
         <div class="summary">
           <div>
             <span class="muted">Total ({view.totalQty} template)</span>
             <strong class="total">{formatRupiah(view.total)}</strong>
           </div>
           {payable.length > 0 ? (
-            <a class="btn" href="/checkout">Lanjut ke checkout</a>
+            <a class="btn go" href="/checkout">Lanjut ke checkout</a>
           ) : (
             <button type="button" disabled>Belum bisa checkout</button>
           )}
@@ -87,15 +104,107 @@ const payable = view.lines.filter((l) => l.buyable);
     gap: 0.75rem;
   }
   .line {
-    display: flex;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    grid-template-areas: 'mini info del' 'mini qty qty';
     align-items: center;
-    justify-content: space-between;
-    gap: 0.75rem;
+    gap: 0.5rem 0.9rem;
+    padding: 0.85rem;
+    border-radius: 14px;
+  }
+  .mini {
+    grid-area: mini;
+    align-self: start;
+    width: 72px;
+    height: 72px;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    background: var(--code-bg);
+    display: grid;
+    place-items: center;
+    text-decoration: none;
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 0.8rem;
+  }
+  .mini img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: top center;
   }
   .info {
+    grid-area: info;
     display: grid;
-    gap: 0.2rem;
+    gap: 0.15rem;
     min-width: 0;
+  }
+  .info .badge {
+    justify-self: start;
+  }
+  .del {
+    grid-area: del;
+    align-self: start;
+  }
+  .icon-btn {
+    width: 44px;
+    padding: 0;
+    background: transparent;
+    color: var(--muted);
+    border: 0;
+  }
+  .icon-btn svg {
+    width: 20px;
+    height: 20px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .price small {
+    color: var(--muted);
+    font-weight: 400;
+    font-size: 0.82rem;
+  }
+  .more {
+    margin: 0 0 0.5rem;
+  }
+  .more a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    color: var(--accent-dark);
+    font-weight: 500;
+    text-decoration: none;
+  }
+  .empty {
+    display: grid;
+    justify-items: center;
+    text-align: center;
+    gap: 0.5rem;
+    padding: 2.5rem 1.25rem;
+  }
+  .empty p {
+    margin: 0 0 0.5rem;
+  }
+  .empty-ico {
+    width: 56px;
+    height: 56px;
+    border-radius: 999px;
+    display: grid;
+    place-items: center;
+    background: var(--code-bg);
+  }
+  .empty-ico svg {
+    width: 28px;
+    height: 28px;
+    fill: none;
+    stroke: var(--muted);
+    stroke-width: 1.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
   }
   .title {
     color: var(--ink);
@@ -110,6 +219,8 @@ const payable = view.lines.filter((l) => l.buyable);
     font-size: 0.9rem;
   }
   .qty {
+    grid-area: qty;
+    justify-self: start;
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -117,7 +228,7 @@ const payable = view.lines.filter((l) => l.buyable);
   }
   .qty-btn {
     min-width: 44px;
-    padding: 0.6rem 0;
+    padding: 0;
     font-size: 1.1rem;
     line-height: 1;
   }
@@ -154,6 +265,13 @@ const payable = view.lines.filter((l) => l.buyable);
     font-size: 1.25rem;
   }
   @media (min-width: 720px) {
+    .line {
+      grid-template-columns: auto 1fr auto auto;
+      grid-template-areas: 'mini info qty del';
+    }
+    .mini {
+      align-self: center;
+    }
     .summary {
       bottom: 0;
       margin: 1.5rem 0 0;

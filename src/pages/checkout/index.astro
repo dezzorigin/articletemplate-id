@@ -1,7 +1,16 @@
 ---
 import Base from '../../layouts/Base.astro';
+import Steps from '../../components/Steps.astro';
+import PayMethods from '../../components/PayMethods.astro';
 import { readCart, loadCart } from '../../lib/cart';
 import { formatRupiah } from '../../lib/money';
+import { isMockEnabled } from '../../lib/payments';
+import {
+  FALLBACK_EWALLET_PROVIDERS,
+  FALLBACK_VA_BANKS,
+  isBorderPayEnabled,
+  listBorderPayMethods,
+} from '../../lib/borderpay';
 
 const view = await loadCart(readCart(Astro.cookies));
 const payable = view.lines.filter((l) => l.buyable);
@@ -17,63 +26,90 @@ const messages: Record<string, string> = {
   gagal: 'Pesanan gagal dibuat. Coba lagi sebentar lagi.',
 };
 const error = code ? messages[code] : undefined;
+
+// Metode bayar dipilih langsung di sini bila BorderPay aktif (sekali klik ke
+// halaman bayar). Mode simulasi/tanpa key: metode dipilih di halaman status.
+const borderpay = !isMockEnabled() && isBorderPayEnabled();
+const methods = borderpay ? await listBorderPayMethods() : null;
+const vaBanks = methods && methods.vaBanks.length > 0 ? methods.vaBanks : FALLBACK_VA_BANKS;
+const ewalletBanks = methods && methods.ewalletBanks.length > 0 ? methods.ewalletBanks : FALLBACK_EWALLET_PROVIDERS;
 ---
 
 <Base title="Checkout">
+  <Steps current={1} />
   <h1>Checkout</h1>
   {error ? <p class="notice" role="alert">{error}</p> : null}
 
   <form class="co" method="post" action="/checkout/buat">
     <div class="co-main">
-      <h2>Data pembeli</h2>
-      {
-        user ? (
-          <p class="hint">Membeli sebagai <strong>{user.email}</strong>.</p>
-        ) : (
-          <>
-            <label class="field">
-              <span>Nama</span>
-              <input type="text" name="nama" required autocomplete="name" maxlength="80" />
-            </label>
-            <label class="field">
-              <span>Email</span>
-              <input type="email" name="email" required autocomplete="email" inputmode="email" autocapitalize="none" autocorrect="off" maxlength="254" />
-              <span class="hint">
-                Akun dibuat otomatis dari email ini — akun itu belum punya kata sandi. Setelah pesanan dibuat,
-                buka <a href="/lupa-password">Lupa kata sandi</a>, masukkan email ini, lalu ikuti tautan yang
-                kami kirim untuk mengatur kata sandi dan mengunduh file.
+      <section class="card block" aria-labelledby="h-pembeli">
+        <h2 id="h-pembeli"><span class="num" aria-hidden="true">1</span> Data pembeli</h2>
+        {
+          user ? (
+            <p class="who">
+              <span class="who-ico" aria-hidden="true">{(user.email ?? '?').slice(0, 1).toUpperCase()}</span>
+              <span>
+                Membeli sebagai <strong>{user.email}</strong>
+                <small>File akan muncul di halaman Akun setelah lunas.</small>
               </span>
-            </label>
-          </>
-        )
-      }
-      <section class="card pay-next" aria-label="Langkah pembayaran">
-        <h3>Pembayaran</h3>
-        <p>
-          Bayar lewat <strong>QRIS</strong> atau <strong>Virtual Account</strong> (BorderPay).
-          Metode dipilih di langkah berikutnya, di halaman status pesanan — setelah pesanan ini dibuat.
-        </p>
+            </p>
+          ) : (
+            <div class="fields">
+              <label class="field">
+                <span>Nama</span>
+                <input type="text" name="nama" required autocomplete="name" maxlength="80" />
+              </label>
+              <label class="field">
+                <span>Email</span>
+                <input type="email" name="email" required autocomplete="email" inputmode="email" autocapitalize="none" autocorrect="off" maxlength="254" />
+                <span class="hint">
+                  Akun dibuat otomatis dari email ini. Untuk mengunduh, atur kata sandinya lewat{' '}
+                  <a href="/lupa-password">Lupa kata sandi</a> setelah pesanan dibuat.
+                </span>
+              </label>
+              <p class="hint">Sudah punya akun? <a href="/masuk?next=/checkout">Masuk dulu</a>.</p>
+            </div>
+          )
+        }
+      </section>
+
+      <section class="card block" aria-labelledby="h-bayar">
+        <h2 id="h-bayar"><span class="num" aria-hidden="true">2</span> Pembayaran</h2>
+        {
+          borderpay ? (
+            <PayMethods vaBanks={vaBanks} ewalletBanks={ewalletBanks} />
+          ) : (
+            <p class="hint">Metode bayar dipilih setelah pesanan dibuat.</p>
+          )
+        }
       </section>
     </div>
 
     <aside class="co-side" aria-label="Ringkasan pesanan">
       <div class="card summary">
-        <details open>
-          <summary>Ringkasan pesanan ({view.totalQty} item)</summary>
-          <ul class="lines">
-            {
-              payable.map((l) => (
-                <li class="line">
-                  <span>{l.product.judul}{l.qty > 1 ? ` × ${l.qty}` : ''}</span>
-                  <strong>{formatRupiah(l.subtotal)}</strong>
-                </li>
-              ))
-            }
-          </ul>
-        </details>
+        <h2 class="sum-h">Ringkasan pesanan</h2>
+        <ul class="lines">
+          {
+            payable.map((l) => (
+              <li class="line">
+                <span>
+                  {l.product.judul}
+                  <small>{l.product.jenjang}{l.qty > 1 ? ` · ${l.qty} lisensi` : ''}</small>
+                </span>
+                <strong>{formatRupiah(l.subtotal)}</strong>
+              </li>
+            ))
+          }
+        </ul>
         <p class="total"><span>Total</span> <strong>{formatRupiah(view.total)}</strong></p>
-        <button type="submit" data-submit>Buat pesanan &amp; lanjut ke pembayaran</button>
-        <p class="hint">Sekali bayar. Tanpa biaya tambahan dari kami.</p>
+        <button type="submit" class="pay-btn" data-submit>
+          {borderpay ? `Bayar ${formatRupiah(view.total)}` : 'Buat pesanan'}
+        </button>
+        <p class="fine">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 11V8a5 5 0 0110 0v3M6 11h12v9H6z" /></svg>
+          {borderpay ? 'Kamu akan diarahkan ke halaman bayar BorderPay yang aman.' : 'Sekali bayar. Tanpa biaya tambahan dari kami.'}
+        </p>
+        <a class="back" href="/keranjang">Ubah keranjang</a>
       </div>
     </aside>
   </form>
@@ -82,37 +118,100 @@ const error = code ? messages[code] : undefined;
 </Base>
 
 <style>
-  /* Dua kolom di desktop (form kiri, ringkasan lengket kanan — pola
-     shadcn Pro checkout-01, PETA.md §7.2 baris 6); satu kolom di HP
-     dengan ringkasan di atas dan bisa dilipat. */
   .co { display: grid; gap: 1rem; }
-  .co-main { display: grid; gap: 0.9rem; align-content: start; }
-  .co-main h2 { margin: 0; }
-  .co-main .field { display: grid; gap: 0.3rem; font-weight: 500; font-size: 0.9rem; }
-  .co-main .field input {
+  .co-main { display: grid; gap: 1rem; align-content: start; }
+  .block h2 {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin: 0 0 1rem;
+    font-size: 1.2rem;
+  }
+  .num {
+    display: inline-grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 999px;
+    background: var(--ink);
+    color: var(--paper);
+    font-family: system-ui, sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+  .fields { display: grid; gap: 0.9rem; }
+  .field { display: grid; gap: 0.3rem; font-weight: 500; font-size: 0.9rem; }
+  .field input {
     width: 100%;
-    border: 1px solid var(--line);
-    border-radius: 8px;
+    border: 1px solid var(--line-strong);
+    border-radius: 10px;
     padding: 0.5rem 0.8rem;
     background: var(--surface);
     color: var(--ink);
     font-weight: 400;
   }
-  .co-main .hint { color: var(--muted); font-size: 0.85rem; font-weight: 400; }
-  .pay-next h3 { font-family: Georgia, "Times New Roman", serif; font-size: 1.1rem; font-weight: 500; margin: 0 0 0.35rem; }
-  .pay-next p { margin: 0; }
-  .pay-next p:last-child { margin-bottom: 0; }
-  .co-side { order: -1; }
-  .summary { padding: 1rem 1.25rem; }
-  .summary details summary { cursor: pointer; font-weight: 600; min-height: 44px; display: flex; align-items: center; }
-  .lines { list-style: none; padding: 0; margin: 0.5rem 0 0.75rem; display: grid; gap: 0.5rem; }
+  .hint { color: var(--muted); font-size: 0.85rem; font-weight: 400; margin: 0; }
+  .who { display: flex; gap: 0.8rem; align-items: center; margin: 0; }
+  .who small { display: block; color: var(--muted); font-size: 0.85rem; }
+  .who-ico {
+    flex: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 999px;
+    display: grid;
+    place-items: center;
+    background: var(--accent-soft);
+    color: var(--accent-dark);
+    font-weight: 700;
+  }
+  .summary { padding: 1.15rem 1.25rem; }
+  .sum-h { margin: 0 0 0.5rem; font-size: 1.1rem; }
+  .lines { list-style: none; padding: 0; margin: 0 0 0.75rem; display: grid; gap: 0.6rem; }
   .line { display: flex; justify-content: space-between; gap: 0.75rem; font-size: 0.95rem; }
-  .line strong { white-space: nowrap; }
-  .total { display: flex; justify-content: space-between; font-size: 1.15rem; margin: 0 0 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--line); }
-  .summary button { width: 100%; }
-  .summary .hint { color: var(--muted); font-size: 0.85rem; margin: 0.6rem 0 0; text-align: center; }
-  @media (min-width: 720px) {
-    .co { grid-template-columns: 1.1fr 0.9fr; gap: 2rem; align-items: start; }
-    .co-side { order: 0; position: sticky; top: 1rem; }
+  .line small { display: block; color: var(--muted); font-size: 0.8rem; }
+  .line strong { white-space: nowrap; font-family: inherit; font-size: 0.95rem; }
+  .total {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin: 0 0 1rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--line);
+  }
+  .total { color: var(--ink); }
+  .total strong { font-family: inherit; font-size: 1.35rem; font-weight: 700; color: var(--ink); }
+  .pay-btn { width: 100%; min-height: 50px; font-size: 1.02rem; font-weight: 600; }
+  .fine {
+    display: flex;
+    gap: 0.4rem;
+    align-items: flex-start;
+    justify-content: center;
+    color: var(--muted);
+    font-size: 0.82rem;
+    margin: 0.7rem 0 0;
+    text-align: center;
+    line-height: 1.45;
+  }
+  .fine svg {
+    flex: none;
+    width: 14px;
+    height: 14px;
+    margin-top: 0.15rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linejoin: round;
+  }
+  .back {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 44px;
+    font-size: 0.88rem;
+    color: var(--muted);
+  }
+  @media (min-width: 860px) {
+    .co { grid-template-columns: 1.15fr 0.85fr; gap: 2rem; align-items: start; }
+    .co-side { position: sticky; top: 5.5rem; }
   }
 </style>

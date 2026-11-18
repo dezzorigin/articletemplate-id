@@ -1,0 +1,181 @@
+---
+// Pilihan metode bayar BorderPay (QRIS / Virtual Account / E-Wallet) dengan
+// pilihan bank yang hanya muncul untuk metode yang membutuhkannya.
+// Tanpa JS: pakai CSS :has(); browser tanpa :has() menampilkan kedua daftar.
+// Field yang dikirim: aksi, bank_va, bank_ewallet (dibaca src/lib/pay-flow.ts).
+interface Bank {
+  code: string;
+  name: string;
+}
+interface Props {
+  vaBanks: Bank[];
+  ewalletBanks: Bank[];
+  selected?: string | null;
+}
+const { vaBanks, ewalletBanks, selected } = Astro.props;
+const sel = selected === 'VA' || selected === 'EWALLET' ? selected : 'QRIS';
+---
+
+<fieldset class="pm">
+  <legend>Pilih metode bayar</legend>
+  <div class="pm-opts">
+    <label class="pm-opt">
+      <input type="radio" name="aksi" value="QRIS" checked={sel === 'QRIS'} />
+      <span class="pm-ico" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 14h2v2h-2zM14 18h2v2h-2zM18 18h2v2h-2z" /></svg>
+      </span>
+      <span class="pm-txt"><strong>QRIS</strong><small>Scan dari aplikasi bank atau e-wallet apa pun</small></span>
+    </label>
+    <label class="pm-opt">
+      <input type="radio" name="aksi" value="VA" checked={sel === 'VA'} />
+      <span class="pm-ico" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M3 10l9-5 9 5M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 20h18" /></svg>
+      </span>
+      <span class="pm-txt"><strong>Virtual Account</strong><small>Transfer dari m-banking, ATM, atau teller</small></span>
+    </label>
+    <label class="pm-opt">
+      <input type="radio" name="aksi" value="EWALLET" checked={sel === 'EWALLET'} />
+      <span class="pm-ico" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M4 7.5A2.5 2.5 0 016.5 5H18v4M4 7.5V17a2 2 0 002 2h14V9H6.5A2.5 2.5 0 014 7.5zM16 14h.01" /></svg>
+      </span>
+      <span class="pm-txt"><strong>E-Wallet</strong><small>DANA, OVO, GoPay, ShopeePay</small></span>
+    </label>
+  </div>
+
+  <label class="pm-bank pm-bank-va">
+    <span>Bank Virtual Account</span>
+    <select name="bank_va">
+      {vaBanks.map((b) => <option value={b.code}>{b.name}</option>)}
+    </select>
+  </label>
+  <label class="pm-bank pm-bank-ew">
+    <span>Penyedia e-wallet</span>
+    <select name="bank_ewallet">
+      {ewalletBanks.map((b) => <option value={b.code}>{b.name}</option>)}
+    </select>
+  </label>
+</fieldset>
+
+<style>
+  .pm {
+    border: 0;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 0.75rem;
+    min-width: 0;
+  }
+  .pm legend {
+    padding: 0;
+    margin-bottom: 0.6rem;
+    font-weight: 600;
+  }
+  .pm-opts {
+    display: grid;
+    gap: 0.5rem;
+  }
+  .pm-opt {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.8rem 1rem;
+    border: 1.5px solid var(--line);
+    border-radius: 14px;
+    background: var(--surface);
+    cursor: pointer;
+    transition: border-color 140ms var(--ease-out), background 140ms var(--ease-out);
+  }
+  .pm-opt input {
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+  }
+  .pm-ico {
+    flex: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: grid;
+    place-items: center;
+    background: var(--code-bg);
+    color: var(--ink);
+  }
+  .pm-ico svg {
+    width: 22px;
+    height: 22px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .pm-txt {
+    display: grid;
+    line-height: 1.3;
+    gap: 0.15rem;
+  }
+  .pm-txt strong {
+    font-family: inherit;
+    font-size: 0.98rem;
+    font-weight: 600;
+  }
+  .pm-txt small {
+    color: var(--muted);
+    font-size: 0.82rem;
+  }
+  .pm-opt::after {
+    content: '';
+    margin-left: auto;
+    flex: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 999px;
+    border: 1.5px solid var(--line-strong);
+    background: var(--surface);
+  }
+  .pm-opt:has(input:checked) {
+    border-color: var(--ink);
+    background: #fffdf9;
+  }
+  .pm-opt:has(input:checked)::after {
+    border: 6px solid var(--ink);
+  }
+  .pm-opt:has(input:checked) .pm-ico {
+    background: var(--accent-soft);
+    color: var(--accent-dark);
+  }
+  .pm-opt:has(input:focus-visible) {
+    outline: 3px solid var(--accent);
+    outline-offset: 2px;
+  }
+  .pm-bank {
+    display: none;
+    gap: 0.3rem;
+    font-weight: 500;
+    font-size: 0.9rem;
+  }
+  .pm-bank select {
+    width: 100%;
+    border: 1px solid var(--line-strong);
+    border-radius: 10px;
+    padding: 0.5rem 0.8rem;
+    background: var(--surface);
+    color: var(--ink);
+  }
+  .pm:has(input[value='VA']:checked) .pm-bank-va,
+  .pm:has(input[value='EWALLET']:checked) .pm-bank-ew {
+    display: grid;
+  }
+  @supports not selector(:has(*)) {
+    .pm-bank {
+      display: grid;
+    }
+  }
+  @media (hover: hover) {
+    .pm-opt:hover {
+      border-color: var(--line-strong);
+    }
+  }
+</style>
