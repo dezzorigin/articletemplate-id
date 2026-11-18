@@ -35,7 +35,7 @@ const steps = ['Keranjang', 'Checkout', 'Bayar', 'Unduh'];
     counter-reset: none;
   }
   .steps li {
-    flex: 1;
+    flex: 1 1 0;
     display: flex;
     align-items: center;
     gap: 0.45rem;
@@ -84,6 +84,8 @@ const steps = ['Keranjang', 'Checkout', 'Bayar', 'Unduh'];
   .now {
     color: var(--ink);
     font-weight: 600;
+    flex: 0 0 auto !important;
+    padding-right: 0.25rem;
   }
   .now .dot {
     border-color: var(--accent);
